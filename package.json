@@ -1,0 +1,91 @@
+{
+  "name": "jjcoder",
+  "version": "0.1.0",
+  "private": true,
+  "description": "JJcoder is an open-source Electron workspace for agentically building React websites and deploying them to Vercel.",
+  "type": "module",
+  "main": "dist-electron/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "tsc --noEmit && electron-vite build",
+    "preview": "electron-vite preview",
+    "dist": "npm run build && electron-builder",
+    "dist:win": "npm run build && electron-builder --win nsis",
+    "dist:mac": "npm run build && electron-builder --mac dmg",
+    "dist:linux": "npm run build && electron-builder --linux AppImage"
+  },
+  "keywords": [
+    "electron",
+    "openrouter",
+    "react",
+    "vercel",
+    "github",
+    "agent"
+  ],
+  "author": "JJcoder contributors",
+  "license": "MIT",
+  "dependencies": {
+    "@fontsource/fraunces": "^5.2.9",
+    "@fontsource/ibm-plex-sans": "^5.2.8",
+    "@octokit/rest": "^22.0.1",
+    "@openrouter/sdk": "^0.10.2",
+    "@vercel/sdk": "^1.19.11",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.7.0",
+    "nanoid": "^5.1.7",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.2.0",
+    "concurrently": "^9.2.1",
+    "electron": "^41.1.0",
+    "electron-builder": "^26.8.1",
+    "electron-vite": "^5.0.0",
+    "typescript": "^6.0.2",
+    "vite": "^7.3.1",
+    "wait-on": "^9.0.4"
+  },
+  "build": {
+    "appId": "com.jjcoder.desktop",
+    "productName": "JJcoder",
+    "directories": {
+      "buildResources": "build",
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        "nsis"
+      ]
+    },
+    "mac": {
+      "icon": "build/icon.png",
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.developer-tools"
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "target": [
+        "AppImage"
+      ],
+      "category": "Development"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

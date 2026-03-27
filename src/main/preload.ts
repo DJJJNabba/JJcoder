@@ -1,0 +1,43 @@
+import { contextBridge, ipcRenderer } from "electron";
+import type { AppEventMap, DesktopBridgeApi } from "@shared/types";
+
+const BRIDGE_EVENT_CHANNEL = "jjcoder:event";
+
+const api: DesktopBridgeApi = {
+  getSnapshot: async () => await ipcRenderer.invoke("jjcoder:get-snapshot"),
+  pickFolder: async () => await ipcRenderer.invoke("jjcoder:pick-folder"),
+  refreshModels: async () => await ipcRenderer.invoke("jjcoder:refresh-models"),
+  createWebsite: async (input) => await ipcRenderer.invoke("jjcoder:create-website", input),
+  deleteWebsite: async (websiteId) => await ipcRenderer.invoke("jjcoder:delete-website", websiteId),
+  openInIde: async (websiteId) => await ipcRenderer.invoke("jjcoder:open-in-ide", websiteId),
+  openInExplorer: async (websiteId) => await ipcRenderer.invoke("jjcoder:open-in-explorer", websiteId),
+  openExternal: async (url) => await ipcRenderer.invoke("jjcoder:open-external", url),
+  saveSecret: async (input) => await ipcRenderer.invoke("jjcoder:save-secret", input),
+  clearSecret: async (kind) => await ipcRenderer.invoke("jjcoder:clear-secret", kind),
+  updateSettings: async (input) => await ipcRenderer.invoke("jjcoder:update-settings", input),
+  dispatchRun: async (input) => await ipcRenderer.invoke("jjcoder:dispatch-run", input),
+  startPreview: async (websiteId) => await ipcRenderer.invoke("jjcoder:start-preview", websiteId),
+  stopPreview: async (websiteId) => await ipcRenderer.invoke("jjcoder:stop-preview", websiteId),
+  initGitRepo: async (websiteId) => await ipcRenderer.invoke("jjcoder:init-git", websiteId),
+  publishRepo: async (input) => await ipcRenderer.invoke("jjcoder:publish-repo", input),
+  deployWebsite: async (input) => await ipcRenderer.invoke("jjcoder:deploy-website", input),
+  subscribe: (channel, listener) => {
+    const wrapped = (
+      _event: Electron.IpcRendererEvent,
+      payload: {
+        channel: keyof AppEventMap;
+        payload: AppEventMap[keyof AppEventMap];
+      }
+    ) => {
+      if (payload.channel === channel) {
+        listener(payload.payload as AppEventMap[typeof channel]);
+      }
+    };
+    ipcRenderer.on(BRIDGE_EVENT_CHANNEL, wrapped);
+    return () => {
+      ipcRenderer.removeListener(BRIDGE_EVENT_CHANNEL, wrapped);
+    };
+  }
+};
+
+contextBridge.exposeInMainWorld("jjcoder", api);
