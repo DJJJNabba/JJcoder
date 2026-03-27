@@ -127,6 +127,61 @@ export async function runCommandOrThrow(
   return result;
 }
 
+export async function launchCommandInTerminal(command: string, cwd: string): Promise<void> {
+  const normalizedCwd = path.resolve(cwd);
+
+  if (process.platform === "win32") {
+    const powershellCwd = normalizedCwd.replace(/'/g, "''");
+    const child = spawn(
+      "cmd.exe",
+      [
+        "/c",
+        "start",
+        "powershell.exe",
+        "-NoExit",
+        "-Command",
+        `Set-Location -LiteralPath '${powershellCwd}'; ${command}`
+      ],
+      {
+        cwd: normalizedCwd,
+        detached: true,
+        stdio: "ignore",
+        windowsHide: false
+      }
+    );
+    child.unref();
+    return;
+  }
+
+  if (process.platform === "darwin") {
+    const appleScript = [
+      "tell application \"Terminal\"",
+      `do script "cd ${escapeForPosixShell(normalizedCwd)}; ${escapeForAppleScript(command)}"`,
+      "activate",
+      "end tell"
+    ].join("\n");
+
+    const child = spawn("osascript", ["-e", appleScript], {
+      cwd: normalizedCwd,
+      detached: true,
+      stdio: "ignore"
+    });
+    child.unref();
+    return;
+  }
+
+  const child = spawn(
+    "x-terminal-emulator",
+    ["-e", `bash -lc 'cd ${escapeForPosixShell(normalizedCwd)}; ${command}; exec bash'`],
+    {
+      cwd: normalizedCwd,
+      detached: true,
+      stdio: "ignore"
+    }
+  );
+  child.unref();
+}
+
 export async function listFilesRecursive(rootPath: string, basePath = ""): Promise<string[]> {
   const startPath = path.join(rootPath, basePath);
   const entries = await fs.readdir(startPath, { withFileTypes: true });
@@ -234,4 +289,12 @@ export async function readTextFileSafe(filePath: string): Promise<string> {
 export async function writeTextFileSafe(filePath: string, value: string): Promise<void> {
   await ensureDir(path.dirname(filePath));
   await fs.writeFile(filePath, value, "utf8");
+}
+
+function escapeForPosixShell(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+function escapeForAppleScript(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }

@@ -4,6 +4,10 @@ export type AgentMode = "solo" | "squad";
 
 export type DeploymentTarget = "preview" | "production";
 
+export type AuthSource = "vault" | "env" | "github-cli" | "vercel-cli" | null;
+
+export type ProviderLoginKind = "github" | "vercel";
+
 export type PreviewStatus = "stopped" | "starting" | "running" | "error";
 
 export type RunStatus = "idle" | "queued" | "running" | "completed" | "failed" | "cancelled";
@@ -94,6 +98,11 @@ export interface AuthState {
   githubConfigured: boolean;
   vercelConfigured: boolean;
   encryptionAvailable: boolean;
+  openRouterSource: AuthSource;
+  githubSource: AuthSource;
+  vercelSource: AuthSource;
+  githubCliInstalled: boolean;
+  vercelCliInstalled: boolean;
 }
 
 export interface AppSettings {
@@ -105,6 +114,7 @@ export interface AppSettings {
   websitesRoot: string | null;
   vercelTeamId: string;
   vercelTeamSlug: string;
+  onboardingCompletedAt: string | null;
 }
 
 export interface AppSnapshot {
@@ -137,6 +147,7 @@ export interface UpdateSettingsInput {
   websitesRoot?: string | null;
   vercelTeamId?: string;
   vercelTeamSlug?: string;
+  onboardingCompletedAt?: string | null;
   selectedWebsiteId?: string | null;
   selectedRunId?: string | null;
 }
@@ -172,11 +183,13 @@ export interface DesktopBridgeApi {
   getSnapshot: () => Promise<AppSnapshot>;
   pickFolder: () => Promise<string | null>;
   refreshModels: () => Promise<AppSnapshot>;
+  refreshConnections: (deep?: boolean) => Promise<AppSnapshot>;
   createWebsite: (input: CreateWebsiteInput) => Promise<AppSnapshot>;
   deleteWebsite: (websiteId: string) => Promise<AppSnapshot>;
   openInIde: (websiteId: string) => Promise<void>;
   openInExplorer: (websiteId: string) => Promise<void>;
   openExternal: (url: string) => Promise<void>;
+  launchProviderLogin: (provider: ProviderLoginKind) => Promise<void>;
   saveSecret: (input: SaveSecretInput) => Promise<AppSnapshot>;
   clearSecret: (kind: SaveSecretInput["kind"]) => Promise<AppSnapshot>;
   updateSettings: (input: UpdateSettingsInput) => Promise<AppSnapshot>;

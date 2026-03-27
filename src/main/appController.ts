@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 import type {
   AppEventMap,
   AppSnapshot,
+  AuthState,
   CreateWebsiteInput,
   DeployWebsiteInput,
   DispatchRunInput,
@@ -16,19 +17,31 @@ import type {
   Website
 } from "@shared/types";
 import { executeWebsiteAgentRun } from "./services/agent";
+import { getGitHubToken, getOpenRouterApiKey, getVercelToken, launchProviderLogin, resolveAuthState } from "./services/auth";
 import { CredentialVault } from "./services/credentials";
-import { initGitRepository, publishGitHubRepository, readGitState } from "./services/git";
+import { initGitRepository, publishGitHubRepository, publishGitHubRepositoryWithCli, readGitState } from "./services/git";
 import { fetchOpenRouterModels } from "./services/models";
 import { StateStore, type PersistedState } from "./services/persistence";
 import { PreviewManager } from "./services/preview";
 import { scaffoldReactWebsite } from "./services/template";
 import { runCommand, sanitizeProjectName } from "./services/utils";
-import { deployWebsiteToVercel } from "./services/vercel";
+import { deployWebsiteToVercel, deployWebsiteToVercelWithCli } from "./services/vercel";
 
 export class AppController {
   private stateStore: StateStore;
   private vault: CredentialVault;
   private previewManager: PreviewManager;
+  private authState: AuthState = {
+    openRouterConfigured: false,
+    githubConfigured: false,
+    vercelConfigured: false,
+    encryptionAvailable: false,
+    openRouterSource: null,
+    githubSource: null,
+    vercelSource: null,
+    githubCliInstalled: false,
+    vercelCliInstalled: false
+  };
   private state: PersistedState = {
     settings: {
       selectedWebsiteId: null,
@@ -38,7 +51,8 @@ export class AppController {
       ideCommand: "code",
       websitesRoot: null,
       vercelTeamId: "",
-      vercelTeamSlug: ""
+      vercelTeamSlug: "",
+      onboardingCompletedAt: null
     },
     websites: [],
     runs: [],
@@ -67,6 +81,7 @@ export class AppController {
 
   async initialize(): Promise<AppSnapshot> {
     this.state = await this.stateStore.load();
+    await this.refreshConnections();
     try {
       await this.refreshModels();
     } catch {
@@ -80,16 +95,10 @@ export class AppController {
   }
 
   async getSnapshot(): Promise<AppSnapshot> {
-    const presence = await this.vault.getPresence();
     return {
       productName: "JJcoder",
       productVersion: app.getVersion(),
-      auth: {
-        openRouterConfigured: presence.openrouter,
-        githubConfigured: presence.github,
-        vercelConfigured: presence.vercel,
-        encryptionAvailable: presence.encryptionAvailable
-      },
+      auth: this.authState,
       settings: this.state.settings,
       models: this.state.models,
       modelsFetchedAt: this.state.modelsFetchedAt,
@@ -99,7 +108,7 @@ export class AppController {
   }
 
   async refreshModels(): Promise<AppSnapshot> {
-    const apiKey = (await this.vault.getSecret("openrouter")) ?? process.env.OPENROUTER_API_KEY ?? null;
+    const apiKey = await getOpenRouterApiKey(this.vault);
     const models = await fetchOpenRouterModels(apiKey);
     this.state = {
       ...this.state,
@@ -107,6 +116,13 @@ export class AppController {
       modelsFetchedAt: new Date().toISOString()
     };
     await this.persist();
+    const snapshot = await this.getSnapshot();
+    this.emit("snapshot", snapshot);
+    return snapshot;
+  }
+
+  async refreshConnections(deep = false): Promise<AppSnapshot> {
+    this.authState = await resolveAuthState(this.vault, { deepVercelCheck: deep });
     const snapshot = await this.getSnapshot();
     this.emit("snapshot", snapshot);
     return snapshot;
@@ -201,6 +217,7 @@ export class AppController {
 
   async saveSecret(input: SaveSecretInput): Promise<AppSnapshot> {
     await this.vault.setSecret(input.kind, input.value.trim());
+    await this.refreshConnections();
     const snapshot = await this.refreshModels().catch(async () => await this.getSnapshot());
     this.emit("snapshot", snapshot);
     return snapshot;
@@ -208,9 +225,14 @@ export class AppController {
 
   async clearSecret(kind: SaveSecretInput["kind"]): Promise<AppSnapshot> {
     await this.vault.clearSecret(kind);
+    await this.refreshConnections();
     const snapshot = await this.getSnapshot();
     this.emit("snapshot", snapshot);
     return snapshot;
+  }
+
+  async launchProviderLogin(provider: "github" | "vercel"): Promise<void> {
+    await launchProviderLogin(provider);
   }
 
   async updateSettings(input: UpdateSettingsInput): Promise<AppSnapshot> {
@@ -276,16 +298,19 @@ export class AppController {
 
   async publishRepo(input: PublishRepoInput): Promise<AppSnapshot> {
     const website = this.requireWebsite(input.websiteId);
-    const token = await this.vault.getSecret("github");
-    if (!token) {
-      throw new Error("Add a GitHub token in Settings before publishing a repository.");
-    }
-    const gitState = await publishGitHubRepository({
-      website,
-      repoName: input.repoName,
-      owner: input.owner,
-      githubToken: token
-    });
+    const token = await getGitHubToken(this.vault);
+    const gitState = token
+      ? await publishGitHubRepository({
+          website,
+          repoName: input.repoName,
+          owner: input.owner,
+          githubToken: token
+        })
+      : await publishGitHubRepositoryWithCli({
+          website,
+          repoName: input.repoName,
+          owner: input.owner
+        });
     this.state = {
       ...this.state,
       websites: this.state.websites.map((candidate) =>
@@ -300,17 +325,19 @@ export class AppController {
 
   async deployWebsite(input: DeployWebsiteInput): Promise<AppSnapshot> {
     const website = this.requireWebsite(input.websiteId);
-    const token = await this.vault.getSecret("vercel");
-    if (!token) {
-      throw new Error("Add a Vercel token in Settings before deploying.");
-    }
-    const vercel = await deployWebsiteToVercel({
-      website,
-      token,
-      target: input.target,
-      teamId: this.state.settings.vercelTeamId || undefined,
-      teamSlug: this.state.settings.vercelTeamSlug || undefined
-    });
+    const token = await getVercelToken(this.vault);
+    const vercel = token
+      ? await deployWebsiteToVercel({
+          website,
+          token,
+          target: input.target,
+          teamId: this.state.settings.vercelTeamId || undefined,
+          teamSlug: this.state.settings.vercelTeamSlug || undefined
+        })
+      : await deployWebsiteToVercelWithCli({
+          website,
+          target: input.target
+        });
     this.state = {
       ...this.state,
       websites: this.state.websites.map((candidate) =>
@@ -325,7 +352,7 @@ export class AppController {
 
   async dispatchRun(input: DispatchRunInput): Promise<AppSnapshot> {
     const website = this.requireWebsite(input.websiteId);
-    const apiKey = (await this.vault.getSecret("openrouter")) ?? process.env.OPENROUTER_API_KEY ?? null;
+    const apiKey = await getOpenRouterApiKey(this.vault);
     if (!apiKey) {
       throw new Error("Add an OpenRouter API key in Settings before dispatching an agent.");
     }

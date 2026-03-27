@@ -12,9 +12,9 @@ export function PreviewPane(props: PreviewPaneProps) {
   if (!props.website) {
     return (
       <div className="empty-panel">
-        <p className="eyebrow">Live preview</p>
+        <p className="eyebrow">Preview</p>
         <h2>No website selected</h2>
-        <p>Create or import a website to get the in-app preview and deployment controls.</p>
+        <p>Create or select a website to see the live preview.</p>
       </div>
     );
   }
@@ -22,22 +22,19 @@ export function PreviewPane(props: PreviewPaneProps) {
   const hasPreview = Boolean(props.website.preview.url);
 
   return (
-    <div className="preview-panel">
-      <header className="panel-header">
-        <div>
-          <p className="eyebrow">Live preview</p>
-          <h2>{props.website.name}</h2>
-        </div>
+    <div className="preview-area">
+      <div className="preview-header">
+        <h3>{props.website.name}</h3>
         <div className="preview-actions">
           {!hasPreview ? (
             <button type="button" className="toolbar-chip" onClick={() => props.onStartPreview(props.website!.id)}>
-              <EyeIcon size={14} />
-              Start preview
+              <EyeIcon size={13} />
+              Start
             </button>
           ) : (
             <button type="button" className="toolbar-chip" onClick={() => props.onStopPreview(props.website!.id)}>
-              <EyeOffIcon size={14} />
-              Stop preview
+              <EyeOffIcon size={13} />
+              Stop
             </button>
           )}
           {props.website.vercel.deploymentUrl ? (
@@ -46,27 +43,27 @@ export function PreviewPane(props: PreviewPaneProps) {
               className="toolbar-chip"
               onClick={() => props.onOpenExternal(props.website!.vercel.deploymentUrl!)}
             >
-              <RocketIcon size={14} />
-              Open deployment
+              <RocketIcon size={13} />
+              Live
             </button>
           ) : null}
         </div>
-      </header>
+      </div>
 
       {hasPreview && props.website.preview.url ? (
         <>
           <div className="preview-toolbar">
             <span>{props.website.preview.url}</span>
             <button type="button" className="icon-button" onClick={() => props.onOpenExternal(props.website!.preview.url!)}>
-              <ExternalLinkIcon size={14} />
+              <ExternalLinkIcon size={13} />
             </button>
           </div>
           <iframe className="preview-frame" src={props.website.preview.url} title={`${props.website.name} preview`} />
         </>
       ) : (
         <div className="preview-placeholder">
-          <p>The preview server is offline.</p>
-          <small>{props.website.preview.lastOutput ?? "Start a Vite dev server inside the app when you are ready."}</small>
+          <p>Preview offline</p>
+          <small>{props.website.preview.lastOutput ?? "Start a dev server to see your site here."}</small>
         </div>
       )}
     </div>

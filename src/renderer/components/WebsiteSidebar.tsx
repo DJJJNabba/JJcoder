@@ -1,4 +1,4 @@
-import { FolderPlusIcon, FolderCodeIcon, RocketIcon, GitForkIcon, EyeIcon } from "lucide-react";
+import { PlusIcon, FolderCodeIcon, RocketIcon, GitForkIcon, EyeIcon } from "lucide-react";
 import type { AgentRun, Website } from "@shared/types";
 import { formatRelativeTime, statusLabel } from "@renderer/lib/format";
 
@@ -18,20 +18,20 @@ export function WebsiteSidebar(props: WebsiteSidebarProps) {
       <div className="sidebar-brand">
         <div>
           <p className="eyebrow">JJcoder</p>
-          <h1>Website bays</h1>
+          <h1>Projects</h1>
         </div>
-        <button type="button" className="icon-button" onClick={props.onCreateWebsite} title="Create website">
-          <FolderPlusIcon size={16} />
+        <button type="button" className="icon-button" onClick={props.onCreateWebsite} title="New website">
+          <PlusIcon size={14} />
         </button>
       </div>
 
       <div className="sidebar-scroll">
         {props.websites.length === 0 ? (
           <div className="empty-sidebar">
-            <FolderCodeIcon size={22} />
-            <p>No websites yet.</p>
+            <FolderCodeIcon size={16} />
+            <p>No websites yet</p>
             <button type="button" className="text-button" onClick={props.onCreateWebsite}>
-              Scaffold your first React workspace
+              Create your first workspace
             </button>
           </div>
         ) : null}
@@ -47,14 +47,14 @@ export function WebsiteSidebar(props: WebsiteSidebarProps) {
                   <span>{website.description}</span>
                 </div>
                 <div className="website-meta">
-                  {website.preview.url ? <EyeIcon size={14} /> : null}
-                  {website.github.repoUrl ? <GitForkIcon size={14} /> : null}
-                  {website.vercel.deploymentUrl ? <RocketIcon size={14} /> : null}
+                  {website.preview.url ? <EyeIcon size={12} /> : null}
+                  {website.github.repoUrl ? <GitForkIcon size={12} /> : null}
+                  {website.vercel.deploymentUrl ? <RocketIcon size={12} /> : null}
                 </div>
               </button>
               <p className="website-path">{website.workspacePath}</p>
               <div className="website-runs">
-                {websiteRuns.length === 0 ? <span className="run-placeholder">No agent runs yet</span> : null}
+                {websiteRuns.length === 0 ? <span className="run-placeholder">No runs</span> : null}
                 {websiteRuns.map((run) => (
                   <button
                     type="button"

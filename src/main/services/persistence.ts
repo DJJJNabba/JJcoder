@@ -18,7 +18,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   ideCommand: "code",
   websitesRoot: null,
   vercelTeamId: "",
-  vercelTeamSlug: ""
+  vercelTeamSlug: "",
+  onboardingCompletedAt: null
 };
 
 export class StateStore {
@@ -30,13 +31,20 @@ export class StateStore {
 
   async load(): Promise<PersistedState> {
     await ensureDir(path.dirname(this.stateFilePath));
-    return await readJsonFile<PersistedState>(this.stateFilePath, {
+    const loaded = await readJsonFile<PersistedState>(this.stateFilePath, {
       settings: DEFAULT_SETTINGS,
       websites: [],
       runs: [],
       models: [],
       modelsFetchedAt: null
     });
+    return {
+      ...loaded,
+      settings: {
+        ...DEFAULT_SETTINGS,
+        ...loaded.settings
+      }
+    };
   }
 
   async save(value: PersistedState): Promise<void> {

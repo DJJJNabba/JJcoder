@@ -50,6 +50,7 @@ async function registerIpcHandlers() {
 
   ipcMain.handle("jjcoder:get-snapshot", async () => await controller!.getSnapshot());
   ipcMain.handle("jjcoder:refresh-models", async () => await controller!.refreshModels());
+  ipcMain.handle("jjcoder:refresh-connections", async (_event, deep) => await controller!.refreshConnections(Boolean(deep)));
   ipcMain.handle("jjcoder:create-website", async (_event, input) => await controller!.createWebsite(input));
   ipcMain.handle("jjcoder:delete-website", async (_event, websiteId) => await controller!.deleteWebsite(websiteId));
   ipcMain.handle("jjcoder:open-in-ide", async (_event, websiteId) => await controller!.openInIde(websiteId));
@@ -57,6 +58,7 @@ async function registerIpcHandlers() {
   ipcMain.handle("jjcoder:open-external", async (_event, url) => {
     await shell.openExternal(url);
   });
+  ipcMain.handle("jjcoder:launch-provider-login", async (_event, provider) => await controller!.launchProviderLogin(provider));
   ipcMain.handle("jjcoder:save-secret", async (_event, input) => await controller!.saveSecret(input));
   ipcMain.handle("jjcoder:clear-secret", async (_event, kind) => await controller!.clearSecret(kind));
   ipcMain.handle("jjcoder:update-settings", async (_event, input) => await controller!.updateSettings(input));

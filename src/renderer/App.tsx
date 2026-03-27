@@ -1,19 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import {
-  BotIcon,
   GitForkIcon,
   LayoutTemplateIcon,
   PlayIcon,
   RocketIcon,
   Settings2Icon,
+  SendIcon,
+  SparklesIcon,
   WandSparklesIcon
 } from "lucide-react";
-import type { AppSnapshot } from "@shared/types";
+import type { AppSnapshot, AuthSource, ProviderLoginKind } from "@shared/types";
 import { ModelPicker } from "./components/ModelPicker";
 import { PreviewPane } from "./components/PreviewPane";
 import { RunTimeline } from "./components/RunTimeline";
 import { WebsiteSidebar } from "./components/WebsiteSidebar";
-import { formatDateTime } from "./lib/format";
 
 const EMPTY_SNAPSHOT: AppSnapshot = {
   productName: "JJcoder",
@@ -22,7 +22,12 @@ const EMPTY_SNAPSHOT: AppSnapshot = {
     openRouterConfigured: false,
     githubConfigured: false,
     vercelConfigured: false,
-    encryptionAvailable: false
+    encryptionAvailable: false,
+    openRouterSource: null,
+    githubSource: null,
+    vercelSource: null,
+    githubCliInstalled: false,
+    vercelCliInstalled: false
   },
   settings: {
     selectedWebsiteId: null,
@@ -32,13 +37,63 @@ const EMPTY_SNAPSHOT: AppSnapshot = {
     ideCommand: "code",
     websitesRoot: null,
     vercelTeamId: "",
-    vercelTeamSlug: ""
+    vercelTeamSlug: "",
+    onboardingCompletedAt: null
   },
   models: [],
   modelsFetchedAt: null,
   websites: [],
   runs: []
 };
+
+const SIDEBAR_WIDTH_KEY = "jjcoder.sidebar.width";
+const WORKBENCH_WIDTH_KEY = "jjcoder.workbench.left.width";
+const DEFAULT_SIDEBAR_WIDTH = 280;
+const DEFAULT_WORKBENCH_LEFT_WIDTH = 520;
+const MIN_SIDEBAR_WIDTH = 220;
+const MIN_WORKBENCH_LEFT_WIDTH = 360;
+const MIN_PREVIEW_WIDTH = 320;
+const MIN_WORKSPACE_WIDTH = 720;
+
+function readStoredNumber(key: string, fallback: number): number {
+  const raw = window.localStorage.getItem(key);
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function writeStoredNumber(key: string, value: number) {
+  window.localStorage.setItem(key, String(Math.round(value)));
+}
+
+function sanitizeSegment(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function joinPath(base: string, segment: string): string {
+  const separator = base.includes("\\") ? "\\" : "/";
+  return `${base.replace(/[\\/]+$/, "")}${separator}${segment.replace(/^[\\/]+/, "")}`;
+}
+
+function describeSource(source: AuthSource): string {
+  switch (source) {
+    case "vault":
+      return "stored in app";
+    case "env":
+      return "loaded from environment";
+    case "github-cli":
+      return "connected through GitHub CLI";
+    case "vercel-cli":
+      return "connected through Vercel CLI";
+    default:
+      return "not connected";
+  }
+}
+
+type ResizeTarget = "sidebar" | "workbench";
 
 export function App() {
   const [snapshot, setSnapshot] = useState<AppSnapshot>(EMPTY_SNAPSHOT);
@@ -47,13 +102,26 @@ export function App() {
   const [prompt, setPrompt] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [showCreateWebsite, setShowCreateWebsite] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [createName, setCreateName] = useState("");
   const [createDescription, setCreateDescription] = useState("");
   const [createPath, setCreatePath] = useState("");
+  const [createPathTouched, setCreatePathTouched] = useState(false);
   const [repoName, setRepoName] = useState("");
   const [openrouterKey, setOpenrouterKey] = useState("");
   const [githubToken, setGithubToken] = useState("");
   const [vercelToken, setVercelToken] = useState("");
+  const [sidebarWidth, setSidebarWidth] = useState(() => readStoredNumber(SIDEBAR_WIDTH_KEY, DEFAULT_SIDEBAR_WIDTH));
+  const [workbenchLeftWidth, setWorkbenchLeftWidth] = useState(() =>
+    readStoredNumber(WORKBENCH_WIDTH_KEY, DEFAULT_WORKBENCH_LEFT_WIDTH)
+  );
+  const appShellRef = useRef<HTMLDivElement | null>(null);
+  const workbenchRef = useRef<HTMLElement | null>(null);
+  const resizeRef = useRef<{
+    target: ResizeTarget;
+    startX: number;
+    startWidth: number;
+  } | null>(null);
 
   useEffect(() => {
     let disposed = false;
@@ -99,6 +167,67 @@ export function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const needsOnboarding =
+      !loading &&
+      !snapshot.settings.onboardingCompletedAt &&
+      (!snapshot.auth.openRouterConfigured || snapshot.websites.length === 0);
+    setShowOnboarding(needsOnboarding);
+  }, [loading, snapshot.auth.openRouterConfigured, snapshot.settings.onboardingCompletedAt, snapshot.websites.length]);
+
+  useEffect(() => {
+    if (!showCreateWebsite || createPathTouched || createPath.trim() || !snapshot.settings.websitesRoot) {
+      return;
+    }
+    const segment = sanitizeSegment(createName) || "my-website";
+    setCreatePath(joinPath(snapshot.settings.websitesRoot, segment));
+  }, [createName, createPath, createPathTouched, showCreateWebsite, snapshot.settings.websitesRoot]);
+
+  useEffect(() => {
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!resizeRef.current) {
+        return;
+      }
+
+      if (resizeRef.current.target === "sidebar") {
+        const totalWidth = appShellRef.current?.clientWidth ?? 0;
+        const nextWidth = clamp(
+          resizeRef.current.startWidth + (event.clientX - resizeRef.current.startX),
+          MIN_SIDEBAR_WIDTH,
+          Math.max(MIN_SIDEBAR_WIDTH, totalWidth - MIN_WORKSPACE_WIDTH)
+        );
+        setSidebarWidth(nextWidth);
+        return;
+      }
+
+      const totalWidth = workbenchRef.current?.clientWidth ?? 0;
+      const nextWidth = clamp(
+        resizeRef.current.startWidth + (event.clientX - resizeRef.current.startX),
+        MIN_WORKBENCH_LEFT_WIDTH,
+        Math.max(MIN_WORKBENCH_LEFT_WIDTH, totalWidth - MIN_PREVIEW_WIDTH)
+      );
+      setWorkbenchLeftWidth(nextWidth);
+    };
+
+    const handlePointerUp = () => {
+      if (!resizeRef.current) {
+        return;
+      }
+
+      writeStoredNumber(SIDEBAR_WIDTH_KEY, sidebarWidth);
+      writeStoredNumber(WORKBENCH_WIDTH_KEY, workbenchLeftWidth);
+      resizeRef.current = null;
+      document.body.classList.remove("is-resizing");
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+  }, [sidebarWidth, workbenchLeftWidth]);
+
   const selectedWebsite = useMemo(() => {
     return snapshot.websites.find((website) => website.id === snapshot.settings.selectedWebsiteId) ?? null;
   }, [snapshot.settings.selectedWebsiteId, snapshot.websites]);
@@ -138,13 +267,37 @@ export function App() {
       next = await window.jjcoder.updateSettings({
         ideCommand: snapshot.settings.ideCommand,
         vercelTeamId: snapshot.settings.vercelTeamId,
-        vercelTeamSlug: snapshot.settings.vercelTeamSlug
+        vercelTeamSlug: snapshot.settings.vercelTeamSlug,
+        websitesRoot: snapshot.settings.websitesRoot,
+        onboardingCompletedAt: snapshot.settings.onboardingCompletedAt
       });
       setOpenrouterKey("");
       setGithubToken("");
       setVercelToken("");
-      return next;
+      return await window.jjcoder.refreshConnections(true).catch(async () => next);
     });
+  };
+
+  const completeOnboarding = async () => {
+    await mutateSnapshot(async () => {
+      return await window.jjcoder.updateSettings({
+        onboardingCompletedAt: new Date().toISOString()
+      });
+    });
+    setShowOnboarding(false);
+  };
+
+  const refreshConnections = async (deep = true) => {
+    await mutateSnapshot(async () => await window.jjcoder.refreshConnections(deep));
+  };
+
+  const launchProviderLogin = async (provider: ProviderLoginKind) => {
+    try {
+      await window.jjcoder.launchProviderLogin(provider);
+      setError(null);
+    } catch (reason) {
+      handleError(reason);
+    }
   };
 
   const selectWebsite = async (websiteId: string) => {
@@ -167,18 +320,34 @@ export function App() {
   };
 
   const createWebsite = async () => {
+    const normalizedCreatePath = createPath.trim()
+      ? createPath.trim()
+      : snapshot.settings.websitesRoot && createName.trim()
+        ? joinPath(snapshot.settings.websitesRoot, sanitizeSegment(createName) || "my-website")
+        : "";
+
+    if (!normalizedCreatePath) {
+      setError("Choose a workspace folder before creating a website.");
+      return;
+    }
+
     await mutateSnapshot(async () => {
       const next = await window.jjcoder.createWebsite({
         name: createName,
         description: createDescription,
-        workspacePath: createPath,
+        workspacePath: normalizedCreatePath,
         scaffold: true
       });
+      const completed = await window.jjcoder.updateSettings({
+        onboardingCompletedAt: next.settings.onboardingCompletedAt ?? new Date().toISOString()
+      });
       setShowCreateWebsite(false);
+      setShowOnboarding(false);
       setCreateName("");
       setCreateDescription("");
       setCreatePath("");
-      return next;
+      setCreatePathTouched(false);
+      return completed;
     });
   };
 
@@ -196,8 +365,22 @@ export function App() {
     });
   };
 
+  const beginResize = (target: ResizeTarget) => (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    resizeRef.current = {
+      target,
+      startX: event.clientX,
+      startWidth: target === "sidebar" ? sidebarWidth : workbenchLeftWidth
+    };
+    document.body.classList.add("is-resizing");
+  };
+
   return (
-    <div className="app-shell">
+    <div
+      ref={appShellRef}
+      className="app-shell"
+      style={{ gridTemplateColumns: `${sidebarWidth}px var(--divider-size) minmax(0, 1fr)` }}
+    >
       <WebsiteSidebar
         websites={snapshot.websites}
         runs={snapshot.runs}
@@ -208,15 +391,24 @@ export function App() {
         onCreateWebsite={() => setShowCreateWebsite(true)}
       />
 
+      <div
+        className="panel-divider"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize sidebar"
+        onPointerDown={beginResize("sidebar")}
+        onDoubleClick={() => {
+          setSidebarWidth(DEFAULT_SIDEBAR_WIDTH);
+          writeStoredNumber(SIDEBAR_WIDTH_KEY, DEFAULT_SIDEBAR_WIDTH);
+        }}
+      />
+
       <main className="workspace-shell">
         <header className="workspace-header">
           <div>
-            <p className="eyebrow">Agentic React builder</p>
-            <h2>{activeWebsite?.name ?? "Spin up your first website"}</h2>
+            <h2>{activeWebsite?.name ?? "JJcoder"}</h2>
             <span className="header-caption">
-              {activeWebsite
-                ? `${activeWebsite.workspacePath} • updated ${formatDateTime(activeWebsite.updatedAt)}`
-                : "OpenRouter-powered website generation with GitHub and Vercel baked in."}
+              {activeWebsite ? `${activeWebsite.workspacePath}` : "Run the guided setup to create your first website"}
             </span>
           </div>
           <div className="header-actions">
@@ -247,36 +439,47 @@ export function App() {
                 Squad
               </button>
             </div>
+            <button type="button" className="toolbar-chip" onClick={() => setShowOnboarding(true)}>
+              <WandSparklesIcon size={13} />
+              Setup
+            </button>
             <button type="button" className="icon-button" onClick={() => setShowSettings(true)} title="Settings">
-              <Settings2Icon size={16} />
+              <Settings2Icon size={14} />
             </button>
           </div>
         </header>
 
         {error ? <div className="error-banner">{error}</div> : null}
 
-        <section className="stats-grid">
-          <article className="stat-card">
-            <span>Catalog</span>
-            <strong>{snapshot.models.length}</strong>
-            <small>OpenRouter models cached</small>
-          </article>
-          <article className="stat-card">
-            <span>Auth</span>
-            <strong>{snapshot.auth.openRouterConfigured ? "Ready" : "Missing"}</strong>
-            <small>OpenRouter key status</small>
-          </article>
-          <article className="stat-card">
-            <span>GitHub</span>
-            <strong>{activeWebsite?.github.repoUrl ? "Published" : "Local"}</strong>
-            <small>{activeWebsite?.github.repoUrl ?? "Create a repo from the toolbar"}</small>
-          </article>
-          <article className="stat-card">
-            <span>Deploy</span>
-            <strong>{activeWebsite?.vercel.deploymentUrl ? "Live" : "Pending"}</strong>
-            <small>{activeWebsite?.vercel.deploymentUrl ?? "Deploy to Vercel when ready"}</small>
-          </article>
-        </section>
+        <div className="status-bar">
+          <div className="status-item">
+            <span className={`status-dot ${snapshot.auth.openRouterConfigured ? "ready" : "missing"}`} />
+            OpenRouter
+            <span className="status-detail">{describeSource(snapshot.auth.openRouterSource)}</span>
+          </div>
+          <div className="status-item">
+            <span className={`status-dot ${snapshot.auth.githubConfigured ? "ready" : "missing"}`} />
+            GitHub
+            <span className="status-detail">{describeSource(snapshot.auth.githubSource)}</span>
+          </div>
+          <div className="status-item">
+            <span className={`status-dot ${snapshot.auth.vercelConfigured ? "ready" : "missing"}`} />
+            Vercel
+            <span className="status-detail">{describeSource(snapshot.auth.vercelSource)}</span>
+          </div>
+          <div className="status-item">
+            <span className={`status-dot ${activeWebsite?.github.repoUrl ? "ready" : "pending"}`} />
+            {activeWebsite?.github.repoUrl ? "Repo linked" : "No repo"}
+          </div>
+          <div className="status-item">
+            <span className={`status-dot ${activeWebsite?.vercel.deploymentUrl ? "ready" : "pending"}`} />
+            {activeWebsite?.vercel.deploymentUrl ? "Deployed" : "Not deployed"}
+          </div>
+          <button type="button" className="text-button status-refresh" onClick={() => void refreshConnections(true)}>
+            Refresh setup
+          </button>
+          <div className="status-spacer">{snapshot.models.length} models</div>
+        </div>
 
         <section className="workspace-toolbar">
           <button
@@ -285,8 +488,8 @@ export function App() {
             disabled={!activeWebsite}
             onClick={() => activeWebsite && void window.jjcoder.openInIde(activeWebsite.id).catch(handleError)}
           >
-            <LayoutTemplateIcon size={14} />
-            Open in IDE
+            <LayoutTemplateIcon size={13} />
+            IDE
           </button>
           <button
             type="button"
@@ -297,7 +500,7 @@ export function App() {
               void window.jjcoder.initGitRepo(activeWebsite.id).then(setSnapshot).catch(handleError)
             }
           >
-            <GitForkIcon size={14} />
+            <GitForkIcon size={13} />
             Init Git
           </button>
           <button
@@ -315,8 +518,8 @@ export function App() {
                 .catch(handleError)
             }
           >
-            <GitForkIcon size={14} />
-            Publish GitHub
+            <GitForkIcon size={13} />
+            Publish
           </button>
           <button
             type="button"
@@ -327,8 +530,8 @@ export function App() {
               void window.jjcoder.openExternal(activeWebsite.github.repoUrl).catch(handleError)
             }
           >
-            <GitForkIcon size={14} />
-            Open GitHub
+            <GitForkIcon size={13} />
+            GitHub
           </button>
           <button
             type="button"
@@ -345,8 +548,8 @@ export function App() {
                 .catch(handleError)
             }
           >
-            <RocketIcon size={14} />
-            Deploy to Vercel
+            <RocketIcon size={13} />
+            Deploy
           </button>
           <button
             type="button"
@@ -360,48 +563,63 @@ export function App() {
                 .catch(handleError)
             }
           >
-            <PlayIcon size={14} />
-            Start preview
+            <PlayIcon size={13} />
+            Preview
           </button>
           <label className="inline-field">
-            <span>Repo name</span>
-            <input value={repoName} onChange={(event) => setRepoName(event.target.value)} placeholder="jjcoder-site" />
+            <span>Repo</span>
+            <input value={repoName} onChange={(event) => setRepoName(event.target.value)} placeholder="repo-name" />
           </label>
         </section>
 
-        <section className="workbench-grid">
+        <section
+          ref={workbenchRef}
+          className="workbench-grid"
+          style={{ gridTemplateColumns: `${workbenchLeftWidth}px var(--divider-size) minmax(${MIN_PREVIEW_WIDTH}px, 1fr)` }}
+        >
           <div className="left-column">
-            <div className="composer-card">
-              <header className="panel-header">
-                <div>
-                  <p className="eyebrow">Dispatch agent</p>
-                  <h2>Build prompt</h2>
-                </div>
-                <div className="status-pill status-running">
-                  <BotIcon size={14} />
-                  {snapshot.settings.agentMode}
-                </div>
-              </header>
+            <div className="composer-area">
               <textarea
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
-                placeholder="Build a bold SaaS landing page for a robotics platform, with pricing, testimonials, and a waitlist CTA..."
+                placeholder="Describe what to build..."
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+                    void dispatchRun();
+                  }
+                }}
               />
               <div className="composer-footer">
                 <span>
-                  {snapshot.auth.openRouterConfigured
-                    ? "OpenRouter is ready."
-                    : "Add your OpenRouter key in Settings to dispatch agents."}
+                  {snapshot.settings.agentMode} mode
+                  {snapshot.auth.openRouterConfigured ? "" : " · Add OpenRouter in setup"}
                 </span>
-                <button type="button" className="primary-button" disabled={!activeWebsite || !prompt.trim()} onClick={() => void dispatchRun()}>
-                  <WandSparklesIcon size={14} />
-                  Dispatch build
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={!activeWebsite || !prompt.trim()}
+                  onClick={() => void dispatchRun()}
+                >
+                  <SendIcon size={13} />
+                  Run
                 </button>
               </div>
             </div>
 
             <RunTimeline run={selectedRun} />
           </div>
+
+          <div
+            className="panel-divider"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize workbench"
+            onPointerDown={beginResize("workbench")}
+            onDoubleClick={() => {
+              setWorkbenchLeftWidth(DEFAULT_WORKBENCH_LEFT_WIDTH);
+              writeStoredNumber(WORKBENCH_WIDTH_KEY, DEFAULT_WORKBENCH_LEFT_WIDTH);
+            }}
+          />
 
           <PreviewPane
             website={activeWebsite}
@@ -416,29 +634,260 @@ export function App() {
         </section>
       </main>
 
+      {showOnboarding ? (
+        <div className="overlay">
+          <div className="dialog onboarding-dialog">
+            <header className="onboarding-header">
+              <div>
+                <p className="eyebrow">Welcome</p>
+                <h2>Get JJcoder ready in a few minutes</h2>
+              </div>
+              <button type="button" className="toolbar-chip" onClick={() => void completeOnboarding()}>
+                Skip onboarding
+              </button>
+            </header>
+
+            <div className="onboarding-intro">
+              <div className="onboarding-step">
+                <strong>1. Connect your tools</strong>
+                <p>JJcoder can reuse existing GitHub CLI, Vercel CLI, and environment-based credentials so users do not have to paste everything manually.</p>
+              </div>
+              <div className="onboarding-step">
+                <strong>2. Pick a workspace folder</strong>
+                <p>Choose one root folder for new websites and JJcoder will scaffold a Vite + React workspace inside it.</p>
+              </div>
+              <div className="onboarding-step">
+                <strong>3. Create, publish, deploy</strong>
+                <p>Write a prompt, let the agent build, then publish to GitHub and deploy to Vercel from the same app.</p>
+              </div>
+            </div>
+
+            <div className="onboarding-grid">
+              <section className="setup-card">
+                <div className="setup-card-header">
+                  <div>
+                    <p className="eyebrow">AI access</p>
+                    <h3>OpenRouter</h3>
+                  </div>
+                  <span className={`status-pill ${snapshot.auth.openRouterConfigured ? "status-completed" : "status-queued"}`}>
+                    {snapshot.auth.openRouterConfigured ? describeSource(snapshot.auth.openRouterSource) : "required"}
+                  </span>
+                </div>
+                <p>Needed for agent runs. If `OPENROUTER_API_KEY` is already set, JJcoder will use it automatically.</p>
+                <label className="field">
+                  <span>OpenRouter API key</span>
+                  <input
+                    type="password"
+                    value={openrouterKey}
+                    onChange={(event) => setOpenrouterKey(event.target.value)}
+                    placeholder={snapshot.auth.openRouterConfigured ? "Already connected" : "sk-or-v1-..."}
+                  />
+                </label>
+                <div className="setup-actions">
+                  <button type="button" className="primary-button" onClick={() => void saveTokens()}>
+                    Save key
+                  </button>
+                  <button type="button" className="toolbar-chip" onClick={() => void refreshConnections()}>
+                    Re-check
+                  </button>
+                </div>
+              </section>
+
+              <section className="setup-card">
+                <div className="setup-card-header">
+                  <div>
+                    <p className="eyebrow">Publish</p>
+                    <h3>GitHub</h3>
+                  </div>
+                  <span className={`status-pill ${snapshot.auth.githubConfigured ? "status-completed" : "status-queued"}`}>
+                    {snapshot.auth.githubConfigured ? describeSource(snapshot.auth.githubSource) : "optional"}
+                  </span>
+                </div>
+                <p>JJcoder can publish without a pasted token when GitHub CLI is already logged in. If not, launch the browser login once and come back here.</p>
+                <div className="setup-meta">
+                  <span>CLI installed: {snapshot.auth.githubCliInstalled ? "Yes" : "No"}</span>
+                </div>
+                <label className="field">
+                  <span>GitHub token</span>
+                  <input
+                    type="password"
+                    value={githubToken}
+                    onChange={(event) => setGithubToken(event.target.value)}
+                    placeholder={snapshot.auth.githubConfigured ? "Already connected" : "Optional fallback token"}
+                  />
+                </label>
+                <div className="setup-actions">
+                  <button type="button" className="primary-button" onClick={() => void launchProviderLogin("github")}>
+                    Connect GitHub
+                  </button>
+                  <button type="button" className="toolbar-chip" onClick={() => void saveTokens()}>
+                    Save token
+                  </button>
+                  <button type="button" className="toolbar-chip" onClick={() => void refreshConnections()}>
+                    Re-check
+                  </button>
+                </div>
+              </section>
+
+              <section className="setup-card">
+                <div className="setup-card-header">
+                  <div>
+                    <p className="eyebrow">Deploy</p>
+                    <h3>Vercel</h3>
+                  </div>
+                  <span className={`status-pill ${snapshot.auth.vercelConfigured ? "status-completed" : "status-queued"}`}>
+                    {snapshot.auth.vercelConfigured ? describeSource(snapshot.auth.vercelSource) : "optional"}
+                  </span>
+                </div>
+                <p>Use a stored token, `VERCEL_TOKEN`, or a Vercel CLI login. The connect button opens a terminal and starts the browser-based login flow automatically.</p>
+                <div className="setup-meta">
+                  <span>CLI installed: {snapshot.auth.vercelCliInstalled ? "Yes" : "No, login can use npx"}</span>
+                </div>
+                <label className="field">
+                  <span>Vercel token</span>
+                  <input
+                    type="password"
+                    value={vercelToken}
+                    onChange={(event) => setVercelToken(event.target.value)}
+                    placeholder={snapshot.auth.vercelConfigured ? "Already connected" : "Optional fallback token"}
+                  />
+                </label>
+                <div className="setup-actions">
+                  <button type="button" className="primary-button" onClick={() => void launchProviderLogin("vercel")}>
+                    Connect Vercel
+                  </button>
+                  <button type="button" className="toolbar-chip" onClick={() => void saveTokens()}>
+                    Save token
+                  </button>
+                  <button type="button" className="toolbar-chip" onClick={() => void refreshConnections(true)}>
+                    Re-check
+                  </button>
+                </div>
+              </section>
+
+              <section className="setup-card">
+                <div className="setup-card-header">
+                  <div>
+                    <p className="eyebrow">Workspace</p>
+                    <h3>Default folder</h3>
+                  </div>
+                  <span className={`status-pill ${snapshot.settings.websitesRoot ? "status-completed" : "status-queued"}`}>
+                    {snapshot.settings.websitesRoot ? "ready" : "choose folder"}
+                  </span>
+                </div>
+                <p>New websites can default into one root directory so first-time users are not guessing where files will be created.</p>
+                <label className="field">
+                  <span>Workspace root</span>
+                  <div className="inline-row">
+                    <input
+                      value={snapshot.settings.websitesRoot ?? ""}
+                      onChange={(event) =>
+                        setSnapshot((prev) => ({
+                          ...prev,
+                          settings: {
+                            ...prev.settings,
+                            websitesRoot: event.target.value
+                          }
+                        }))
+                      }
+                      placeholder="C:\\Sites"
+                    />
+                    <button
+                      type="button"
+                      className="toolbar-chip"
+                      onClick={() =>
+                        void window.jjcoder
+                          .pickFolder()
+                          .then((value) => {
+                            if (!value) {
+                              return;
+                            }
+                            setSnapshot((prev) => ({
+                              ...prev,
+                              settings: {
+                                ...prev.settings,
+                                websitesRoot: value
+                              }
+                            }));
+                          })
+                          .catch(handleError)
+                      }
+                    >
+                      Browse
+                    </button>
+                  </div>
+                </label>
+                <div className="setup-actions">
+                  <button
+                    type="button"
+                    className="primary-button"
+                    onClick={() =>
+                      void mutateSnapshot(async () =>
+                        await window.jjcoder.updateSettings({
+                          websitesRoot: snapshot.settings.websitesRoot,
+                          onboardingCompletedAt: snapshot.settings.onboardingCompletedAt
+                        })
+                      )
+                    }
+                  >
+                    Save folder
+                  </button>
+                  <button
+                    type="button"
+                    className="toolbar-chip"
+                    onClick={() => {
+                      setShowCreateWebsite(true);
+                      setShowOnboarding(false);
+                    }}
+                  >
+                    Create first website
+                  </button>
+                </div>
+              </section>
+            </div>
+
+            <footer className="dialog-actions">
+              <button type="button" className="toolbar-chip" onClick={() => setShowSettings(true)}>
+                Advanced settings
+              </button>
+              <button type="button" className="primary-button" onClick={() => void completeOnboarding()}>
+                Finish setup
+              </button>
+            </footer>
+          </div>
+        </div>
+      ) : null}
+
       {showCreateWebsite ? (
         <div className="overlay">
-          <div className="dialog-card">
+          <div className="dialog">
             <header>
-              <p className="eyebrow">Create website</p>
-              <h2>Scaffold a new React workspace</h2>
+              <p className="eyebrow">New workspace</p>
+              <h2>Create website</h2>
             </header>
             <label className="field">
               <span>Name</span>
-              <input value={createName} onChange={(event) => setCreateName(event.target.value)} placeholder="Nova Robotics" />
+              <input value={createName} onChange={(event) => setCreateName(event.target.value)} placeholder="My Website" />
             </label>
             <label className="field">
               <span>Description</span>
               <input
                 value={createDescription}
                 onChange={(event) => setCreateDescription(event.target.value)}
-                placeholder="Landing page for the robotics launch"
+                placeholder="Landing page for..."
               />
             </label>
             <label className="field">
               <span>Folder</span>
               <div className="inline-row">
-                <input value={createPath} onChange={(event) => setCreatePath(event.target.value)} placeholder="C:\\Sites\\nova-robotics" />
+                <input
+                  value={createPath}
+                  onChange={(event) => {
+                    setCreatePathTouched(true);
+                    setCreatePath(event.target.value);
+                  }}
+                  placeholder={snapshot.settings.websitesRoot ? joinPath(snapshot.settings.websitesRoot, "my-website") : "C:\\Sites\\my-website"}
+                />
                 <button
                   type="button"
                   className="toolbar-chip"
@@ -447,6 +896,7 @@ export function App() {
                       .pickFolder()
                       .then((value) => {
                         if (value) {
+                          setCreatePathTouched(true);
                           setCreatePath(value);
                         }
                       })
@@ -461,8 +911,8 @@ export function App() {
               <button type="button" className="toolbar-chip" onClick={() => setShowCreateWebsite(false)}>
                 Cancel
               </button>
-              <button type="button" className="primary-button" disabled={!createPath.trim()} onClick={() => void createWebsite()}>
-                Create workspace
+              <button type="button" className="primary-button" onClick={() => void createWebsite()}>
+                Create
               </button>
             </footer>
           </div>
@@ -471,10 +921,10 @@ export function App() {
 
       {showSettings ? (
         <div className="overlay">
-          <div className="dialog-card settings-card">
+          <div className="dialog dialog-wide">
             <header>
-              <p className="eyebrow">Settings</p>
-              <h2>Credentials and defaults</h2>
+              <p className="eyebrow">Configuration</p>
+              <h2>Settings</h2>
             </header>
             <div className="settings-grid">
               <label className="field">
@@ -483,8 +933,9 @@ export function App() {
                   type="password"
                   value={openrouterKey}
                   onChange={(event) => setOpenrouterKey(event.target.value)}
-                  placeholder={snapshot.auth.openRouterConfigured ? "Stored securely" : "sk-or-v1-..."}
+                  placeholder={snapshot.auth.openRouterConfigured ? "Stored or auto-detected" : "sk-or-v1-..."}
                 />
+                <small className="field-note">{describeSource(snapshot.auth.openRouterSource)}</small>
               </label>
               <label className="field">
                 <span>GitHub token</span>
@@ -492,8 +943,9 @@ export function App() {
                   type="password"
                   value={githubToken}
                   onChange={(event) => setGithubToken(event.target.value)}
-                  placeholder={snapshot.auth.githubConfigured ? "Stored securely" : "ghp_..."}
+                  placeholder={snapshot.auth.githubConfigured ? "Stored or auto-detected" : "ghp_..."}
                 />
+                <small className="field-note">{describeSource(snapshot.auth.githubSource)}</small>
               </label>
               <label className="field">
                 <span>Vercel token</span>
@@ -501,8 +953,9 @@ export function App() {
                   type="password"
                   value={vercelToken}
                   onChange={(event) => setVercelToken(event.target.value)}
-                  placeholder={snapshot.auth.vercelConfigured ? "Stored securely" : "vercel_..."}
+                  placeholder={snapshot.auth.vercelConfigured ? "Stored or auto-detected" : "vercel_..."}
                 />
+                <small className="field-note">{describeSource(snapshot.auth.vercelSource)}</small>
               </label>
               <label className="field">
                 <span>IDE command</span>
@@ -518,6 +971,22 @@ export function App() {
                     }))
                   }
                   placeholder="code"
+                />
+              </label>
+              <label className="field">
+                <span>Workspace root</span>
+                <input
+                  value={snapshot.settings.websitesRoot ?? ""}
+                  onChange={(event) =>
+                    setSnapshot((prev) => ({
+                      ...prev,
+                      settings: {
+                        ...prev.settings,
+                        websitesRoot: event.target.value
+                      }
+                    }))
+                  }
+                  placeholder="C:\\Sites"
                 />
               </label>
               <label className="field">
@@ -553,23 +1022,40 @@ export function App() {
                 />
               </label>
             </div>
+            <div className="settings-actions">
+              <button type="button" className="toolbar-chip" onClick={() => void launchProviderLogin("github")}>
+                <SparklesIcon size={13} />
+                GitHub browser login
+              </button>
+              <button type="button" className="toolbar-chip" onClick={() => void launchProviderLogin("vercel")}>
+                <SparklesIcon size={13} />
+                Vercel browser login
+              </button>
+              <button type="button" className="toolbar-chip" onClick={() => void refreshConnections(true)}>
+                Refresh connections
+              </button>
+            </div>
             <div className="settings-note">
-              <p>Encryption available: {snapshot.auth.encryptionAvailable ? "Yes" : "No"}</p>
-              <small>JJcoder stores secrets locally and uses Electron safe storage whenever the OS supports it.</small>
+              <p>Encryption: {snapshot.auth.encryptionAvailable ? "Available" : "Unavailable"}</p>
+              <small>Secrets stay local. When possible, JJcoder also reuses existing CLI logins and environment variables automatically.</small>
             </div>
             <footer className="dialog-actions">
               <button type="button" className="toolbar-chip" onClick={() => setShowSettings(false)}>
-                Close
+                Cancel
               </button>
               <button type="button" className="primary-button" onClick={() => void saveTokens()}>
-                Save settings
+                Save
               </button>
             </footer>
           </div>
         </div>
       ) : null}
 
-      {loading ? <div className="loading-screen">Loading JJcoder…</div> : null}
+      {loading ? <div className="loading-screen">Loading...</div> : null}
     </div>
   );
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
 }

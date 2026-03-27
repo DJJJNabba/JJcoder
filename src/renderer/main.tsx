@@ -1,9 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import "@fontsource/fraunces/latin.css";
-import "@fontsource/ibm-plex-sans/400.css";
-import "@fontsource/ibm-plex-sans/500.css";
-import "@fontsource/ibm-plex-sans/600.css";
+// @ts-ignore
+import "@fontsource-variable/dm-sans";
 import "./styles.css";
 import { App } from "./App";
 

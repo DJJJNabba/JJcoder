@@ -120,3 +120,36 @@ export async function publishGitHubRepository(options: {
     lastCommit: await getGitValue("git rev-parse --short HEAD", options.website.workspacePath)
   };
 }
+
+export async function publishGitHubRepositoryWithCli(options: {
+  website: Website;
+  repoName: string;
+  owner?: string;
+}): Promise<GitHubState> {
+  await initGitRepository(options.website.workspacePath);
+  const repoName = sanitizeProjectName(options.repoName) || sanitizeProjectName(options.website.name);
+  const ownerPrefix = options.owner?.trim() ? `${options.owner.trim()}/` : "";
+  const fullRepoName = `${ownerPrefix}${repoName}`;
+
+  await runCommandOrThrow("git add .", options.website.workspacePath);
+  await runCommand("git commit -m \"Initial JJcoder website publish\"", options.website.workspacePath);
+  await runCommandOrThrow(
+    `gh repo create ${fullRepoName} --public --source . --remote origin --push`,
+    options.website.workspacePath
+  );
+
+  const remoteUrl = await getGitValue("git remote get-url origin", options.website.workspacePath);
+  const parsedRemote = remoteUrl?.match(/github\.com[:/](?<owner>[^/]+)\/(?<repo>[^/.]+)(?:\.git)?$/i);
+  const repoOwner = parsedRemote?.groups?.owner ?? options.owner?.trim() ?? null;
+  const cleanRepoName = parsedRemote?.groups?.repo ?? repoName;
+
+  return {
+    repoName: cleanRepoName,
+    repoOwner,
+    repoUrl: repoOwner ? `https://github.com/${repoOwner}/${cleanRepoName}` : null,
+    remoteUrl,
+    branch: await getGitValue("git rev-parse --abbrev-ref HEAD", options.website.workspacePath),
+    dirtyFiles: 0,
+    lastCommit: await getGitValue("git rev-parse --short HEAD", options.website.workspacePath)
+  };
+}
