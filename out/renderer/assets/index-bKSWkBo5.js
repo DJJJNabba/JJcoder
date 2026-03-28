@@ -12533,17 +12533,12 @@ const createLucideIcon = (iconName, iconNode) => {
   Component.displayName = toPascalCase(iconName);
   return Component;
 };
-const __iconNode$h = [
-  ["path", { d: "M12 8V4H8", key: "hb8ula" }],
-  ["rect", { width: "16", height: "12", x: "4", y: "8", rx: "2", key: "enze0r" }],
-  ["path", { d: "M2 14h2", key: "vft8re" }],
-  ["path", { d: "M20 14h2", key: "4cs60a" }],
-  ["path", { d: "M15 13v2", key: "1xurst" }],
-  ["path", { d: "M9 13v2", key: "rq6x2g" }]
-];
-const Bot = createLucideIcon("bot", __iconNode$h);
-const __iconNode$g = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-const ChevronDown = createLucideIcon("chevron-down", __iconNode$g);
+const __iconNode$i = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
+const Check = createLucideIcon("check", __iconNode$i);
+const __iconNode$h = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+const ChevronDown = createLucideIcon("chevron-down", __iconNode$h);
+const __iconNode$g = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
+const ChevronRight = createLucideIcon("chevron-right", __iconNode$g);
 const __iconNode$f = [
   ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
   ["path", { d: "M10 14 21 3", key: "gplh6r" }],
@@ -12601,23 +12596,22 @@ const __iconNode$b = [
 ];
 const GitFork = createLucideIcon("git-fork", __iconNode$b);
 const __iconNode$a = [
-  ["path", { d: "m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9", key: "1hayfq" }],
-  ["path", { d: "m18 15 4-4", key: "16gjal" }],
-  [
-    "path",
-    {
-      d: "m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5",
-      key: "15ts47"
-    }
-  ]
-];
-const Hammer = createLucideIcon("hammer", __iconNode$a);
-const __iconNode$9 = [
   ["rect", { width: "18", height: "7", x: "3", y: "3", rx: "1", key: "f1a2em" }],
   ["rect", { width: "9", height: "7", x: "3", y: "14", rx: "1", key: "jqznyg" }],
   ["rect", { width: "5", height: "7", x: "16", y: "14", rx: "1", key: "q5h2i8" }]
 ];
-const LayoutTemplate = createLucideIcon("layout-template", __iconNode$9);
+const LayoutTemplate = createLucideIcon("layout-template", __iconNode$a);
+const __iconNode$9 = [
+  ["path", { d: "M12 2v4", key: "3427ic" }],
+  ["path", { d: "m16.2 7.8 2.9-2.9", key: "r700ao" }],
+  ["path", { d: "M18 12h4", key: "wj9ykh" }],
+  ["path", { d: "m16.2 16.2 2.9 2.9", key: "1bxg5t" }],
+  ["path", { d: "M12 18v4", key: "jadmvz" }],
+  ["path", { d: "m4.9 19.1 2.9-2.9", key: "bwix9q" }],
+  ["path", { d: "M2 12h4", key: "j09sii" }],
+  ["path", { d: "m4.9 4.9 2.9 2.9", key: "giyufr" }]
+];
+const Loader = createLucideIcon("loader", __iconNode$9);
 const __iconNode$8 = [
   [
     "path",
@@ -12717,12 +12711,6 @@ const __iconNode = [
   ["path", { d: "M11 3H9", key: "1obp7u" }]
 ];
 const WandSparkles = createLucideIcon("wand-sparkles", __iconNode);
-function formatDateTime(value) {
-  if (!value) {
-    return "Never";
-  }
-  return new Date(value).toLocaleString();
-}
 function formatRelativeTime(value) {
   const delta = Date.now() - new Date(value).getTime();
   const minutes = Math.floor(delta / 6e4);
@@ -12913,50 +12901,374 @@ function PreviewPane(props) {
     ] })
   ] });
 }
-function iconForEvent(event) {
-  switch (event.type) {
-    case "tool":
-      return /* @__PURE__ */ jsxRuntimeExports.jsx(Hammer, { size: 13 });
-    case "error":
-      return /* @__PURE__ */ jsxRuntimeExports.jsx(TriangleAlert, { size: 13 });
-    case "assistant":
-      return /* @__PURE__ */ jsxRuntimeExports.jsx(Bot, { size: 13 });
+function deriveTimelineActivities(events) {
+  const activities = [];
+  const toolActivityIndexByCallId = /* @__PURE__ */ new Map();
+  const unresolvedToolIndices = [];
+  for (const event of events) {
+    if (isToolCallEvent(event)) {
+      const toolName = readMetadata(event, "toolName") ?? event.title;
+      const callId = readMetadata(event, "toolCallId");
+      const summary = summarizeToolCall(toolName, event.content);
+      const activity = {
+        id: event.id,
+        tone: "tool",
+        kind: "tool",
+        agent: event.agent,
+        createdAt: event.createdAt,
+        title: summary.title,
+        note: summary.note,
+        tag: "tool",
+        rawInput: event.content,
+        toolName,
+        resolved: false
+      };
+      activities.push(activity);
+      const index = activities.length - 1;
+      unresolvedToolIndices.push(index);
+      if (callId) {
+        toolActivityIndexByCallId.set(callId, index);
+      }
+      continue;
+    }
+    if (isToolResultEvent(event)) {
+      const callId = readMetadata(event, "toolCallId");
+      const resolvedIndex = findToolActivityIndex(activities, unresolvedToolIndices, event.agent, callId, toolActivityIndexByCallId);
+      if (resolvedIndex !== null) {
+        const activity = activities[resolvedIndex];
+        const summary2 = summarizeToolResult(activity.toolName ?? "tool", event.content);
+        activity.note = summary2.note ?? activity.note;
+        activity.body = summary2.body ?? activity.body;
+        activity.rawOutput = event.content;
+        activity.resolved = true;
+        const unresolvedIndex = unresolvedToolIndices.indexOf(resolvedIndex);
+        if (unresolvedIndex >= 0) {
+          unresolvedToolIndices.splice(unresolvedIndex, 1);
+        }
+        continue;
+      }
+      const summary = summarizeToolResult(readMetadata(event, "toolName") ?? "tool", event.content);
+      activities.push({
+        id: event.id,
+        tone: "tool",
+        kind: "tool",
+        agent: event.agent,
+        createdAt: event.createdAt,
+        title: summary.title,
+        note: summary.note,
+        body: summary.body,
+        tag: "output",
+        rawOutput: event.content,
+        toolName: readMetadata(event, "toolName"),
+        resolved: true
+      });
+      continue;
+    }
+    if (event.type === "error") {
+      activities.push({
+        id: event.id,
+        tone: "error",
+        kind: "error",
+        agent: event.agent,
+        createdAt: event.createdAt,
+        title: event.title,
+        body: event.content,
+        tag: "error"
+      });
+      continue;
+    }
+    if (event.type === "assistant") {
+      activities.push({
+        id: event.id,
+        tone: "info",
+        kind: "assistant",
+        agent: event.agent,
+        createdAt: event.createdAt,
+        title: event.title,
+        body: event.content,
+        tag: "note"
+      });
+      continue;
+    }
+    activities.push({
+      id: event.id,
+      tone: "info",
+      kind: "status",
+      agent: event.agent,
+      createdAt: event.createdAt,
+      title: event.content,
+      tag: "info"
+    });
+  }
+  return activities;
+}
+function findToolActivityIndex(activities, unresolvedToolIndices, agent, callId, toolActivityIndexByCallId) {
+  if (callId) {
+    const activityIndex = toolActivityIndexByCallId.get(callId);
+    if (typeof activityIndex === "number") {
+      return activityIndex;
+    }
+  }
+  for (let index = unresolvedToolIndices.length - 1; index >= 0; index -= 1) {
+    const activityIndex = unresolvedToolIndices[index];
+    const activity = activities[activityIndex];
+    if (activity && activity.agent === agent && activity.kind === "tool" && !activity.resolved) {
+      return activityIndex;
+    }
+  }
+  return null;
+}
+function isToolCallEvent(event) {
+  if (event.type !== "tool") {
+    return false;
+  }
+  return (readMetadata(event, "toolPhase") ?? "call") === "call";
+}
+function isToolResultEvent(event) {
+  if (event.type === "tool") {
+    return readMetadata(event, "toolPhase") === "result";
+  }
+  return event.type === "status" && event.title === "Tool result";
+}
+function readMetadata(event, key) {
+  const value = event.metadata?.[key];
+  return typeof value === "string" ? value : void 0;
+}
+function summarizeToolCall(toolName, rawInput) {
+  const input = parseRecord(rawInput);
+  switch (toolName) {
+    case "read_file": {
+      const targetPath = readString(input, "path");
+      return {
+        title: targetPath ? `Read ${targetPath}` : "Read file"
+      };
+    }
+    case "write_file": {
+      const targetPath = readString(input, "path");
+      return {
+        title: targetPath ? `Wrote ${targetPath}` : "Wrote file"
+      };
+    }
+    case "delete_file": {
+      const targetPath = readString(input, "path");
+      return {
+        title: targetPath ? `Deleted ${targetPath}` : "Deleted file"
+      };
+    }
+    case "list_files": {
+      const targetPath = readString(input, "path");
+      return {
+        title: targetPath ? `Listed ${targetPath}` : "Listed workspace files"
+      };
+    }
+    case "run_workspace_command": {
+      const command = readString(input, "command");
+      return {
+        title: command ? `Ran ${command}` : "Ran workspace command"
+      };
+    }
+    case "start_preview":
+      return {
+        title: "Started preview"
+      };
+    case "finish_build":
+      return {
+        title: "Finished build"
+      };
     default:
-      return /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { size: 13 });
+      return {
+        title: humanizeToolName(toolName)
+      };
   }
 }
-function RunTimeline({ run }) {
-  if (!run) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "empty-panel", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "eyebrow", children: "Timeline" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { children: "No run selected" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Select a run from the sidebar to see agent activity." })
+function summarizeToolResult(toolName, rawOutput) {
+  const output = parseRecord(rawOutput);
+  switch (toolName) {
+    case "read_file": {
+      const targetPath = readString(output, "path");
+      const content = readString(output, "content");
+      return {
+        title: targetPath ? `Read ${targetPath}` : "Read file",
+        note: content ? summarizeTextLength(content) : "Loaded file contents"
+      };
+    }
+    case "write_file": {
+      const targetPath = readString(output, "path");
+      const bytes = readNumber(output, "bytes");
+      return {
+        title: targetPath ? `Wrote ${targetPath}` : "Wrote file",
+        note: typeof bytes === "number" ? `${formatBytes(bytes)} written` : "Saved changes"
+      };
+    }
+    case "delete_file": {
+      const targetPath = readString(output, "path");
+      return {
+        title: targetPath ? `Deleted ${targetPath}` : "Deleted file",
+        note: "Removed from workspace"
+      };
+    }
+    case "list_files": {
+      const total = readNumber(output, "total");
+      const files = Array.isArray(output?.files) ? output.files : null;
+      return {
+        title: "Listed files",
+        note: typeof total === "number" ? `${total} file${total === 1 ? "" : "s"} found` : files ? `${files.length} file${files.length === 1 ? "" : "s"} found` : "Workspace files loaded"
+      };
+    }
+    case "run_workspace_command": {
+      const command = readString(output, "command");
+      const stdout = stripAnsi(readString(output, "stdout") ?? "");
+      const stderr = stripAnsi(readString(output, "stderr") ?? "");
+      const note = summarizeCommandOutput(stdout, stderr);
+      return {
+        title: command ? `Ran ${command}` : "Ran workspace command",
+        note,
+        body: buildCommandExcerpt(stdout, stderr)
+      };
+    }
+    case "start_preview":
+      return {
+        title: "Started preview",
+        note: "Preview server is running"
+      };
+    case "finish_build": {
+      const summary = readString(output, "summary");
+      return {
+        title: "Finished build",
+        note: summary ? trimSentence(summary, 140) : "Build marked complete"
+      };
+    }
+    default:
+      return {
+        title: humanizeToolName(toolName),
+        note: "Tool completed"
+      };
+  }
+}
+function parseRecord(value) {
+  try {
+    const parsed = JSON.parse(value);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+function readString(record, key) {
+  const value = record?.[key];
+  return typeof value === "string" ? value : void 0;
+}
+function readNumber(record, key) {
+  const value = record?.[key];
+  return typeof value === "number" ? value : void 0;
+}
+function humanizeToolName(toolName) {
+  return toolName.replace(/[_-]+/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
+}
+function formatBytes(value) {
+  if (value < 1024) {
+    return `${value} B`;
+  }
+  if (value < 1024 * 1024) {
+    return `${(value / 1024).toFixed(1)} KB`;
+  }
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+function summarizeTextLength(value) {
+  const lines = value.split(/\r?\n/).length;
+  return `${lines} line${lines === 1 ? "" : "s"} loaded`;
+}
+function stripAnsi(value) {
+  return value.replace(/\u001b\[[0-9;]*m/g, "");
+}
+function summarizeCommandOutput(stdout, stderr) {
+  const lines = [...stdout.split(/\r?\n/), ...stderr.split(/\r?\n/)].map((line) => line.trim()).filter(Boolean);
+  if (lines.length === 0) {
+    return "Command completed";
+  }
+  const preferredLine = lines.find((line) => /added \d+ packages/i.test(line)) ?? lines.find((line) => /found 0 vulnerabilities/i.test(line)) ?? lines.find((line) => /built in /i.test(line)) ?? lines.find((line) => /error/i.test(line)) ?? lines[0];
+  return trimSentence(preferredLine, 140);
+}
+function buildCommandExcerpt(stdout, stderr) {
+  const lines = (stderr.trim() || stdout.trim()).split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (lines.length < 2) {
+    return void 0;
+  }
+  return lines.slice(Math.max(0, lines.length - 3)).join("\n");
+}
+function trimSentence(value, limit) {
+  if (value.length <= limit) {
+    return value;
+  }
+  return `${value.slice(0, limit - 3).trimEnd()}...`;
+}
+function isToolActivity(a) {
+  return a.kind === "tool";
+}
+function isFinalNote(a) {
+  return a.kind === "assistant" && a.agent === "builder" && (a.tag === "note" || a.tag === "output");
+}
+function toolStatusIcon(a) {
+  if (!a.resolved) return /* @__PURE__ */ jsxRuntimeExports.jsx(Loader, { size: 11, className: "chat-spin" });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { size: 11 });
+}
+function RunMessages({ run }) {
+  const activities = deriveTimelineActivities(run.events);
+  const tools = activities.filter(isToolActivity);
+  const finalNote = activities.find(isFinalNote);
+  const errors = activities.filter((a) => a.kind === "error");
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chat-row chat-row-user", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chat-bubble-user", children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: run.prompt }) }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chat-row chat-row-agent", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chat-agent-block", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chat-agent-header", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `chat-status-dot chat-status-${run.status}` }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-agent-label", children: statusLabel(run.status) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-meta", children: run.modelId.split("/").pop() }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-meta", children: run.mode }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-meta", children: formatRelativeTime(run.updatedAt) })
+      ] }),
+      tools.length > 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("details", { className: "chat-tools-group", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("summary", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronRight, { size: 12, className: "chat-tools-chevron" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+            tools.length,
+            " action",
+            tools.length === 1 ? "" : "s"
+          ] }),
+          tools.every((t) => t.resolved) ? /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { size: 12, className: "chat-tools-done" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Loader, { size: 12, className: "chat-spin" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chat-tools-list", children: tools.map((tool) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chat-tool-row", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-tool-icon", children: toolStatusIcon(tool) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-tool-name", children: tool.title }),
+          tool.note ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-tool-note", children: tool.note }) : null
+        ] }, tool.id)) })
+      ] }) : null,
+      errors.map((err) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chat-error", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TriangleAlert, { size: 13 }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: err.title }),
+        err.body ? /* @__PURE__ */ jsxRuntimeExports.jsx("pre", { children: err.body }) : null
+      ] }, err.id)),
+      finalNote?.body ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chat-agent-message", children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: finalNote.body }) }) : null
+    ] }) })
+  ] });
+}
+function ChatThread({ runs }) {
+  const endRef = reactExports.useRef(null);
+  reactExports.useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [runs]);
+  if (runs.length === 0) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chat-empty", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "No messages yet." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "chat-empty-sub", children: "Type a prompt below to start building." })
     ] });
   }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "timeline-area", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "timeline-header", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { children: run.title }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `status-pill status-${run.status}`, children: run.status })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "run-summary-block", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { children: "Prompt" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: run.prompt }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "run-summary-meta", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: run.modelId }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: run.mode }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: formatDateTime(run.updatedAt) })
-      ] })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "timeline-list", children: run.events.map((event) => /* @__PURE__ */ jsxRuntimeExports.jsxs("article", { className: `timeline-event timeline-${event.type}`, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "timeline-icon", children: iconForEvent(event) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "timeline-copy", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: event.title }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: event.agent })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("pre", { children: event.content })
-      ] })
-    ] }, event.id)) })
+  const sorted = [...runs].reverse();
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chat-scroll", children: [
+    sorted.map((run) => /* @__PURE__ */ jsxRuntimeExports.jsx(RunMessages, { run }, run.id)),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { ref: endRef })
   ] });
 }
 function WebsiteSidebar(props) {
@@ -13194,10 +13506,11 @@ function App() {
   const selectedWebsite = reactExports.useMemo(() => {
     return snapshot.websites.find((website) => website.id === snapshot.settings.selectedWebsiteId) ?? null;
   }, [snapshot.settings.selectedWebsiteId, snapshot.websites]);
-  const selectedRun = reactExports.useMemo(() => {
-    return snapshot.runs.find((run) => run.id === snapshot.settings.selectedRunId) ?? null;
-  }, [snapshot.runs, snapshot.settings.selectedRunId]);
   const activeWebsite = selectedWebsite ?? snapshot.websites[0] ?? null;
+  const activeWebsiteRuns = reactExports.useMemo(() => {
+    if (!activeWebsite) return [];
+    return snapshot.runs.filter((run) => run.websiteId === activeWebsite.id);
+  }, [snapshot.runs, activeWebsite]);
   const handleError = (reason) => {
     setError(reason instanceof Error ? reason.message : String(reason));
   };
@@ -13528,6 +13841,7 @@ function App() {
               style: { gridTemplateColumns: `${workbenchLeftWidth}px var(--divider-size) minmax(${MIN_PREVIEW_WIDTH}px, 1fr)` },
               children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "left-column", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(ChatThread, { runs: activeWebsiteRuns }),
                   /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "composer-area", children: [
                     /* @__PURE__ */ jsxRuntimeExports.jsx(
                       "textarea",
@@ -13557,13 +13871,12 @@ function App() {
                           onClick: () => void dispatchRun(),
                           children: [
                             /* @__PURE__ */ jsxRuntimeExports.jsx(Send, { size: 13 }),
-                            "Run"
+                            "Send"
                           ]
                         }
                       )
                     ] })
-                  ] }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(RunTimeline, { run: selectedRun })
+                  ] })
                 ] }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx(
                   "div",

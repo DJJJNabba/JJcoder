@@ -218,6 +218,7 @@ export async function executeWebsiteAgentRun(options: {
 
   const buildContext = await readProjectSnapshot(workspacePath);
   await options.callbacks.setStatus("Dispatching builder agent.");
+  const toolNamesByCallId = new Map<string, string>();
 
   const builderResult = client.callModel({
     model: options.modelId,
@@ -253,28 +254,43 @@ export async function executeWebsiteAgentRun(options: {
   for await (const item of builderResult.getItemsStream()) {
     const candidate = item as {
       type?: string;
+      callId?: string;
       name?: string;
       status?: string;
       arguments?: string;
       output?: unknown;
     };
     if (candidate.type === "function_call" && candidate.status === "completed" && candidate.name) {
+      if (candidate.callId) {
+        toolNamesByCallId.set(candidate.callId, candidate.name);
+      }
       await options.callbacks.appendEvent({
         agent: "builder",
         type: "tool",
         title: candidate.name,
-        content: candidate.arguments ?? "{}"
+        content: candidate.arguments ?? "{}",
+        metadata: {
+          toolName: candidate.name,
+          toolPhase: "call",
+          toolCallId: candidate.callId ?? null
+        }
       });
     }
     if (candidate.type === "function_call_output") {
+      const toolName = candidate.callId ? toolNamesByCallId.get(candidate.callId) ?? null : null;
       await options.callbacks.appendEvent({
         agent: "builder",
-        type: "status",
+        type: "tool",
         title: "Tool result",
         content:
           typeof candidate.output === "string"
             ? candidate.output
-            : JSON.stringify(candidate.output ?? {}, null, 2)
+            : JSON.stringify(candidate.output ?? {}, null, 2),
+        metadata: {
+          toolName,
+          toolPhase: "result",
+          toolCallId: candidate.callId ?? null
+        }
       });
     }
   }

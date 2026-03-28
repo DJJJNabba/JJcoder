@@ -1,9 +1,10 @@
-import { BotIcon, HammerIcon, AlertTriangleIcon, SparklesIcon } from "lucide-react";
-import type { AgentRun, RunEvent } from "@shared/types";
-import { formatDateTime } from "@renderer/lib/format";
+import { AlertTriangleIcon, BotIcon, HammerIcon, SparklesIcon } from "lucide-react";
+import type { AgentRun } from "@shared/types";
+import { formatDateTime, statusLabel } from "@renderer/lib/format";
+import { deriveTimelineActivities, type TimelineActivity } from "@renderer/lib/runTimeline";
 
-function iconForEvent(event: RunEvent) {
-  switch (event.type) {
+function iconForActivity(activity: TimelineActivity) {
+  switch (activity.kind) {
     case "tool":
       return <HammerIcon size={13} />;
     case "error":
@@ -12,6 +13,28 @@ function iconForEvent(event: RunEvent) {
       return <BotIcon size={13} />;
     default:
       return <SparklesIcon size={13} />;
+  }
+}
+
+function pillClassName(activity: TimelineActivity): string {
+  switch (activity.kind) {
+    case "tool":
+      return activity.resolved ? "status-completed" : "status-queued";
+    case "error":
+      return "status-failed";
+    default:
+      return "status-idle";
+  }
+}
+
+function pillLabel(activity: TimelineActivity): string {
+  switch (activity.kind) {
+    case "tool":
+      return activity.resolved ? "done" : "tool";
+    case "error":
+      return "error";
+    default:
+      return activity.tag ?? "info";
   }
 }
 
@@ -26,11 +49,13 @@ export function RunTimeline({ run }: { run: AgentRun | null }) {
     );
   }
 
+  const activities = deriveTimelineActivities(run.events);
+
   return (
     <div className="timeline-area">
       <div className="timeline-header">
         <h3>{run.title}</h3>
-        <span className={`status-pill status-${run.status}`}>{run.status}</span>
+        <span className={`status-pill status-${run.status}`}>{statusLabel(run.status)}</span>
       </div>
 
       <div className="run-summary-block">
@@ -44,15 +69,41 @@ export function RunTimeline({ run }: { run: AgentRun | null }) {
       </div>
 
       <div className="timeline-list">
-        {run.events.map((event) => (
-          <article key={event.id} className={`timeline-event timeline-${event.type}`}>
-            <div className="timeline-icon">{iconForEvent(event)}</div>
-            <div className="timeline-copy">
-              <header>
-                <strong>{event.title}</strong>
-                <span>{event.agent}</span>
-              </header>
-              <pre>{event.content}</pre>
+        {activities.map((activity) => (
+          <article key={activity.id} className={`timeline-entry timeline-${activity.tone}`}>
+            <div className="timeline-entry-icon">{iconForActivity(activity)}</div>
+            <div className="timeline-entry-copy">
+              <div className="timeline-entry-topline">
+                <strong>{activity.title}</strong>
+                <span className={`status-pill ${pillClassName(activity)}`}>{pillLabel(activity)}</span>
+              </div>
+
+              <div className="timeline-entry-meta">
+                <span>{activity.agent}</span>
+                <span>{formatDateTime(activity.createdAt)}</span>
+                {activity.toolName ? <span>{activity.toolName}</span> : null}
+              </div>
+
+              {activity.note ? <p className="timeline-entry-note">{activity.note}</p> : null}
+              {activity.body ? <pre className="timeline-entry-body">{activity.body}</pre> : null}
+
+              {activity.rawInput || activity.rawOutput ? (
+                <details className="timeline-disclosure">
+                  <summary>Raw data</summary>
+                  {activity.rawInput ? (
+                    <div className="timeline-disclosure-block">
+                      <span>Input</span>
+                      <pre>{activity.rawInput}</pre>
+                    </div>
+                  ) : null}
+                  {activity.rawOutput ? (
+                    <div className="timeline-disclosure-block">
+                      <span>Output</span>
+                      <pre>{activity.rawOutput}</pre>
+                    </div>
+                  ) : null}
+                </details>
+              ) : null}
             </div>
           </article>
         ))}

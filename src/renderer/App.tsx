@@ -12,7 +12,7 @@ import {
 import type { AppSnapshot, AuthSource, ProviderLoginKind } from "@shared/types";
 import { ModelPicker } from "./components/ModelPicker";
 import { PreviewPane } from "./components/PreviewPane";
-import { RunTimeline } from "./components/RunTimeline";
+import { ChatThread } from "./components/ChatThread";
 import { WebsiteSidebar } from "./components/WebsiteSidebar";
 
 const EMPTY_SNAPSHOT: AppSnapshot = {
@@ -232,11 +232,12 @@ export function App() {
     return snapshot.websites.find((website) => website.id === snapshot.settings.selectedWebsiteId) ?? null;
   }, [snapshot.settings.selectedWebsiteId, snapshot.websites]);
 
-  const selectedRun = useMemo(() => {
-    return snapshot.runs.find((run) => run.id === snapshot.settings.selectedRunId) ?? null;
-  }, [snapshot.runs, snapshot.settings.selectedRunId]);
-
   const activeWebsite = selectedWebsite ?? snapshot.websites[0] ?? null;
+
+  const activeWebsiteRuns = useMemo(() => {
+    if (!activeWebsite) return [];
+    return snapshot.runs.filter((run) => run.websiteId === activeWebsite.id);
+  }, [snapshot.runs, activeWebsite]);
 
   const handleError = (reason: unknown) => {
     setError(reason instanceof Error ? reason.message : String(reason));
@@ -578,6 +579,8 @@ export function App() {
           style={{ gridTemplateColumns: `${workbenchLeftWidth}px var(--divider-size) minmax(${MIN_PREVIEW_WIDTH}px, 1fr)` }}
         >
           <div className="left-column">
+            <ChatThread runs={activeWebsiteRuns} />
+
             <div className="composer-area">
               <textarea
                 value={prompt}
@@ -601,12 +604,10 @@ export function App() {
                   onClick={() => void dispatchRun()}
                 >
                   <SendIcon size={13} />
-                  Run
+                  Send
                 </button>
               </div>
             </div>
-
-            <RunTimeline run={selectedRun} />
           </div>
 
           <div
