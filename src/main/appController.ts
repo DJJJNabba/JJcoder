@@ -458,6 +458,8 @@ export class AppController {
   }
 
   private async appendRunEvent(runId: string, event: RunEvent): Promise<void> {
+    const streamKey = typeof event.metadata?.streamKey === "string" ? event.metadata.streamKey : null;
+    const replaceExisting = event.metadata?.replace === true && Boolean(streamKey);
     this.state = {
       ...this.state,
       runs: this.state.runs.map((run) =>
@@ -465,13 +467,24 @@ export class AppController {
           ? {
               ...run,
               updatedAt: new Date().toISOString(),
-              events: [...run.events, event]
+              events: replaceExisting ? this.upsertRunEvent(run.events, event, streamKey!) : [...run.events, event]
             }
           : run
       )
     };
     await this.persist();
     this.emit("run-updated", this.requireRun(runId));
+  }
+
+  private upsertRunEvent(events: RunEvent[], event: RunEvent, streamKey: string): RunEvent[] {
+    const existingIndex = events.findIndex(
+      (candidate) => typeof candidate.metadata?.streamKey === "string" && candidate.metadata.streamKey === streamKey
+    );
+    if (existingIndex < 0) {
+      return [...events, event];
+    }
+
+    return events.map((candidate, index) => (index === existingIndex ? { ...candidate, ...event, id: candidate.id } : candidate));
   }
 
   private async updateRun(runId: string, patch: Partial<AgentRun>): Promise<void> {

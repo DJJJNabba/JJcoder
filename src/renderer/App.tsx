@@ -47,8 +47,10 @@ const EMPTY_SNAPSHOT: AppSnapshot = {
 };
 
 const SIDEBAR_WIDTH_KEY = "jjcoder.sidebar.width";
+const SIDEBAR_COLLAPSED_KEY = "jjcoder.sidebar.collapsed";
 const WORKBENCH_WIDTH_KEY = "jjcoder.workbench.left.width";
 const DEFAULT_SIDEBAR_WIDTH = 280;
+const COLLAPSED_SIDEBAR_WIDTH = 60;
 const DEFAULT_WORKBENCH_LEFT_WIDTH = 520;
 const MIN_SIDEBAR_WIDTH = 220;
 const MIN_WORKBENCH_LEFT_WIDTH = 360;
@@ -58,11 +60,18 @@ const MIN_WORKSPACE_WIDTH = 720;
 function readStoredNumber(key: string, fallback: number): number {
   const raw = window.localStorage.getItem(key);
   const value = Number(raw);
-  return Number.isFinite(value) ? value : fallback;
+  return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
 function writeStoredNumber(key: string, value: number) {
   window.localStorage.setItem(key, String(Math.round(value)));
+}
+
+function readStoredBoolean(key: string, fallback: boolean): boolean {
+  const raw = window.localStorage.getItem(key);
+  if (raw === "true") return true;
+  if (raw === "false") return false;
+  return fallback;
 }
 
 function sanitizeSegment(value: string): string {
@@ -111,6 +120,7 @@ export function App() {
   const [openrouterKey, setOpenrouterKey] = useState("");
   const [githubToken, setGithubToken] = useState("");
   const [vercelToken, setVercelToken] = useState("");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => readStoredBoolean(SIDEBAR_COLLAPSED_KEY, false));
   const [sidebarWidth, setSidebarWidth] = useState(() => readStoredNumber(SIDEBAR_WIDTH_KEY, DEFAULT_SIDEBAR_WIDTH));
   const [workbenchLeftWidth, setWorkbenchLeftWidth] = useState(() =>
     readStoredNumber(WORKBENCH_WIDTH_KEY, DEFAULT_WORKBENCH_LEFT_WIDTH)
@@ -121,6 +131,7 @@ export function App() {
     target: ResizeTarget;
     startX: number;
     startWidth: number;
+    currentWidth: number;
   } | null>(null);
 
   useEffect(() => {
@@ -184,8 +195,27 @@ export function App() {
   }, [createName, createPath, createPathTouched, showCreateWebsite, snapshot.settings.websitesRoot]);
 
   useEffect(() => {
+    const stopResize = () => {
+      if (!resizeRef.current) {
+        return;
+      }
+
+      const { target, currentWidth } = resizeRef.current;
+      if (target === "sidebar") {
+        writeStoredNumber(SIDEBAR_WIDTH_KEY, currentWidth);
+      } else {
+        writeStoredNumber(WORKBENCH_WIDTH_KEY, currentWidth);
+      }
+      resizeRef.current = null;
+      document.body.classList.remove("is-resizing");
+    };
+
     const handlePointerMove = (event: PointerEvent) => {
       if (!resizeRef.current) {
+        return;
+      }
+      if (event.buttons === 0) {
+        stopResize();
         return;
       }
 
@@ -196,6 +226,7 @@ export function App() {
           MIN_SIDEBAR_WIDTH,
           Math.max(MIN_SIDEBAR_WIDTH, totalWidth - MIN_WORKSPACE_WIDTH)
         );
+        resizeRef.current.currentWidth = nextWidth;
         setSidebarWidth(nextWidth);
         return;
       }
@@ -206,25 +237,58 @@ export function App() {
         MIN_WORKBENCH_LEFT_WIDTH,
         Math.max(MIN_WORKBENCH_LEFT_WIDTH, totalWidth - MIN_PREVIEW_WIDTH)
       );
+      resizeRef.current.currentWidth = nextWidth;
       setWorkbenchLeftWidth(nextWidth);
     };
 
-    const handlePointerUp = () => {
-      if (!resizeRef.current) {
-        return;
-      }
-
-      writeStoredNumber(SIDEBAR_WIDTH_KEY, sidebarWidth);
-      writeStoredNumber(WORKBENCH_WIDTH_KEY, workbenchLeftWidth);
-      resizeRef.current = null;
-      document.body.classList.remove("is-resizing");
-    };
+    const handlePointerUp = () => stopResize();
+    const handleWindowBlur = () => stopResize();
 
     window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("blur", handleWindowBlur);
     return () => {
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("blur", handleWindowBlur);
+      stopResize();
+    };
+  }, []);
+
+  useEffect(() => {
+    const clampStoredWidths = () => {
+      const totalShellWidth = appShellRef.current?.clientWidth ?? 0;
+      const totalWorkbenchWidth = workbenchRef.current?.clientWidth ?? 0;
+
+      if (totalShellWidth > 0) {
+        const clampedSidebarWidth = clamp(
+          sidebarWidth,
+          MIN_SIDEBAR_WIDTH,
+          Math.max(MIN_SIDEBAR_WIDTH, totalShellWidth - MIN_WORKSPACE_WIDTH)
+        );
+        if (clampedSidebarWidth !== sidebarWidth) {
+          setSidebarWidth(clampedSidebarWidth);
+          writeStoredNumber(SIDEBAR_WIDTH_KEY, clampedSidebarWidth);
+        }
+      }
+
+      if (totalWorkbenchWidth > 0) {
+        const clampedWorkbenchWidth = clamp(
+          workbenchLeftWidth,
+          MIN_WORKBENCH_LEFT_WIDTH,
+          Math.max(MIN_WORKBENCH_LEFT_WIDTH, totalWorkbenchWidth - MIN_PREVIEW_WIDTH)
+        );
+        if (clampedWorkbenchWidth !== workbenchLeftWidth) {
+          setWorkbenchLeftWidth(clampedWorkbenchWidth);
+          writeStoredNumber(WORKBENCH_WIDTH_KEY, clampedWorkbenchWidth);
+        }
+      }
+    };
+
+    clampStoredWidths();
+    window.addEventListener("resize", clampStoredWidths);
+    return () => {
+      window.removeEventListener("resize", clampStoredWidths);
     };
   }, [sidebarWidth, workbenchLeftWidth]);
 
@@ -356,23 +420,30 @@ export function App() {
     if (!activeWebsite || !prompt.trim()) {
       return;
     }
-    await mutateSnapshot(async () => {
-      const next = await window.jjcoder.dispatchRun({
+    try {
+      await window.jjcoder.dispatchRun({
         websiteId: activeWebsite.id,
         prompt: prompt.trim()
       });
       setPrompt("");
-      return next;
-    });
+      setError(null);
+    } catch (reason) {
+      handleError(reason);
+    }
   };
 
   const beginResize = (target: ResizeTarget) => (event: ReactPointerEvent<HTMLDivElement>) => {
     event.preventDefault();
+    if (target === "sidebar" && sidebarCollapsed) {
+      return;
+    }
     resizeRef.current = {
       target,
       startX: event.clientX,
-      startWidth: target === "sidebar" ? sidebarWidth : workbenchLeftWidth
+      startWidth: target === "sidebar" ? sidebarWidth : workbenchLeftWidth,
+      currentWidth: target === "sidebar" ? sidebarWidth : workbenchLeftWidth
     };
+    event.currentTarget.setPointerCapture(event.pointerId);
     document.body.classList.add("is-resizing");
   };
 
@@ -380,20 +451,28 @@ export function App() {
     <div
       ref={appShellRef}
       className="app-shell"
-      style={{ gridTemplateColumns: `${sidebarWidth}px var(--divider-size) minmax(0, 1fr)` }}
+      style={{
+        gridTemplateColumns: `${sidebarCollapsed ? COLLAPSED_SIDEBAR_WIDTH : sidebarWidth}px var(--divider-size) minmax(0, 1fr)`
+      }}
     >
       <WebsiteSidebar
         websites={snapshot.websites}
         runs={snapshot.runs}
+        collapsed={sidebarCollapsed}
         selectedWebsiteId={snapshot.settings.selectedWebsiteId}
         selectedRunId={snapshot.settings.selectedRunId}
         onSelectWebsite={(websiteId) => void selectWebsite(websiteId)}
         onSelectRun={(runId, websiteId) => void selectRun(runId, websiteId)}
         onCreateWebsite={() => setShowCreateWebsite(true)}
+        onToggleCollapse={() => {
+          const next = !sidebarCollapsed;
+          setSidebarCollapsed(next);
+          window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next));
+        }}
       />
 
       <div
-        className="panel-divider"
+        className={`panel-divider ${sidebarCollapsed ? "disabled" : ""}`}
         role="separator"
         aria-orientation="vertical"
         aria-label="Resize sidebar"

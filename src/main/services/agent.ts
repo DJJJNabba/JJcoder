@@ -20,21 +20,88 @@ export interface AgentRuntimeCallbacks {
   startPreview: () => Promise<void>;
 }
 
-function createSystemPrompt(workspacePath: string): string {
-  return [
+function stringifyContent(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return JSON.stringify(value ?? {}, null, 2);
+}
+
+function parseOrStringifyArguments(rawArguments: string): string {
+  try {
+    return JSON.stringify(JSON.parse(rawArguments), null, 2);
+  } catch {
+    return rawArguments;
+  }
+}
+
+function summarizePreliminaryResult(value: unknown): string | null {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  for (const key of ["message", "status", "summary", "detail"]) {
+    const candidate = record[key];
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return null;
+}
+
+function createSystemPrompt(workspacePath: string, hasExistingFiles: boolean): string {
+  const base = [
     "You are JJcoder, an expert website-building agent.",
-    "You are operating inside a single React + Vite website workspace.",
+    "You are operating inside a React + Vite website workspace.",
     `Workspace root: ${workspacePath}`,
     "Build polished React websites with strong visual direction, production-ready code, and clean file structure.",
     "Use tools to inspect, edit, install, build, and preview the site.",
     "Always verify the app with a build command before finishing.",
     "Keep changes inside the workspace root and prefer full-file rewrites when they are simpler than brittle search/replace edits.",
     "When the task is complete, call finish_build with a concise ship note."
-  ].join("\n");
+  ];
+
+  if (hasExistingFiles) {
+    base.push(
+      "",
+      "IMPORTANT: This workspace already has source files.",
+      "Before making changes, use list_files and read_file to understand the existing codebase.",
+      "Preserve existing patterns, styles, and architecture unless the user asks you to change them.",
+      "Build on top of what exists rather than replacing everything."
+    );
+  } else {
+    base.push(
+      "",
+      "IMPORTANT: This workspace has only build tooling (package.json, vite config, etc.) — no source files yet.",
+      "You must create all source files from scratch: src/main.tsx, src/App.tsx, styles, and any other components.",
+      "Design and build the entire site based on the user's request. Do not use placeholder or generic template content.",
+      "Create a distinctive, polished design that directly addresses what the user asked for."
+    );
+  }
+
+  return base.join("\n");
 }
 
 function commandAllowed(command: string): boolean {
   return /^(npm|pnpm|yarn|bun)\s+(install|run\s+[a-z0-9:_-]+|add\s+.+)$/i.test(command.trim());
+}
+
+async function hasSourceFiles(workspacePath: string): Promise<boolean> {
+  const srcDir = path.join(workspacePath, "src");
+  try {
+    const entries = await fs.readdir(srcDir);
+    return entries.some((e) => e.endsWith(".tsx") || e.endsWith(".ts") || e.endsWith(".jsx") || e.endsWith(".js"));
+  } catch {
+    return false;
+  }
 }
 
 async function readProjectSnapshot(workspacePath: string): Promise<string> {
@@ -217,12 +284,14 @@ export async function executeWebsiteAgentRun(options: {
   });
 
   const buildContext = await readProjectSnapshot(workspacePath);
+  const hasExistingFiles = await hasSourceFiles(workspacePath);
   await options.callbacks.setStatus("Dispatching builder agent.");
   const toolNamesByCallId = new Map<string, string>();
+  const assistantDraftsByItemId = new Map<string, string>();
 
   const builderResult = client.callModel({
     model: options.modelId,
-    instructions: createSystemPrompt(workspacePath),
+    instructions: createSystemPrompt(workspacePath, hasExistingFiles),
     input: [
       {
         role: "user",
@@ -251,52 +320,74 @@ export async function executeWebsiteAgentRun(options: {
     stopWhen: [stepCountIs(20), hasToolCall("finish_build")]
   });
 
-  for await (const item of builderResult.getItemsStream()) {
-    const candidate = item as {
-      type?: string;
-      callId?: string;
-      name?: string;
-      status?: string;
-      arguments?: string;
-      output?: unknown;
-    };
-    if (candidate.type === "function_call" && candidate.status === "completed" && candidate.name) {
-      if (candidate.callId) {
-        toolNamesByCallId.set(candidate.callId, candidate.name);
+  for await (const event of builderResult.getFullResponsesStream()) {
+    switch (event.type) {
+      case "response.function_call_arguments.done": {
+        toolNamesByCallId.set(event.itemId, event.name);
+        await options.callbacks.appendEvent({
+          agent: "builder",
+          type: "tool",
+          title: event.name,
+          content: parseOrStringifyArguments(event.arguments),
+          metadata: {
+            toolName: event.name,
+            toolPhase: "call",
+            toolCallId: event.itemId
+          }
+        });
+        break;
       }
-      await options.callbacks.appendEvent({
-        agent: "builder",
-        type: "tool",
-        title: candidate.name,
-        content: candidate.arguments ?? "{}",
-        metadata: {
-          toolName: candidate.name,
-          toolPhase: "call",
-          toolCallId: candidate.callId ?? null
+      case "tool.result": {
+        const toolName = toolNamesByCallId.get(event.toolCallId) ?? null;
+        await options.callbacks.appendEvent({
+          agent: "builder",
+          type: "tool",
+          title: "Tool result",
+          content: stringifyContent(event.result),
+          metadata: {
+            toolName,
+            toolPhase: "result",
+            toolCallId: event.toolCallId
+          }
+        });
+        break;
+      }
+      case "tool.preliminary_result": {
+        const summary = summarizePreliminaryResult(event.result);
+        if (!summary) {
+          break;
         }
-      });
-    }
-    if (candidate.type === "function_call_output") {
-      const toolName = candidate.callId ? toolNamesByCallId.get(candidate.callId) ?? null : null;
-      await options.callbacks.appendEvent({
-        agent: "builder",
-        type: "tool",
-        title: "Tool result",
-        content:
-          typeof candidate.output === "string"
-            ? candidate.output
-            : JSON.stringify(candidate.output ?? {}, null, 2),
-        metadata: {
-          toolName,
-          toolPhase: "result",
-          toolCallId: candidate.callId ?? null
-        }
-      });
+        await options.callbacks.appendEvent({
+          agent: "builder",
+          type: "status",
+          title: "Status",
+          content: summary
+        });
+        break;
+      }
+      case "response.output_text.delta": {
+        const streamKey = `builder:assistant:${event.itemId}`;
+        const nextDraft = `${assistantDraftsByItemId.get(event.itemId) ?? ""}${event.delta}`;
+        assistantDraftsByItemId.set(event.itemId, nextDraft);
+        await options.callbacks.appendEvent({
+          agent: "builder",
+          type: "assistant_delta",
+          title: "Builder output",
+          content: nextDraft,
+          metadata: {
+            streamKey,
+            replace: true
+          }
+        });
+        break;
+      }
+      default:
+        break;
     }
   }
 
   const builderText = await builderResult.getText();
-  if (builderText.trim()) {
+  if (builderText.trim() && assistantDraftsByItemId.size === 0) {
     await options.callbacks.appendEvent({
       agent: "builder",
       type: "assistant",

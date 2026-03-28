@@ -27,6 +27,7 @@ export function deriveTimelineActivities(events: RunEvent[]): TimelineActivity[]
   const activities: TimelineActivity[] = [];
   const toolActivityIndexByCallId = new Map<string, number>();
   const unresolvedToolIndices: number[] = [];
+  const assistantActivityIndexByStreamKey = new Map<string, number>();
 
   for (const event of events) {
     if (isToolCallEvent(event)) {
@@ -106,8 +107,8 @@ export function deriveTimelineActivities(events: RunEvent[]): TimelineActivity[]
       continue;
     }
 
-    if (event.type === "assistant") {
-      activities.push({
+    if (event.type === "assistant" || event.type === "assistant_delta") {
+      const activity: TimelineActivity = {
         id: event.id,
         tone: "info",
         kind: "assistant",
@@ -116,7 +117,17 @@ export function deriveTimelineActivities(events: RunEvent[]): TimelineActivity[]
         title: event.title,
         body: event.content,
         tag: "note"
-      });
+      };
+      const streamKey = readMetadata(event, "streamKey");
+      if (streamKey) {
+        const existingIndex = assistantActivityIndexByStreamKey.get(streamKey);
+        if (typeof existingIndex === "number") {
+          activities[existingIndex] = activity;
+          continue;
+        }
+        assistantActivityIndexByStreamKey.set(streamKey, activities.length);
+      }
+      activities.push(activity);
       continue;
     }
 

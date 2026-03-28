@@ -12,7 +12,7 @@ export type PreviewStatus = "stopped" | "starting" | "running" | "error";
 
 export type RunStatus = "idle" | "queued" | "running" | "completed" | "failed" | "cancelled";
 
-export type RunEventType = "status" | "assistant" | "tool" | "error";
+export type RunEventType = "status" | "assistant" | "assistant_delta" | "tool" | "error";
 
 export interface ProviderModel {
   id: string;
