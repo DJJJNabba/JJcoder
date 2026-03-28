@@ -29771,7 +29771,7 @@ ${activePlan.planMarkdown}`,
                 ] }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `status-pill ${snapshot.auth.githubConfigured ? "status-completed" : "status-queued"}`, children: snapshot.auth.githubConfigured ? describeSource(snapshot.auth.githubSource) : "optional" })
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "JJcoder can publish without a pasted token when GitHub CLI is already logged in. If not, launch the browser login once and come back here." }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "JJcoder can reuse an existing GitHub CLI login when `gh` is installed. Otherwise, the connect button opens the GitHub token page so the user can create a token and paste it here." }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "setup-meta", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
                 "CLI installed: ",
                 snapshot.auth.githubCliInstalled ? "Yes" : "No"
@@ -29789,7 +29789,7 @@ ${activePlan.planMarkdown}`,
                 )
               ] }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "setup-actions", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "primary-button", onClick: () => void launchProviderLogin("github"), children: "Connect GitHub" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "primary-button", onClick: () => void launchProviderLogin("github"), children: "Open GitHub setup" }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "toolbar-chip", onClick: () => void saveTokens(), children: "Save token" }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "toolbar-chip", onClick: () => void refreshConnections(), children: "Re-check" })
               ] })
@@ -29802,7 +29802,7 @@ ${activePlan.planMarkdown}`,
                 ] }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `status-pill ${snapshot.auth.vercelConfigured ? "status-completed" : "status-queued"}`, children: snapshot.auth.vercelConfigured ? describeSource(snapshot.auth.vercelSource) : "optional" })
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Use a stored token, `VERCEL_TOKEN`, or a Vercel CLI login. The connect button opens a terminal and starts the browser-based login flow automatically." }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Use a stored token, `VERCEL_TOKEN`, or an existing Vercel CLI login. If the CLI is not installed, the connect button opens the Vercel token page so the user can paste a token here instead." }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "setup-meta", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
                 "CLI installed: ",
                 snapshot.auth.vercelCliInstalled ? "Yes" : "No, login can use npx"
@@ -29820,7 +29820,7 @@ ${activePlan.planMarkdown}`,
                 )
               ] }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "setup-actions", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "primary-button", onClick: () => void launchProviderLogin("vercel"), children: "Connect Vercel" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "primary-button", onClick: () => void launchProviderLogin("vercel"), children: "Open Vercel setup" }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "toolbar-chip", onClick: () => void saveTokens(), children: "Save token" }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "toolbar-chip", onClick: () => void refreshConnections(true), children: "Re-check" })
               ] })
@@ -30121,11 +30121,11 @@ ${activePlan.planMarkdown}`,
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "settings-actions", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { type: "button", className: "toolbar-chip", onClick: () => void launchProviderLogin("github"), children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { size: 13 }),
-              "GitHub browser login"
+              "GitHub setup"
             ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { type: "button", className: "toolbar-chip", onClick: () => void launchProviderLogin("vercel"), children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { size: 13 }),
-              "Vercel browser login"
+              "Vercel setup"
             ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "toolbar-chip", onClick: () => void refreshConnections(true), children: "Refresh connections" })
           ] }),
@@ -30134,7 +30134,7 @@ ${activePlan.planMarkdown}`,
               "Encryption: ",
               snapshot.auth.encryptionAvailable ? "Available" : "Unavailable"
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("small", { children: "Secrets stay local. When possible, JJcoder also reuses existing CLI logins and environment variables automatically." })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("small", { children: "Secrets stay local. JJcoder reuses existing CLI logins when available, otherwise users can create tokens in the browser and save them here." })
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("footer", { className: "dialog-actions", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "toolbar-chip", onClick: () => setShowSettings(false), children: "Cancel" }),
