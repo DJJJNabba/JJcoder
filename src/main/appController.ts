@@ -11,6 +11,8 @@ import type {
   CreateWebsiteInput,
   DeployWebsiteInput,
   DispatchRunInput,
+  RenameConversationInput,
+  RenameWebsiteInput,
   RunEvent,
   AgentRun,
   PendingUserInputQuestion,
@@ -30,10 +32,19 @@ import { CredentialVault } from "./services/credentials";
 import { initGitRepository, publishGitHubRepository, publishGitHubRepositoryWithCli, readGitState } from "./services/git";
 import { fetchOpenRouterModels } from "./services/models";
 import { StateStore, type PersistedState } from "./services/persistence";
-import { PreviewManager } from "./services/preview";
+import { createStoppedPreviewState, PreviewManager } from "./services/preview";
 import { scaffoldReactWebsite } from "./services/template";
 import { runCommand, sanitizeProjectName } from "./services/utils";
 import { deployWebsiteToVercel, deployWebsiteToVercelWithCli } from "./services/vercel";
+
+function hasEphemeralPreviewRuntime(website: Website): boolean {
+  return (
+    website.preview.status !== "stopped" ||
+    website.preview.port !== null ||
+    website.preview.url !== null ||
+    website.preview.command !== null
+  );
+}
 
 export class AppController {
   private stateStore: StateStore;
@@ -103,6 +114,28 @@ export class AppController {
 
   async initialize(): Promise<AppSnapshot> {
     this.state = await this.stateStore.load();
+    const normalizedWebsites = this.state.websites.map((website) => {
+      if (!hasEphemeralPreviewRuntime(website)) {
+        return website;
+      }
+
+      return {
+        ...website,
+        preview: createStoppedPreviewState({
+          lastOutput: website.preview.lastOutput,
+          lastStartedAt: website.preview.lastStartedAt
+        })
+      };
+    });
+
+    if (normalizedWebsites.some((website, index) => website !== this.state.websites[index])) {
+      this.state = {
+        ...this.state,
+        websites: normalizedWebsites
+      };
+      await this.persist();
+    }
+
     await this.refreshConnections();
     try {
       await this.refreshModels();
@@ -220,12 +253,25 @@ export class AppController {
   }
 
   async deleteWebsite(websiteId: string): Promise<AppSnapshot> {
+    const website = this.requireWebsite(websiteId);
+    const conversationIds = new Set(website.conversationIds);
+    const runIds = new Set(
+      this.state.runs
+        .filter((run) => run.websiteId === websiteId || conversationIds.has(run.conversationId))
+        .map((run) => run.id)
+    );
+
     await this.previewManager.stopPreview(websiteId).catch(() => undefined);
+    await this.abortAndRejectRuns(runIds, "Project removed");
     this.state = {
       ...this.state,
       websites: this.state.websites.filter((website) => website.id !== websiteId),
       conversations: this.state.conversations.filter((conversation) => conversation.websiteId !== websiteId),
       runs: this.state.runs.filter((run) => run.websiteId !== websiteId),
+      proposedPlans: this.state.proposedPlans.filter((plan) => plan.websiteId !== websiteId && !runIds.has(plan.runId)),
+      pendingUserInputs: this.state.pendingUserInputs.filter(
+        (request) => request.websiteId !== websiteId && !runIds.has(request.runId)
+      ),
       settings: {
         ...this.state.settings,
         selectedWebsiteId:
@@ -236,6 +282,26 @@ export class AppController {
             ? null
             : this.state.settings.selectedConversationId
       }
+    };
+    await this.persist();
+    const snapshot = await this.getSnapshot();
+    this.emit("snapshot", snapshot);
+    return snapshot;
+  }
+
+  async renameWebsite(input: RenameWebsiteInput): Promise<AppSnapshot> {
+    const website = this.requireWebsite(input.websiteId);
+    const name = input.name.trim();
+    if (!name) {
+      throw new Error("Project name cannot be empty.");
+    }
+
+    const updatedAt = new Date().toISOString();
+    this.state = {
+      ...this.state,
+      websites: this.state.websites.map((candidate) =>
+        candidate.id === website.id ? { ...candidate, name, updatedAt } : candidate
+      )
     };
     await this.persist();
     const snapshot = await this.getSnapshot();
@@ -307,6 +373,68 @@ export class AppController {
           : candidate
       ),
       conversations: [conversation, ...this.state.conversations]
+    };
+    await this.persist();
+    const snapshot = await this.getSnapshot();
+    this.emit("snapshot", snapshot);
+    return snapshot;
+  }
+
+  async renameConversation(input: RenameConversationInput): Promise<AppSnapshot> {
+    const conversation = this.requireConversation(input.conversationId);
+    const title = input.title.trim();
+    if (!title) {
+      throw new Error("Thread name cannot be empty.");
+    }
+
+    const updatedAt = new Date().toISOString();
+    this.state = {
+      ...this.state,
+      conversations: this.state.conversations.map((candidate) =>
+        candidate.id === conversation.id ? { ...candidate, title, updatedAt } : candidate
+      ),
+      websites: this.state.websites.map((candidate) =>
+        candidate.id === conversation.websiteId ? { ...candidate, updatedAt } : candidate
+      )
+    };
+    await this.persist();
+    const snapshot = await this.getSnapshot();
+    this.emit("snapshot", snapshot);
+    return snapshot;
+  }
+
+  async deleteConversation(conversationId: string): Promise<AppSnapshot> {
+    const conversation = this.requireConversation(conversationId);
+    const runIds = new Set(conversation.runIds);
+    const remainingConversations = this.state.conversations.filter((candidate) => candidate.id !== conversationId);
+    const nextSelectedConversationId =
+      this.state.settings.selectedConversationId === conversationId
+        ? remainingConversations.find((candidate) => candidate.websiteId === conversation.websiteId)?.id ?? null
+        : this.state.settings.selectedConversationId;
+
+    await this.abortAndRejectRuns(runIds, "Thread deleted");
+
+    this.state = {
+      ...this.state,
+      websites: this.state.websites.map((candidate) =>
+        candidate.id === conversation.websiteId
+          ? {
+              ...candidate,
+              conversationIds: candidate.conversationIds.filter((id) => id !== conversationId),
+              runIds: candidate.runIds.filter((id) => !runIds.has(id)),
+              updatedAt: new Date().toISOString()
+            }
+          : candidate
+      ),
+      conversations: remainingConversations,
+      runs: this.state.runs.filter((run) => !runIds.has(run.id)),
+      proposedPlans: this.state.proposedPlans.filter((plan) => !runIds.has(plan.runId)),
+      pendingUserInputs: this.state.pendingUserInputs.filter((request) => !runIds.has(request.runId)),
+      settings: {
+        ...this.state.settings,
+        selectedConversationId: nextSelectedConversationId,
+        selectedWebsiteId: conversation.websiteId
+      }
     };
     await this.persist();
     const snapshot = await this.getSnapshot();
@@ -418,7 +546,8 @@ export class AppController {
   }
 
   async stopPreview(websiteId: string): Promise<AppSnapshot> {
-    await this.previewManager.stopPreview(websiteId);
+    const website = this.requireWebsite(websiteId);
+    await this.previewManager.stopPreview(website.id);
     return await this.getSnapshot();
   }
 
@@ -622,7 +751,7 @@ export class AppController {
     return await this.getSnapshot();
   }
 
-  private async executeRun(runId: string, apiKey: string, _signal: AbortSignal): Promise<void> {
+  private async executeRun(runId: string, apiKey: string, signal: AbortSignal): Promise<void> {
     await this.updateRun(runId, { status: "running" });
     const run = this.requireRun(runId);
     const website = this.requireWebsite(run.websiteId);
@@ -641,8 +770,10 @@ export class AppController {
       modelId: run.modelId,
       interactionMode: run.interactionMode,
       sourcePlanId: run.sourcePlanId,
+      signal,
       callbacks: {
         appendEvent: async (event) => {
+          signal.throwIfAborted();
           const nextEvent: RunEvent = {
             id: nanoid(),
             createdAt: new Date().toISOString(),
@@ -651,6 +782,7 @@ export class AppController {
           await this.appendRunEvent(runId, nextEvent);
         },
         setStatus: async (status) => {
+          signal.throwIfAborted();
           await this.appendRunEvent(runId, {
             id: nanoid(),
             createdAt: new Date().toISOString(),
@@ -661,9 +793,11 @@ export class AppController {
           });
         },
         startPreview: async () => {
+          signal.throwIfAborted();
           await this.previewManager.startPreview(website);
         },
         savePlan: async ({ title, planMarkdown }) => {
+          signal.throwIfAborted();
           const now = new Date().toISOString();
           const plan: ProposedPlan = {
             id: nanoid(),
@@ -693,15 +827,18 @@ export class AppController {
           return plan;
         },
         requestUserInput: async ({ questions }) => {
+          signal.throwIfAborted();
           return await this.requestUserInput(runId, website.id, questions);
         }
       }
     });
 
+    signal.throwIfAborted();
     if (run.sourcePlanId) {
       await this.markPlanImplemented(run.sourcePlanId, runId, new Date().toISOString());
     }
 
+    signal.throwIfAborted();
     await this.updateRun(runId, {
       status: "completed",
       awaitingUserInput: false,
@@ -929,6 +1066,24 @@ export class AppController {
     await this.persist();
     this.emit("run-updated", this.requireRun(runId));
     this.emit("snapshot", await this.getSnapshot());
+  }
+
+  private async abortAndRejectRuns(runIds: Set<string>, reason: string): Promise<void> {
+    for (const runId of runIds) {
+      const abortController = this.runAbortControllers.get(runId);
+      if (abortController) {
+        abortController.abort();
+        this.runAbortControllers.delete(runId);
+      }
+    }
+
+    for (const [requestId, resolver] of this.pendingUserInputResolvers.entries()) {
+      if (!runIds.has(resolver.runId)) {
+        continue;
+      }
+      this.pendingUserInputResolvers.delete(requestId);
+      resolver.reject(new Error(reason));
+    }
   }
 
   private deriveConversationTitle(prompt: string): string {

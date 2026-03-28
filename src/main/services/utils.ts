@@ -2,7 +2,7 @@ import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import net from "node:net";
 import path from "node:path";
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 
 export interface CommandResult {
   command: string;
@@ -125,6 +125,57 @@ export async function runCommandOrThrow(
     throw new Error(result.stderr.trim() || result.stdout.trim() || `Command failed: ${command}`);
   }
   return result;
+}
+
+export async function terminateChildProcess(child: ChildProcess): Promise<void> {
+  const pid = child.pid;
+  if (!pid) {
+    return;
+  }
+
+  if (process.platform === "win32") {
+    const result = await runCommand(`taskkill /pid ${pid} /t /f`, process.cwd());
+    const output = `${result.stdout}\n${result.stderr}`;
+    if (
+      result.exitCode !== 0 &&
+      !/no running instance|not found|cannot find the process/i.test(output)
+    ) {
+      throw new Error(output.trim() || `Failed to stop preview process ${pid}.`);
+    }
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    const handleExit = () => {
+      clearTimeout(forceKillTimer);
+      resolve();
+    };
+
+    const forceKillTimer = setTimeout(() => {
+      child.off("exit", handleExit);
+      try {
+        child.kill("SIGKILL");
+      } catch {
+        // Ignore best-effort cleanup failures during shutdown.
+      }
+      resolve();
+    }, 1500);
+
+    child.once("exit", handleExit);
+
+    try {
+      const killed = child.kill("SIGTERM");
+      if (!killed) {
+        clearTimeout(forceKillTimer);
+        child.off("exit", handleExit);
+        resolve();
+      }
+    } catch {
+      clearTimeout(forceKillTimer);
+      child.off("exit", handleExit);
+      resolve();
+    }
+  });
 }
 
 export async function launchCommandInTerminal(command: string, cwd: string): Promise<void> {

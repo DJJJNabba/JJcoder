@@ -187,6 +187,7 @@ export async function executeWebsiteRun(options: {
   modelId: string;
   interactionMode: InteractionMode;
   sourcePlanId: string | null;
+  signal: AbortSignal;
   callbacks: AgentRuntimeCallbacks;
 }): Promise<string> {
   if (options.interactionMode === "plan") {
@@ -203,6 +204,7 @@ async function executeWebsiteChatRun(options: {
   modelId: string;
   interactionMode: InteractionMode;
   sourcePlanId: string | null;
+  signal: AbortSignal;
   callbacks: AgentRuntimeCallbacks;
 }): Promise<string> {
   const client = new OpenRouter({
@@ -327,6 +329,7 @@ async function executeWebsiteChatRun(options: {
 
   const buildContext = await readProjectSnapshot(workspacePath);
   const hasExistingFiles = await hasSourceFiles(workspacePath);
+  options.signal.throwIfAborted();
   await options.callbacks.setStatus("Dispatching builder agent.");
   const toolNamesByCallId = new Map<string, string>();
   const assistantDraftsByItemId = new Map<string, string>();
@@ -392,9 +395,12 @@ async function executeWebsiteChatRun(options: {
       finishTool
     ],
     stopWhen: [stepCountIs(20), hasToolCall("finish_build")]
+  }, {
+    signal: options.signal
   });
 
   for await (const event of builderResult.getFullResponsesStream()) {
+    options.signal.throwIfAborted();
     switch (event.type) {
       case "response.function_call_arguments.done": {
         toolNamesByCallId.set(event.itemId, event.name);
@@ -460,7 +466,9 @@ async function executeWebsiteChatRun(options: {
     }
   }
 
+  options.signal.throwIfAborted();
   const builderText = await builderResult.getText();
+  options.signal.throwIfAborted();
   if (builderText.trim() && assistantDraftsByItemId.size === 0) {
     await options.callbacks.appendEvent({
       agent: "builder",
@@ -470,6 +478,7 @@ async function executeWebsiteChatRun(options: {
     });
   }
 
+  options.signal.throwIfAborted();
   await options.callbacks.startPreview().catch(() => undefined);
   return finalSummary || builderText.trim() || "Website build complete.";
 }
@@ -482,6 +491,7 @@ async function executeWebsitePlanRun(options: {
   modelId: string;
   interactionMode: InteractionMode;
   sourcePlanId: string | null;
+  signal: AbortSignal;
   callbacks: AgentRuntimeCallbacks;
 }): Promise<string> {
   const client = new OpenRouter({
@@ -542,10 +552,13 @@ async function executeWebsitePlanRun(options: {
       })
     ],
     stopWhen: [stepCountIs(12)]
+  }, {
+    signal: options.signal
   });
 
   const toolNamesByCallId = new Map<string, string>();
   for await (const event of builderResult.getFullResponsesStream()) {
+    options.signal.throwIfAborted();
     if (event.type === "response.function_call_arguments.done") {
       toolNamesByCallId.set(event.itemId, event.name);
       await options.callbacks.appendEvent({
@@ -577,7 +590,9 @@ async function executeWebsitePlanRun(options: {
     }
   }
 
+  options.signal.throwIfAborted();
   const text = (await builderResult.getText()).trim();
+  options.signal.throwIfAborted();
   const planMarkdown = extractProposedPlanBlock(text);
   if (!planMarkdown) {
     throw new Error("Plan mode requires a valid <proposed_plan>...</proposed_plan> block.");

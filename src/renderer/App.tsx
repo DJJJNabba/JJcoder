@@ -11,7 +11,15 @@ import {
   SquareIcon,
   WandSparklesIcon
 } from "lucide-react";
-import type { AgentRun, AppSnapshot, AuthSource, PendingUserInputRequest, ProviderLoginKind, ProposedPlan } from "@shared/types";
+import type {
+  AgentRun,
+  AppSnapshot,
+  AuthSource,
+  ContextMenuActionEvent,
+  PendingUserInputRequest,
+  ProviderLoginKind,
+  ProposedPlan
+} from "@shared/types";
 import { ModelPicker } from "./components/ModelPicker";
 import { PreviewPane } from "./components/PreviewPane";
 import { ChatThread } from "./components/ChatThread";
@@ -118,6 +126,30 @@ function describeSource(source: AuthSource): string {
 
 type ResizeTarget = "sidebar" | "workbench";
 
+type RenameDialogState =
+  | {
+      kind: "website";
+      websiteId: string;
+      value: string;
+    }
+  | {
+      kind: "conversation";
+      conversationId: string;
+      value: string;
+    };
+
+type DeleteDialogState =
+  | {
+      kind: "website";
+      websiteId: string;
+      name: string;
+    }
+  | {
+      kind: "conversation";
+      conversationId: string;
+      name: string;
+    };
+
 export function App() {
   const bridge = window.jjcoder;
   const [snapshot, setSnapshot] = useState<AppSnapshot>(EMPTY_SNAPSHOT);
@@ -127,6 +159,8 @@ export function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showCreateWebsite, setShowCreateWebsite] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [renameDialog, setRenameDialog] = useState<RenameDialogState | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState | null>(null);
   const [createName, setCreateName] = useState("");
   const [createDescription, setCreateDescription] = useState("");
   const [createPath, setCreatePath] = useState("");
@@ -193,14 +227,58 @@ export function App() {
         websites: prev.websites.map((website) => (website.id === websiteId ? { ...website, preview } : website))
       }));
     });
+    const unsubscribeContextMenu = bridge.subscribe("context-menu-action", (action: ContextMenuActionEvent) => {
+      setRenameDialog(null);
+      setDeleteDialog(null);
+
+      if (action.kind === "website") {
+        const website = snapshot.websites.find((candidate) => candidate.id === action.websiteId);
+        if (!website) {
+          return;
+        }
+        if (action.action === "rename") {
+          setRenameDialog({
+            kind: "website",
+            websiteId: website.id,
+            value: website.name
+          });
+          return;
+        }
+        setDeleteDialog({
+          kind: "website",
+          websiteId: website.id,
+          name: website.name
+        });
+        return;
+      }
+
+      const conversation = snapshot.conversations.find((candidate) => candidate.id === action.conversationId);
+      if (!conversation) {
+        return;
+      }
+      if (action.action === "rename") {
+        setRenameDialog({
+          kind: "conversation",
+          conversationId: conversation.id,
+          value: conversation.title
+        });
+        return;
+      }
+      setDeleteDialog({
+        kind: "conversation",
+        conversationId: conversation.id,
+        name: conversation.title
+      });
+    });
 
     return () => {
       disposed = true;
       unsubscribeSnapshot();
       unsubscribeRun();
       unsubscribePreview();
+      unsubscribeContextMenu();
     };
-  }, [bridge]);
+  }, [bridge, snapshot.conversations, snapshot.websites]);
 
   useEffect(() => {
     const needsOnboarding =
@@ -279,6 +357,15 @@ export function App() {
     };
   }, []);
 
+  const selectedWebsite = useMemo(() => {
+    return snapshot.websites.find((website) => website.id === snapshot.settings.selectedWebsiteId) ?? null;
+  }, [snapshot.settings.selectedWebsiteId, snapshot.websites]);
+
+  const activeWebsite = selectedWebsite ?? snapshot.websites[0] ?? null;
+  const previewStatus = activeWebsite?.preview.status ?? "stopped";
+  const previewPaneVisible = Boolean(activeWebsite && previewStatus !== "stopped");
+  const previewRunning = previewStatus === "starting" || previewStatus === "running";
+
   useEffect(() => {
     const clampStoredWidths = () => {
       const totalShellWidth = appShellRef.current?.clientWidth ?? 0;
@@ -296,7 +383,7 @@ export function App() {
         }
       }
 
-      if (totalWorkbenchWidth > 0) {
+      if (previewPaneVisible && totalWorkbenchWidth > 0) {
         const clampedWorkbenchWidth = clamp(
           workbenchLeftWidth,
           MIN_WORKBENCH_LEFT_WIDTH,
@@ -309,18 +396,29 @@ export function App() {
       }
     };
 
-    clampStoredWidths();
-    window.addEventListener("resize", clampStoredWidths);
-    return () => {
-      window.removeEventListener("resize", clampStoredWidths);
+    let resizeClassTimer: ReturnType<typeof setTimeout> | null = null;
+    const handleWindowResize = () => {
+      document.body.classList.add("is-window-resizing");
+      if (resizeClassTimer !== null) {
+        clearTimeout(resizeClassTimer);
+      }
+      resizeClassTimer = setTimeout(() => {
+        document.body.classList.remove("is-window-resizing");
+        resizeClassTimer = null;
+      }, 140);
+      clampStoredWidths();
     };
-  }, [sidebarWidth, workbenchLeftWidth]);
 
-  const selectedWebsite = useMemo(() => {
-    return snapshot.websites.find((website) => website.id === snapshot.settings.selectedWebsiteId) ?? null;
-  }, [snapshot.settings.selectedWebsiteId, snapshot.websites]);
-
-  const activeWebsite = selectedWebsite ?? snapshot.websites[0] ?? null;
+    clampStoredWidths();
+    window.addEventListener("resize", handleWindowResize);
+    return () => {
+      window.removeEventListener("resize", handleWindowResize);
+      if (resizeClassTimer !== null) {
+        clearTimeout(resizeClassTimer);
+      }
+      document.body.classList.remove("is-window-resizing");
+    };
+  }, [previewPaneVisible, sidebarWidth, workbenchLeftWidth]);
 
   const activeWebsiteConversations = useMemo(() => {
     if (!activeWebsite) return [];
@@ -489,6 +587,80 @@ export function App() {
 
   const createConversation = async (websiteId: string) => {
     await mutateSnapshot(async () => await window.jjcoder.createConversation({ websiteId }));
+  };
+
+  const showWebsiteContextMenu = async (websiteId: string) => {
+    const website = snapshot.websites.find((candidate) => candidate.id === websiteId);
+    if (!website) {
+      return;
+    }
+
+    try {
+      await window.jjcoder.showSidebarContextMenu({
+        kind: "website",
+        websiteId: website.id,
+        websiteName: website.name,
+        workspacePath: website.workspacePath
+      });
+      setError(null);
+    } catch (reason) {
+      handleError(reason);
+    }
+  };
+
+  const showConversationContextMenu = async (conversationId: string, websiteId: string) => {
+    const conversation = snapshot.conversations.find((candidate) => candidate.id === conversationId);
+    if (!conversation) {
+      return;
+    }
+
+    try {
+      await window.jjcoder.showSidebarContextMenu({
+        kind: "conversation",
+        websiteId,
+        conversationId: conversation.id,
+        conversationTitle: conversation.title
+      });
+      setError(null);
+    } catch (reason) {
+      handleError(reason);
+    }
+  };
+
+  const submitRename = async () => {
+    if (!renameDialog) {
+      return;
+    }
+
+    const nextValue = renameDialog.value.trim();
+    if (!nextValue) {
+      setError(renameDialog.kind === "website" ? "Project name cannot be empty." : "Thread name cannot be empty.");
+      return;
+    }
+
+    await mutateSnapshot(async () => {
+      const next =
+        renameDialog.kind === "website"
+          ? await window.jjcoder.renameWebsite({ websiteId: renameDialog.websiteId, name: nextValue })
+          : await window.jjcoder.renameConversation({ conversationId: renameDialog.conversationId, title: nextValue });
+      setRenameDialog(null);
+      return next;
+    });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteDialog) {
+      return;
+    }
+
+    await mutateSnapshot(async () => {
+      const next =
+        deleteDialog.kind === "website"
+          ? await window.jjcoder.deleteWebsite(deleteDialog.websiteId)
+          : await window.jjcoder.deleteConversation(deleteDialog.conversationId);
+      setDeleteDialog(null);
+      return next;
+    });
   };
 
   const createWebsite = async () => {
@@ -706,6 +878,10 @@ export function App() {
           void mutateSnapshot(async () => await window.jjcoder.reorderConversations({ websiteId, orderedIds }))
         }
         onCreateWebsite={() => setShowCreateWebsite(true)}
+        onRequestWebsiteContextMenu={(website) => void showWebsiteContextMenu(website.id)}
+        onRequestConversationContextMenu={(website, conversation) =>
+          void showConversationContextMenu(conversation.id, website.id)
+        }
         onToggleCollapse={() => {
           const next = !sidebarCollapsed;
           setSidebarCollapsed(next);
@@ -853,13 +1029,13 @@ export function App() {
             onClick={() =>
               activeWebsite &&
               void window.jjcoder
-                .startPreview(activeWebsite.id)
+                [previewRunning ? "stopPreview" : "startPreview"](activeWebsite.id)
                 .then(setSnapshot)
                 .catch(handleError)
             }
           >
-            <PlayIcon size={13} />
-            Preview
+            {previewRunning ? <SquareIcon size={13} /> : <PlayIcon size={13} />}
+            {previewRunning ? "Stop preview" : "Preview"}
           </button>
           <label className="inline-field">
             <span>Repo</span>
@@ -869,167 +1045,177 @@ export function App() {
 
         <section
           ref={workbenchRef}
-          className="workbench-grid"
-          style={{ gridTemplateColumns: `${workbenchLeftWidth}px var(--divider-size) minmax(${MIN_PREVIEW_WIDTH}px, 1fr)` }}
+          className={`workbench-grid ${previewPaneVisible ? "preview-visible" : "preview-hidden"}`}
+          style={{
+            gridTemplateColumns: previewPaneVisible
+              ? `${workbenchLeftWidth}px var(--divider-size) minmax(${MIN_PREVIEW_WIDTH}px, 1fr)`
+              : "minmax(0, 1fr)"
+          }}
         >
           <div className="left-column">
-            <div className="chat-plan-shell">
-              <ChatThread runs={activeConversationRuns} />
-            </div>
+            <div className="left-column-shell">
+              <div className="chat-plan-shell">
+                <ChatThread runs={activeConversationRuns} />
+              </div>
 
-            <div className="composer-area">
-              <PendingUserInputPanel
-                request={activePendingUserInput}
-                answers={pendingUserInputAnswers}
-                questionIndex={pendingUserInputQuestionIndex}
-                isResponding={respondingUserInput}
-                onSelectOption={handleSelectPendingOption}
-                onAdvance={handleAdvancePendingInput}
-              />
-              <textarea
-                value={prompt}
-                disabled={isAgentRunning && !activePendingUserInput}
-                onChange={(event) => {
-                  setPrompt(event.target.value);
-                  if (activePendingUserInputProgress?.activeQuestion?.allowFreeform) {
-                    const question = activePendingUserInputProgress.activeQuestion;
-                    setPendingUserInputAnswers((prev) => ({
-                      ...prev,
-                      [question.id]: setPendingUserInputCustomAnswer(prev[question.id], event.target.value)
-                    }));
-                  }
-                }}
-                placeholder={
-                  isAgentRunning && !activePendingUserInput
-                    ? "Agent is working..."
-                    : activePendingUserInputProgress?.activeQuestion?.allowFreeform
-                      ? "Type a custom answer or choose an option..."
-                      : activePlan && activePlan.status === "proposed"
-                        ? "Add refinements, or leave empty to implement the plan..."
-                        : "Describe what to build..."
-                }
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-                    if (!isAgentRunning || activePendingUserInput) {
-                      void dispatchRun();
+              <div className="composer-area">
+                <PendingUserInputPanel
+                  request={activePendingUserInput}
+                  answers={pendingUserInputAnswers}
+                  questionIndex={pendingUserInputQuestionIndex}
+                  isResponding={respondingUserInput}
+                  onSelectOption={handleSelectPendingOption}
+                  onAdvance={handleAdvancePendingInput}
+                />
+                <textarea
+                  value={prompt}
+                  disabled={isAgentRunning && !activePendingUserInput}
+                  onChange={(event) => {
+                    setPrompt(event.target.value);
+                    if (activePendingUserInputProgress?.activeQuestion?.allowFreeform) {
+                      const question = activePendingUserInputProgress.activeQuestion;
+                      setPendingUserInputAnswers((prev) => ({
+                        ...prev,
+                        [question.id]: setPendingUserInputCustomAnswer(prev[question.id], event.target.value)
+                      }));
                     }
-                  }
-                  if (!activePendingUserInput || event.metaKey || event.ctrlKey || event.altKey) {
-                    return;
-                  }
-                  const digit = Number.parseInt(event.key, 10);
-                  if (Number.isNaN(digit) || digit < 1 || digit > 9) {
-                    return;
-                  }
-                  const question = activePendingUserInputProgress?.activeQuestion;
-                  const option = question?.options[digit - 1];
-                  if (!question || !option) {
-                    return;
-                  }
-                  event.preventDefault();
-                  handleSelectPendingOption(question.id, option.label);
-                  window.setTimeout(() => {
-                    handleAdvancePendingInput();
-                  }, 200);
-                }}
-              />
-              <div className="composer-footer">
-                <div className="composer-left-controls">
-                  <ModelPicker
-                    models={snapshot.models}
-                    selectedModelId={snapshot.settings.preferredModelId}
-                    onSelect={(modelId) => {
-                      void mutateSnapshot(async () => await window.jjcoder.updateSettings({ preferredModelId: modelId }));
-                    }}
-                  />
-                  <div className="segmented">
-                    <button
-                      type="button"
-                      className={snapshot.settings.interactionMode === "chat" ? "active" : ""}
-                      onClick={() => {
-                        void mutateSnapshot(async () => await window.jjcoder.updateSettings({ interactionMode: "chat" }));
-                      }}
-                    >
-                      Chat
-                    </button>
-                    <button
-                      type="button"
-                      className={snapshot.settings.interactionMode === "plan" ? "active" : ""}
-                      onClick={() => {
-                        void mutateSnapshot(async () => await window.jjcoder.updateSettings({ interactionMode: "plan" }));
-                      }}
-                    >
-                      Plan
-                    </button>
-                  </div>
-                </div>
-                <div className="composer-actions">
-                  {activePlan && activePlan.status === "proposed" && !prompt.trim() && !isAgentRunning ? (
-                    <button type="button" className="toolbar-chip" onClick={() => void implementPlan()}>
-                      <ChevronDownIcon size={13} />
-                      Implement plan
-                    </button>
-                  ) : null}
-                  {isAgentRunning && !activePendingUserInput ? (
-                    <button
-                      type="button"
-                      className="stop-button"
-                      onClick={() => void cancelCurrentRun()}
-                    >
-                      <SquareIcon size={11} />
-                      Stop
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="primary-button"
-                      disabled={
-                        !activeWebsite ||
-                        (activePendingUserInput
-                          ? !activePendingUserInputProgress?.canAdvance && !activePendingUserInputProgress?.isComplete
-                          : !prompt.trim() && !(activePlan && activePlan.status === "proposed"))
-                      }
-                      onClick={() => void dispatchRun()}
-                    >
-                      <SendIcon size={13} />
-                      {activePendingUserInput
-                        ? activePendingUserInputProgress?.isLastQuestion
-                          ? "Submit answers"
-                          : "Next question"
+                  }}
+                  placeholder={
+                    isAgentRunning && !activePendingUserInput
+                      ? "Agent is working..."
+                      : activePendingUserInputProgress?.activeQuestion?.allowFreeform
+                        ? "Type a custom answer or choose an option..."
                         : activePlan && activePlan.status === "proposed"
-                          ? prompt.trim()
-                            ? "Refine"
-                            : "Implement"
-                          : "Send"}
-                    </button>
-                  )}
+                          ? "Add refinements, or leave empty to implement the plan..."
+                          : "Describe what to build..."
+                  }
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+                      if (!isAgentRunning || activePendingUserInput) {
+                        void dispatchRun();
+                      }
+                    }
+                    if (!activePendingUserInput || event.metaKey || event.ctrlKey || event.altKey) {
+                      return;
+                    }
+                    const digit = Number.parseInt(event.key, 10);
+                    if (Number.isNaN(digit) || digit < 1 || digit > 9) {
+                      return;
+                    }
+                    const question = activePendingUserInputProgress?.activeQuestion;
+                    const option = question?.options[digit - 1];
+                    if (!question || !option) {
+                      return;
+                    }
+                    event.preventDefault();
+                    handleSelectPendingOption(question.id, option.label);
+                    window.setTimeout(() => {
+                      handleAdvancePendingInput();
+                    }, 200);
+                  }}
+                />
+                <div className="composer-footer">
+                  <div className="composer-left-controls">
+                    <ModelPicker
+                      models={snapshot.models}
+                      selectedModelId={snapshot.settings.preferredModelId}
+                      onSelect={(modelId) => {
+                        void mutateSnapshot(async () => await window.jjcoder.updateSettings({ preferredModelId: modelId }));
+                      }}
+                    />
+                    <div className="segmented">
+                      <button
+                        type="button"
+                        className={snapshot.settings.interactionMode === "chat" ? "active" : ""}
+                        onClick={() => {
+                          void mutateSnapshot(async () => await window.jjcoder.updateSettings({ interactionMode: "chat" }));
+                        }}
+                      >
+                        Chat
+                      </button>
+                      <button
+                        type="button"
+                        className={snapshot.settings.interactionMode === "plan" ? "active" : ""}
+                        onClick={() => {
+                          void mutateSnapshot(async () => await window.jjcoder.updateSettings({ interactionMode: "plan" }));
+                        }}
+                      >
+                        Plan
+                      </button>
+                    </div>
+                  </div>
+                  <div className="composer-actions">
+                    {activePlan && activePlan.status === "proposed" && !prompt.trim() && !isAgentRunning ? (
+                      <button type="button" className="toolbar-chip" onClick={() => void implementPlan()}>
+                        <ChevronDownIcon size={13} />
+                        Implement plan
+                      </button>
+                    ) : null}
+                    {isAgentRunning && !activePendingUserInput ? (
+                      <button
+                        type="button"
+                        className="stop-button"
+                        onClick={() => void cancelCurrentRun()}
+                      >
+                        <SquareIcon size={11} />
+                        Stop
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="primary-button"
+                        disabled={
+                          !activeWebsite ||
+                          (activePendingUserInput
+                            ? !activePendingUserInputProgress?.canAdvance && !activePendingUserInputProgress?.isComplete
+                            : !prompt.trim() && !(activePlan && activePlan.status === "proposed"))
+                        }
+                        onClick={() => void dispatchRun()}
+                      >
+                        <SendIcon size={13} />
+                        {activePendingUserInput
+                          ? activePendingUserInputProgress?.isLastQuestion
+                            ? "Submit answers"
+                            : "Next question"
+                          : activePlan && activePlan.status === "proposed"
+                            ? prompt.trim()
+                              ? "Refine"
+                              : "Implement"
+                            : "Send"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div
-            className="panel-divider"
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Resize workbench"
-            onPointerDown={beginResize("workbench")}
-            onDoubleClick={() => {
-              setWorkbenchLeftWidth(DEFAULT_WORKBENCH_LEFT_WIDTH);
-              writeStoredNumber(WORKBENCH_WIDTH_KEY, DEFAULT_WORKBENCH_LEFT_WIDTH);
-            }}
-          />
+          {previewPaneVisible ? (
+            <div
+              className="panel-divider"
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize workbench"
+              onPointerDown={beginResize("workbench")}
+              onDoubleClick={() => {
+                setWorkbenchLeftWidth(DEFAULT_WORKBENCH_LEFT_WIDTH);
+                writeStoredNumber(WORKBENCH_WIDTH_KEY, DEFAULT_WORKBENCH_LEFT_WIDTH);
+              }}
+            />
+          ) : null}
 
-          <PreviewPane
-            website={activeWebsite}
-            onStartPreview={(websiteId) =>
-              void window.jjcoder.startPreview(websiteId).then(setSnapshot).catch(handleError)
-            }
-            onStopPreview={(websiteId) =>
-              void window.jjcoder.stopPreview(websiteId).then(setSnapshot).catch(handleError)
-            }
-            onOpenExternal={(url) => void window.jjcoder.openExternal(url).catch(handleError)}
-          />
+          {previewPaneVisible ? (
+            <PreviewPane
+              website={activeWebsite}
+              onStartPreview={(websiteId) =>
+                void window.jjcoder.startPreview(websiteId).then(setSnapshot).catch(handleError)
+              }
+              onStopPreview={(websiteId) =>
+                void window.jjcoder.stopPreview(websiteId).then(setSnapshot).catch(handleError)
+              }
+              onOpenExternal={(url) => void window.jjcoder.openExternal(url).catch(handleError)}
+            />
+          ) : null}
         </section>
       </main>
 
@@ -1312,6 +1498,65 @@ export function App() {
               </button>
               <button type="button" className="primary-button" onClick={() => void createWebsite()}>
                 Create
+              </button>
+            </footer>
+          </div>
+        </div>
+      ) : null}
+
+      {renameDialog ? (
+        <div className="overlay">
+          <div className="dialog">
+            <header>
+              <p className="eyebrow">{renameDialog.kind === "website" ? "Project" : "Thread"}</p>
+              <h2>Rename {renameDialog.kind === "website" ? "project" : "thread"}</h2>
+            </header>
+            <label className="field">
+              <span>Name</span>
+              <input
+                autoFocus
+                value={renameDialog.value}
+                onChange={(event) =>
+                  setRenameDialog((current) => (current ? { ...current, value: event.target.value } : current))
+                }
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void submitRename();
+                  }
+                }}
+              />
+            </label>
+            <footer className="dialog-actions">
+              <button type="button" className="toolbar-chip" onClick={() => setRenameDialog(null)}>
+                Cancel
+              </button>
+              <button type="button" className="primary-button" onClick={() => void submitRename()}>
+                Save
+              </button>
+            </footer>
+          </div>
+        </div>
+      ) : null}
+
+      {deleteDialog ? (
+        <div className="overlay">
+          <div className="dialog">
+            <header>
+              <p className="eyebrow">{deleteDialog.kind === "website" ? "Project" : "Thread"}</p>
+              <h2>{deleteDialog.kind === "website" ? "Remove project" : "Delete thread"}</h2>
+            </header>
+            <p>
+              {deleteDialog.kind === "website"
+                ? `Remove "${deleteDialog.name}" from JJcoder. The workspace folder stays on disk.`
+                : `Delete "${deleteDialog.name}" and remove its run history from JJcoder.`}
+            </p>
+            <footer className="dialog-actions">
+              <button type="button" className="toolbar-chip" onClick={() => setDeleteDialog(null)}>
+                Cancel
+              </button>
+              <button type="button" className="primary-button" onClick={() => void confirmDelete()}>
+                {deleteDialog.kind === "website" ? "Remove" : "Delete"}
               </button>
             </footer>
           </div>

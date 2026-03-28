@@ -231,6 +231,16 @@ export interface CreateConversationInput {
   title?: string;
 }
 
+export interface RenameWebsiteInput {
+  websiteId: string;
+  name: string;
+}
+
+export interface RenameConversationInput {
+  conversationId: string;
+  title: string;
+}
+
 export interface ReorderItemsInput {
   orderedIds: string[];
 }
@@ -255,6 +265,22 @@ export interface DeployWebsiteInput {
   target: DeploymentTarget;
 }
 
+export interface ShowSidebarContextMenuInput {
+  kind: "website" | "conversation";
+  websiteId: string;
+  websiteName?: string;
+  workspacePath?: string;
+  conversationId?: string;
+  conversationTitle?: string;
+}
+
+export interface ContextMenuActionEvent {
+  kind: "website" | "conversation";
+  action: "rename" | "delete";
+  websiteId: string;
+  conversationId?: string;
+}
+
 export interface AppEventMap {
   snapshot: AppSnapshot;
   "run-updated": AgentRun;
@@ -262,6 +288,7 @@ export interface AppEventMap {
     websiteId: string;
     preview: PreviewState;
   };
+  "context-menu-action": ContextMenuActionEvent;
 }
 
 export interface DesktopBridgeApi {
@@ -271,6 +298,7 @@ export interface DesktopBridgeApi {
   refreshConnections: (deep?: boolean) => Promise<AppSnapshot>;
   createWebsite: (input: CreateWebsiteInput) => Promise<AppSnapshot>;
   deleteWebsite: (websiteId: string) => Promise<AppSnapshot>;
+  renameWebsite: (input: RenameWebsiteInput) => Promise<AppSnapshot>;
   openInIde: (websiteId: string) => Promise<void>;
   openInExplorer: (websiteId: string) => Promise<void>;
   openExternal: (url: string) => Promise<void>;
@@ -279,6 +307,8 @@ export interface DesktopBridgeApi {
   clearSecret: (kind: SaveSecretInput["kind"]) => Promise<AppSnapshot>;
   updateSettings: (input: UpdateSettingsInput) => Promise<AppSnapshot>;
   createConversation: (input: CreateConversationInput) => Promise<AppSnapshot>;
+  renameConversation: (input: RenameConversationInput) => Promise<AppSnapshot>;
+  deleteConversation: (conversationId: string) => Promise<AppSnapshot>;
   reorderWebsites: (input: ReorderItemsInput) => Promise<AppSnapshot>;
   reorderConversations: (input: ReorderConversationsInput) => Promise<AppSnapshot>;
   dispatchRun: (input: DispatchRunInput) => Promise<AppSnapshot>;
@@ -289,6 +319,7 @@ export interface DesktopBridgeApi {
   publishRepo: (input: PublishRepoInput) => Promise<AppSnapshot>;
   cancelRun: (runId: string) => Promise<AppSnapshot>;
   deployWebsite: (input: DeployWebsiteInput) => Promise<AppSnapshot>;
+  showSidebarContextMenu: (input: ShowSidebarContextMenuInput) => Promise<void>;
   subscribe: <K extends keyof AppEventMap>(
     channel: K,
     listener: (payload: AppEventMap[K]) => void

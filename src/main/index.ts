@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, shell } from "electron";
 import { AppController } from "./appController";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -53,6 +53,7 @@ async function registerIpcHandlers() {
   ipcMain.handle("jjcoder:refresh-connections", async (_event, deep) => await controller!.refreshConnections(Boolean(deep)));
   ipcMain.handle("jjcoder:create-website", async (_event, input) => await controller!.createWebsite(input));
   ipcMain.handle("jjcoder:delete-website", async (_event, websiteId) => await controller!.deleteWebsite(websiteId));
+  ipcMain.handle("jjcoder:rename-website", async (_event, input) => await controller!.renameWebsite(input));
   ipcMain.handle("jjcoder:open-in-ide", async (_event, websiteId) => await controller!.openInIde(websiteId));
   ipcMain.handle("jjcoder:open-in-explorer", async (_event, websiteId) => await controller!.openInExplorer(websiteId));
   ipcMain.handle("jjcoder:open-external", async (_event, url) => {
@@ -63,6 +64,8 @@ async function registerIpcHandlers() {
   ipcMain.handle("jjcoder:clear-secret", async (_event, kind) => await controller!.clearSecret(kind));
   ipcMain.handle("jjcoder:update-settings", async (_event, input) => await controller!.updateSettings(input));
   ipcMain.handle("jjcoder:create-conversation", async (_event, input) => await controller!.createConversation(input));
+  ipcMain.handle("jjcoder:rename-conversation", async (_event, input) => await controller!.renameConversation(input));
+  ipcMain.handle("jjcoder:delete-conversation", async (_event, conversationId) => await controller!.deleteConversation(conversationId));
   ipcMain.handle("jjcoder:reorder-websites", async (_event, input) => await controller!.reorderWebsites(input));
   ipcMain.handle("jjcoder:reorder-conversations", async (_event, input) => await controller!.reorderConversations(input));
   ipcMain.handle("jjcoder:dispatch-run", async (_event, input) => await controller!.dispatchRun(input));
@@ -86,6 +89,71 @@ async function registerIpcHandlers() {
       return null;
     }
     return result.filePaths[0] ?? null;
+  });
+  ipcMain.handle("jjcoder:show-sidebar-context-menu", async (event, input) => {
+    const owner = BrowserWindow.fromWebContents(event.sender) ?? BrowserWindow.getFocusedWindow() ?? mainWindow;
+    const template =
+      input.kind === "website"
+        ? [
+            {
+              label: "Copy Path",
+              click: () => {
+                if (typeof input.workspacePath === "string") {
+                  clipboard.writeText(input.workspacePath);
+                }
+              }
+            },
+            {
+              label: "Rename Project",
+              click: () => {
+                emitToRenderer("context-menu-action", {
+                  kind: "website",
+                  action: "rename",
+                  websiteId: input.websiteId
+                });
+              }
+            },
+            { type: "separator" as const },
+            {
+              label: "Remove Project",
+              click: () => {
+                emitToRenderer("context-menu-action", {
+                  kind: "website",
+                  action: "delete",
+                  websiteId: input.websiteId
+                });
+              }
+            }
+          ]
+        : [
+            {
+              label: "Rename Thread",
+              click: () => {
+                emitToRenderer("context-menu-action", {
+                  kind: "conversation",
+                  action: "rename",
+                  websiteId: input.websiteId,
+                  conversationId: input.conversationId
+                });
+              }
+            },
+            { type: "separator" as const },
+            {
+              label: "Delete Thread",
+              click: () => {
+                emitToRenderer("context-menu-action", {
+                  kind: "conversation",
+                  action: "delete",
+                  websiteId: input.websiteId,
+                  conversationId: input.conversationId
+                });
+              }
+            }
+          ];
+
+    Menu.buildFromTemplate(template).popup({
+      window: owner ?? undefined
+    });
   });
 }
 

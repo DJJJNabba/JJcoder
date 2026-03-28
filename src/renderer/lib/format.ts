@@ -23,14 +23,17 @@ export function formatRelativeTime(value: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-export function formatPrice(value: number | null): string {
+export function formatTokenPrice(value: number | null, direction: "input" | "output"): string {
   if (value === null) {
-    return "n/a";
+    return `${direction} n/a`;
   }
   if (value === 0) {
-    return "free";
+    return `${direction} free`;
   }
-  return `$${value.toFixed(6)}`;
+  const pricePerMillionTokens = value * 1_000_000;
+  const formattedPrice =
+    pricePerMillionTokens >= 1 ? pricePerMillionTokens.toFixed(2) : pricePerMillionTokens.toPrecision(3);
+  return `$${formattedPrice}/1M ${direction} tok`;
 }
 
 export function groupModels(models: ProviderModel[]): Array<[string, ProviderModel[]]> {

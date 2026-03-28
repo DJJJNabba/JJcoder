@@ -7,12 +7,29 @@ import {
   fileExists,
   getFreePort,
   installCommandFor,
-  runCommandOrThrow
+  runCommandOrThrow,
+  terminateChildProcess
 } from "./utils";
 
 interface PreviewSession {
   child: ChildProcess;
   preview: PreviewState;
+  stopping: boolean;
+  stopPromise: Promise<void> | null;
+}
+
+export function createStoppedPreviewState(options?: {
+  lastOutput?: string | null;
+  lastStartedAt?: string | null;
+}): PreviewState {
+  return {
+    status: "stopped",
+    port: null,
+    url: null,
+    command: null,
+    lastOutput: options?.lastOutput ?? null,
+    lastStartedAt: options?.lastStartedAt ?? null
+  };
 }
 
 export class PreviewManager {
@@ -24,7 +41,9 @@ export class PreviewManager {
 
   async startPreview(website: Website): Promise<PreviewState> {
     const existing = this.sessions.get(website.id);
-    if (existing) {
+    if (existing?.stopping) {
+      await existing.stopPromise?.catch(() => undefined);
+    } else if (existing) {
       return existing.preview;
     }
 
@@ -97,20 +116,35 @@ export class PreviewManager {
     });
 
     child.on("exit", (code) => {
+      const session = this.sessions.get(website.id);
+      if (!session || session.child !== child) {
+        return;
+      }
+
+      this.sessions.delete(website.id);
+      if (session.stopping) {
+        return;
+      }
+
       const status: PreviewState["status"] = code === 0 ? "stopped" : "error";
-      void updatePreview({
+      void this.onPreviewChange(website.id, {
+        ...session.preview,
         status,
+        port: null,
+        url: null,
+        command: null,
         lastOutput:
           code === 0
             ? "Preview server stopped."
             : `Preview server exited unexpectedly with code ${code ?? "unknown"}.`
       });
-      this.sessions.delete(website.id);
     });
 
     this.sessions.set(website.id, {
       child,
-      preview
+      preview,
+      stopping: false,
+      stopPromise: null
     });
 
     return preview;
@@ -119,29 +153,27 @@ export class PreviewManager {
   async stopPreview(websiteId: string): Promise<PreviewState> {
     const session = this.sessions.get(websiteId);
     if (!session) {
-      return {
-        status: "stopped",
-        port: null,
-        url: null,
-        command: null,
-        lastOutput: "Preview is not running.",
-        lastStartedAt: null
-      };
+      const next = createStoppedPreviewState({
+        lastOutput: "Preview is not running."
+      });
+      await this.onPreviewChange(websiteId, next);
+      return next;
     }
 
-    const { child } = session;
-    this.sessions.delete(websiteId);
-    child.kill();
-
-    const next: PreviewState = {
-      status: "stopped",
-      port: null,
-      url: null,
-      command: null,
+    const next = createStoppedPreviewState({
       lastOutput: "Preview stopped.",
       lastStartedAt: session.preview.lastStartedAt
-    };
+    });
+    session.stopping = true;
+    session.preview = next;
     await this.onPreviewChange(websiteId, next);
+    session.stopPromise ??= terminateChildProcess(session.child).finally(() => {
+      const current = this.sessions.get(websiteId);
+      if (current === session) {
+        this.sessions.delete(websiteId);
+      }
+    });
+    await session.stopPromise;
     return next;
   }
 

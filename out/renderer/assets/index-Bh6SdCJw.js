@@ -12902,14 +12902,16 @@ function formatRelativeTime(value) {
   }
   return `${Math.floor(hours / 24)}d ago`;
 }
-function formatPrice(value) {
+function formatTokenPrice(value, direction) {
   if (value === null) {
-    return "n/a";
+    return `${direction} n/a`;
   }
   if (value === 0) {
-    return "free";
+    return `${direction} free`;
   }
-  return `$${value.toFixed(6)}`;
+  const pricePerMillionTokens = value * 1e6;
+  const formattedPrice = pricePerMillionTokens >= 1 ? pricePerMillionTokens.toFixed(2) : pricePerMillionTokens.toPrecision(3);
+  return `$${formattedPrice}/1M ${direction} tok`;
 }
 function groupModels(models) {
   const grouped = /* @__PURE__ */ new Map();
@@ -12923,6 +12925,8 @@ function groupModels(models) {
 function ModelPicker({ models, selectedModelId, onSelect }) {
   const [open, setOpen] = reactExports.useState(false);
   const [query, setQuery] = reactExports.useState("");
+  const pickerRef = reactExports.useRef(null);
+  const searchInputRef = reactExports.useRef(null);
   const selectedModel = models.find((model) => model.id === selectedModelId);
   const filteredModels = reactExports.useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -12933,7 +12937,37 @@ function ModelPicker({ models, selectedModelId, onSelect }) {
       return model.name.toLowerCase().includes(normalized) || model.id.toLowerCase().includes(normalized) || model.provider.toLowerCase().includes(normalized) || model.tags.some((tag) => tag.toLowerCase().includes(normalized));
     });
   }, [models, query]);
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "model-picker", children: [
+  reactExports.useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const focusSearch = window.requestAnimationFrame(() => {
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    });
+    const handlePointerDown = (event) => {
+      if (!pickerRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+    window.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(focusSearch);
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+  function handleSelect(modelId) {
+    onSelect(modelId);
+    setOpen(false);
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "model-picker", ref: pickerRef, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { className: "toolbar-chip model-trigger", type: "button", onClick: () => setOpen((value) => !value), children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { size: 14 }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "trigger-copy", children: [
@@ -12950,6 +12984,7 @@ function ModelPicker({ models, selectedModelId, onSelect }) {
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "input",
             {
+              ref: searchInputRef,
               value: query,
               onChange: (event) => setQuery(event.target.value),
               placeholder: "gpt-5, claude, budget, long-context..."
@@ -12963,10 +12998,7 @@ function ModelPicker({ models, selectedModelId, onSelect }) {
           {
             type: "button",
             className: `model-row quick-row ${selectedModelId === "openrouter/auto" ? "selected" : ""}`,
-            onClick: () => {
-              onSelect("openrouter/auto");
-              setOpen(false);
-            },
+            onClick: () => handleSelect("openrouter/auto"),
             children: [
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "OpenRouter Auto" }),
@@ -12989,10 +13021,7 @@ function ModelPicker({ models, selectedModelId, onSelect }) {
             {
               type: "button",
               className: `model-row ${model.id === selectedModelId ? "selected" : ""}`,
-              onClick: () => {
-                onSelect(model.id);
-                setOpen(false);
-              },
+              onClick: () => handleSelect(model.id),
               children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: model.name }),
@@ -13004,7 +13033,8 @@ function ModelPicker({ models, selectedModelId, onSelect }) {
                     Math.round(model.contextLength / 1e3),
                     "k ctx"
                   ] }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: formatPrice(model.promptPrice) })
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: formatTokenPrice(model.promptPrice, "input") }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: formatTokenPrice(model.completionPrice, "output") })
                 ] })
               ]
             },
@@ -13054,7 +13084,7 @@ function PreviewPane(props) {
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: props.website.preview.url }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "icon-button", onClick: () => props.onOpenExternal(props.website.preview.url), children: /* @__PURE__ */ jsxRuntimeExports.jsx(ExternalLink, { size: 13 }) })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("iframe", { className: "preview-frame", src: props.website.preview.url, title: `${props.website.name} preview` })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "preview-viewport", children: /* @__PURE__ */ jsxRuntimeExports.jsx("iframe", { className: "preview-frame", src: props.website.preview.url, title: `${props.website.name} preview` }) })
     ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "preview-placeholder", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Preview offline" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("small", { children: props.website.preview.lastOutput ?? "Start a dev server to see your site here." })
@@ -26280,8 +26310,8 @@ function RunMessages({ run }) {
 }
 function ChatThread({ runs }) {
   const scrollRef = reactExports.useRef(null);
-  const endRef = reactExports.useRef(null);
   const shouldAutoScroll = reactExports.useRef(true);
+  const lastRenderKeyRef = reactExports.useRef("");
   reactExports.useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -26290,14 +26320,25 @@ function ChatThread({ runs }) {
       shouldAutoScroll.current = distFromBottom < 64;
     };
     el.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
     return () => el.removeEventListener("scroll", handleScroll);
   }, []);
-  reactExports.useEffect(() => {
-    if (shouldAutoScroll.current) {
-      requestAnimationFrame(() => {
-        endRef.current?.scrollIntoView({ behavior: "smooth" });
-      });
+  reactExports.useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const lastRun = runs.at(-1);
+    const nextRenderKey = [
+      runs.length,
+      lastRun?.id ?? "",
+      lastRun?.updatedAt ?? "",
+      lastRun?.status ?? "",
+      lastRun?.events.length ?? 0
+    ].join(":");
+    const hasNewTailContent = lastRenderKeyRef.current !== nextRenderKey;
+    if (shouldAutoScroll.current && hasNewTailContent) {
+      el.scrollTop = el.scrollHeight;
     }
+    lastRenderKeyRef.current = nextRenderKey;
   }, [runs]);
   if (runs.length === 0) {
     return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chat-empty", children: [
@@ -26306,10 +26347,7 @@ function ChatThread({ runs }) {
       /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "chat-empty-sub", children: "Each chat keeps the full back and forth for one project workspace." })
     ] });
   }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chat-scroll", ref: scrollRef, children: [
-    runs.map((run) => /* @__PURE__ */ jsxRuntimeExports.jsx(RunMessages, { run }, run.id)),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { ref: endRef })
-  ] });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chat-scroll", ref: scrollRef, children: runs.map((run) => /* @__PURE__ */ jsxRuntimeExports.jsx(RunMessages, { run }, run.id)) });
 }
 const parents = /* @__PURE__ */ new Set();
 const coords = /* @__PURE__ */ new WeakMap();
@@ -28310,6 +28348,9 @@ function WebsiteSidebar(props) {
     }
   }, [conversationsByWebsiteId, props.projectSortMode]);
   const handlePointerDown = reactExports.useCallback((event, type, id, websiteId) => {
+    if (event.button !== 0) {
+      return;
+    }
     const target2 = event.currentTarget;
     const container = target2.closest(type === "website" ? ".website-list" : ".website-runs");
     if (!container) return;
@@ -28465,6 +28506,10 @@ function WebsiteSidebar(props) {
                 type: "button",
                 className: "website-row",
                 onClick: () => props.onSelectWebsite(website.id),
+                onContextMenu: (event) => {
+                  event.preventDefault();
+                  props.onRequestWebsiteContextMenu(website);
+                },
                 onPointerDown: isManualProjects && !props.collapsed ? (event) => handlePointerDown(event, "website", website.id) : void 0,
                 children: [
                   !props.collapsed ? /* @__PURE__ */ jsxRuntimeExports.jsx(ProjectIcon, { website }) : null,
@@ -28503,6 +28548,10 @@ function WebsiteSidebar(props) {
                     {
                       type: "button",
                       className: `conversation-row ${isSelectedConversation ? "selected" : ""}`,
+                      onContextMenu: (event) => {
+                        event.preventDefault();
+                        props.onRequestConversationContextMenu(website, conversation);
+                      },
                       onPointerDown: isManualConversations ? (event) => handlePointerDown(event, "conversation", conversation.id, website.id) : void 0,
                       onClick: () => props.onSelectConversation(conversation.id, website.id),
                       children: [
@@ -28727,6 +28776,8 @@ function App() {
   const [showSettings, setShowSettings] = reactExports.useState(false);
   const [showCreateWebsite, setShowCreateWebsite] = reactExports.useState(false);
   const [showOnboarding, setShowOnboarding] = reactExports.useState(false);
+  const [renameDialog, setRenameDialog] = reactExports.useState(null);
+  const [deleteDialog, setDeleteDialog] = reactExports.useState(null);
   const [createName, setCreateName] = reactExports.useState("");
   const [createDescription, setCreateDescription] = reactExports.useState("");
   const [createPath, setCreatePath] = reactExports.useState("");
@@ -28781,13 +28832,55 @@ function App() {
         websites: prev.websites.map((website) => website.id === websiteId ? { ...website, preview } : website)
       }));
     });
+    const unsubscribeContextMenu = bridge.subscribe("context-menu-action", (action) => {
+      setRenameDialog(null);
+      setDeleteDialog(null);
+      if (action.kind === "website") {
+        const website = snapshot.websites.find((candidate) => candidate.id === action.websiteId);
+        if (!website) {
+          return;
+        }
+        if (action.action === "rename") {
+          setRenameDialog({
+            kind: "website",
+            websiteId: website.id,
+            value: website.name
+          });
+          return;
+        }
+        setDeleteDialog({
+          kind: "website",
+          websiteId: website.id,
+          name: website.name
+        });
+        return;
+      }
+      const conversation = snapshot.conversations.find((candidate) => candidate.id === action.conversationId);
+      if (!conversation) {
+        return;
+      }
+      if (action.action === "rename") {
+        setRenameDialog({
+          kind: "conversation",
+          conversationId: conversation.id,
+          value: conversation.title
+        });
+        return;
+      }
+      setDeleteDialog({
+        kind: "conversation",
+        conversationId: conversation.id,
+        name: conversation.title
+      });
+    });
     return () => {
       disposed = true;
       unsubscribeSnapshot();
       unsubscribeRun();
       unsubscribePreview();
+      unsubscribeContextMenu();
     };
-  }, [bridge]);
+  }, [bridge, snapshot.conversations, snapshot.websites]);
   reactExports.useEffect(() => {
     const needsOnboarding = !loading && !snapshot.settings.onboardingCompletedAt && (!snapshot.auth.openRouterConfigured || snapshot.websites.length === 0);
     setShowOnboarding(needsOnboarding);
@@ -28853,6 +28946,13 @@ function App() {
       stopResize();
     };
   }, []);
+  const selectedWebsite = reactExports.useMemo(() => {
+    return snapshot.websites.find((website) => website.id === snapshot.settings.selectedWebsiteId) ?? null;
+  }, [snapshot.settings.selectedWebsiteId, snapshot.websites]);
+  const activeWebsite = selectedWebsite ?? snapshot.websites[0] ?? null;
+  const previewStatus = activeWebsite?.preview.status ?? "stopped";
+  const previewPaneVisible = Boolean(activeWebsite && previewStatus !== "stopped");
+  const previewRunning = previewStatus === "starting" || previewStatus === "running";
   reactExports.useEffect(() => {
     const clampStoredWidths = () => {
       const totalShellWidth = appShellRef.current?.clientWidth ?? 0;
@@ -28868,7 +28968,7 @@ function App() {
           writeStoredNumber(SIDEBAR_WIDTH_KEY, clampedSidebarWidth);
         }
       }
-      if (totalWorkbenchWidth > 0) {
+      if (previewPaneVisible && totalWorkbenchWidth > 0) {
         const clampedWorkbenchWidth = clamp(
           workbenchLeftWidth,
           MIN_WORKBENCH_LEFT_WIDTH,
@@ -28880,16 +28980,28 @@ function App() {
         }
       }
     };
-    clampStoredWidths();
-    window.addEventListener("resize", clampStoredWidths);
-    return () => {
-      window.removeEventListener("resize", clampStoredWidths);
+    let resizeClassTimer = null;
+    const handleWindowResize = () => {
+      document.body.classList.add("is-window-resizing");
+      if (resizeClassTimer !== null) {
+        clearTimeout(resizeClassTimer);
+      }
+      resizeClassTimer = setTimeout(() => {
+        document.body.classList.remove("is-window-resizing");
+        resizeClassTimer = null;
+      }, 140);
+      clampStoredWidths();
     };
-  }, [sidebarWidth, workbenchLeftWidth]);
-  const selectedWebsite = reactExports.useMemo(() => {
-    return snapshot.websites.find((website) => website.id === snapshot.settings.selectedWebsiteId) ?? null;
-  }, [snapshot.settings.selectedWebsiteId, snapshot.websites]);
-  const activeWebsite = selectedWebsite ?? snapshot.websites[0] ?? null;
+    clampStoredWidths();
+    window.addEventListener("resize", handleWindowResize);
+    return () => {
+      window.removeEventListener("resize", handleWindowResize);
+      if (resizeClassTimer !== null) {
+        clearTimeout(resizeClassTimer);
+      }
+      document.body.classList.remove("is-window-resizing");
+    };
+  }, [previewPaneVisible, sidebarWidth, workbenchLeftWidth]);
   const activeWebsiteConversations = reactExports.useMemo(() => {
     if (!activeWebsite) return [];
     const conversations = snapshot.conversations.filter((conversation) => conversation.websiteId === activeWebsite.id);
@@ -29029,6 +29141,65 @@ function App() {
   };
   const createConversation = async (websiteId) => {
     await mutateSnapshot(async () => await window.jjcoder.createConversation({ websiteId }));
+  };
+  const showWebsiteContextMenu = async (websiteId) => {
+    const website = snapshot.websites.find((candidate) => candidate.id === websiteId);
+    if (!website) {
+      return;
+    }
+    try {
+      await window.jjcoder.showSidebarContextMenu({
+        kind: "website",
+        websiteId: website.id,
+        websiteName: website.name,
+        workspacePath: website.workspacePath
+      });
+      setError(null);
+    } catch (reason) {
+      handleError(reason);
+    }
+  };
+  const showConversationContextMenu = async (conversationId, websiteId) => {
+    const conversation = snapshot.conversations.find((candidate) => candidate.id === conversationId);
+    if (!conversation) {
+      return;
+    }
+    try {
+      await window.jjcoder.showSidebarContextMenu({
+        kind: "conversation",
+        websiteId,
+        conversationId: conversation.id,
+        conversationTitle: conversation.title
+      });
+      setError(null);
+    } catch (reason) {
+      handleError(reason);
+    }
+  };
+  const submitRename = async () => {
+    if (!renameDialog) {
+      return;
+    }
+    const nextValue = renameDialog.value.trim();
+    if (!nextValue) {
+      setError(renameDialog.kind === "website" ? "Project name cannot be empty." : "Thread name cannot be empty.");
+      return;
+    }
+    await mutateSnapshot(async () => {
+      const next = renameDialog.kind === "website" ? await window.jjcoder.renameWebsite({ websiteId: renameDialog.websiteId, name: nextValue }) : await window.jjcoder.renameConversation({ conversationId: renameDialog.conversationId, title: nextValue });
+      setRenameDialog(null);
+      return next;
+    });
+  };
+  const confirmDelete = async () => {
+    if (!deleteDialog) {
+      return;
+    }
+    await mutateSnapshot(async () => {
+      const next = deleteDialog.kind === "website" ? await window.jjcoder.deleteWebsite(deleteDialog.websiteId) : await window.jjcoder.deleteConversation(deleteDialog.conversationId);
+      setDeleteDialog(null);
+      return next;
+    });
   };
   const createWebsite = async () => {
     const normalizedCreatePath = createPath.trim() ? createPath.trim() : snapshot.settings.websitesRoot && createName.trim() ? joinPath(snapshot.settings.websitesRoot, sanitizeSegment(createName) || "my-website") : "";
@@ -29223,6 +29394,8 @@ ${activePlan.planMarkdown}`,
             onReorderWebsites: (orderedIds) => void mutateSnapshot(async () => await window.jjcoder.reorderWebsites({ orderedIds })),
             onReorderConversations: (websiteId, orderedIds) => void mutateSnapshot(async () => await window.jjcoder.reorderConversations({ websiteId, orderedIds })),
             onCreateWebsite: () => setShowCreateWebsite(true),
+            onRequestWebsiteContextMenu: (website) => void showWebsiteContextMenu(website.id),
+            onRequestConversationContextMenu: (website, conversation) => void showConversationContextMenu(conversation.id, website.id),
             onToggleCollapse: () => {
               const next = !sidebarCollapsed;
               setSidebarCollapsed(next);
@@ -29367,10 +29540,10 @@ ${activePlan.planMarkdown}`,
                 type: "button",
                 className: "toolbar-chip",
                 disabled: !activeWebsite,
-                onClick: () => activeWebsite && void window.jjcoder.startPreview(activeWebsite.id).then(setSnapshot).catch(handleError),
+                onClick: () => activeWebsite && void window.jjcoder[previewRunning ? "stopPreview" : "startPreview"](activeWebsite.id).then(setSnapshot).catch(handleError),
                 children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(Play, { size: 13 }),
-                  "Preview"
+                  previewRunning ? /* @__PURE__ */ jsxRuntimeExports.jsx(Square, { size: 13 }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Play, { size: 13 }),
+                  previewRunning ? "Stop preview" : "Preview"
                 ]
               }
             ),
@@ -29383,10 +29556,12 @@ ${activePlan.planMarkdown}`,
             "section",
             {
               ref: workbenchRef,
-              className: "workbench-grid",
-              style: { gridTemplateColumns: `${workbenchLeftWidth}px var(--divider-size) minmax(${MIN_PREVIEW_WIDTH}px, 1fr)` },
+              className: `workbench-grid ${previewPaneVisible ? "preview-visible" : "preview-hidden"}`,
+              style: {
+                gridTemplateColumns: previewPaneVisible ? `${workbenchLeftWidth}px var(--divider-size) minmax(${MIN_PREVIEW_WIDTH}px, 1fr)` : "minmax(0, 1fr)"
+              },
               children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "left-column", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "left-column", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "left-column-shell", children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chat-plan-shell", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ChatThread, { runs: activeConversationRuns }) }),
                   /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "composer-area", children: [
                     /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -29511,8 +29686,8 @@ ${activePlan.planMarkdown}`,
                       ] })
                     ] })
                   ] })
-                ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                ] }) }),
+                previewPaneVisible ? /* @__PURE__ */ jsxRuntimeExports.jsx(
                   "div",
                   {
                     className: "panel-divider",
@@ -29525,8 +29700,8 @@ ${activePlan.planMarkdown}`,
                       writeStoredNumber(WORKBENCH_WIDTH_KEY, DEFAULT_WORKBENCH_LEFT_WIDTH);
                     }
                   }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                ) : null,
+                previewPaneVisible ? /* @__PURE__ */ jsxRuntimeExports.jsx(
                   PreviewPane,
                   {
                     website: activeWebsite,
@@ -29534,7 +29709,7 @@ ${activePlan.planMarkdown}`,
                     onStopPreview: (websiteId) => void window.jjcoder.stopPreview(websiteId).then(setSnapshot).catch(handleError),
                     onOpenExternal: (url) => void window.jjcoder.openExternal(url).catch(handleError)
                   }
-                )
+                ) : null
               ]
             }
           )
@@ -29786,6 +29961,47 @@ ${activePlan.planMarkdown}`,
           /* @__PURE__ */ jsxRuntimeExports.jsxs("footer", { className: "dialog-actions", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "toolbar-chip", onClick: () => setShowCreateWebsite(false), children: "Cancel" }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "primary-button", onClick: () => void createWebsite(), children: "Create" })
+          ] })
+        ] }) }) : null,
+        renameDialog ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "overlay", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "dialog", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "eyebrow", children: renameDialog.kind === "website" ? "Project" : "Thread" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("h2", { children: [
+              "Rename ",
+              renameDialog.kind === "website" ? "project" : "thread"
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "field", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Name" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "input",
+              {
+                autoFocus: true,
+                value: renameDialog.value,
+                onChange: (event) => setRenameDialog((current) => current ? { ...current, value: event.target.value } : current),
+                onKeyDown: (event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void submitRename();
+                  }
+                }
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("footer", { className: "dialog-actions", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "toolbar-chip", onClick: () => setRenameDialog(null), children: "Cancel" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "primary-button", onClick: () => void submitRename(), children: "Save" })
+          ] })
+        ] }) }) : null,
+        deleteDialog ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "overlay", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "dialog", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "eyebrow", children: deleteDialog.kind === "website" ? "Project" : "Thread" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { children: deleteDialog.kind === "website" ? "Remove project" : "Delete thread" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: deleteDialog.kind === "website" ? `Remove "${deleteDialog.name}" from JJcoder. The workspace folder stays on disk.` : `Delete "${deleteDialog.name}" and remove its run history from JJcoder.` }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("footer", { className: "dialog-actions", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "toolbar-chip", onClick: () => setDeleteDialog(null), children: "Cancel" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "primary-button", onClick: () => void confirmDelete(), children: deleteDialog.kind === "website" ? "Remove" : "Delete" })
           ] })
         ] }) }) : null,
         showSettings ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "overlay", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "dialog dialog-wide", children: [

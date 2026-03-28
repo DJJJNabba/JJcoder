@@ -35,6 +35,8 @@ interface WebsiteSidebarProps {
   onChangeProjectSortMode: (sortMode: SortMode) => void;
   onReorderWebsites: (orderedIds: string[]) => void;
   onReorderConversations: (websiteId: string, orderedIds: string[]) => void;
+  onRequestWebsiteContextMenu: (website: Website) => void;
+  onRequestConversationContextMenu: (website: Website, conversation: Conversation) => void;
   onToggleCollapse: () => void;
 }
 
@@ -275,6 +277,9 @@ export function WebsiteSidebar(props: WebsiteSidebarProps) {
     id: string,
     websiteId?: string
   ) => {
+    if (event.button !== 0) {
+      return;
+    }
     const target = event.currentTarget;
     const container = target.closest<HTMLElement>(type === "website" ? ".website-list" : ".website-runs");
     if (!container) return;
@@ -464,6 +469,10 @@ export function WebsiteSidebar(props: WebsiteSidebarProps) {
                     type="button"
                     className="website-row"
                     onClick={() => props.onSelectWebsite(website.id)}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      props.onRequestWebsiteContextMenu(website);
+                    }}
                     onPointerDown={
                       isManualProjects && !props.collapsed
                         ? (event) => handlePointerDown(event, "website", website.id)
@@ -511,6 +520,10 @@ export function WebsiteSidebar(props: WebsiteSidebarProps) {
                               <button
                                 type="button"
                                 className={`conversation-row ${isSelectedConversation ? "selected" : ""}`}
+                                onContextMenu={(event) => {
+                                  event.preventDefault();
+                                  props.onRequestConversationContextMenu(website, conversation);
+                                }}
                                 onPointerDown={
                                   isManualConversations
                                     ? (event) => handlePointerDown(event, "conversation", conversation.id, website.id)

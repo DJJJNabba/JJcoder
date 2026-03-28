@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef } from "react";
 import {
   AlertTriangleIcon,
   CheckIcon,
@@ -297,8 +297,8 @@ interface ChatThreadProps {
 
 export function ChatThread({ runs }: ChatThreadProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const endRef = useRef<HTMLDivElement | null>(null);
   const shouldAutoScroll = useRef(true);
+  const lastRenderKeyRef = useRef("");
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -308,15 +308,28 @@ export function ChatThread({ runs }: ChatThreadProps) {
       shouldAutoScroll.current = distFromBottom < 64;
     };
     el.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
     return () => el.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    if (shouldAutoScroll.current) {
-      requestAnimationFrame(() => {
-        endRef.current?.scrollIntoView({ behavior: "smooth" });
-      });
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const lastRun = runs.at(-1);
+    const nextRenderKey = [
+      runs.length,
+      lastRun?.id ?? "",
+      lastRun?.updatedAt ?? "",
+      lastRun?.status ?? "",
+      lastRun?.events.length ?? 0
+    ].join(":");
+    const hasNewTailContent = lastRenderKeyRef.current !== nextRenderKey;
+
+    if (shouldAutoScroll.current && hasNewTailContent) {
+      el.scrollTop = el.scrollHeight;
     }
+    lastRenderKeyRef.current = nextRenderKey;
   }, [runs]);
 
   if (runs.length === 0) {
@@ -334,7 +347,6 @@ export function ChatThread({ runs }: ChatThreadProps) {
       {runs.map((run) => (
         <RunMessages key={run.id} run={run} />
       ))}
-      <div ref={endRef} />
     </div>
   );
 }

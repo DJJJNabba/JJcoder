@@ -58,7 +58,9 @@ export function PreviewPane(props: PreviewPaneProps) {
               <ExternalLinkIcon size={13} />
             </button>
           </div>
-          <iframe className="preview-frame" src={props.website.preview.url} title={`${props.website.name} preview`} />
+          <div className="preview-viewport">
+            <iframe className="preview-frame" src={props.website.preview.url} title={`${props.website.name} preview`} />
+          </div>
         </>
       ) : (
         <div className="preview-placeholder">
