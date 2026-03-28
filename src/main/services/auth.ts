@@ -1,3 +1,4 @@
+import { shell } from "electron";
 import type { AuthSource, AuthState, ProviderLoginKind } from "@shared/types";
 import type { CredentialVault } from "./credentials";
 import { launchCommandInTerminal, runCommand } from "./utils";
@@ -15,6 +16,10 @@ function readEnvValue(keys: string[]): string | null {
 async function commandSucceeds(command: string): Promise<boolean> {
   const result = await runCommand(command, process.cwd());
   return result.exitCode === 0;
+}
+
+async function isCommandAvailable(command: string): Promise<boolean> {
+  return await commandSucceeds(command);
 }
 
 async function resolveGitHubSource(vault: CredentialVault): Promise<{
@@ -134,9 +139,19 @@ export async function getVercelToken(vault: CredentialVault): Promise<string | n
 export async function launchProviderLogin(provider: ProviderLoginKind): Promise<void> {
   const cwd = process.cwd();
   if (provider === "github") {
-    await launchCommandInTerminal("gh auth login --web", cwd);
+    if (await isCommandAvailable("gh --version")) {
+      await launchCommandInTerminal("gh auth login --web", cwd);
+      return;
+    }
+
+    await shell.openExternal("https://github.com/settings/tokens");
     return;
   }
 
-  await launchCommandInTerminal("npx --yes vercel login --github", cwd);
+  if (await isCommandAvailable("vercel --version")) {
+    await launchCommandInTerminal("vercel login", cwd);
+    return;
+  }
+
+  await shell.openExternal("https://vercel.com/account/tokens");
 }

@@ -1288,7 +1288,7 @@ export function App() {
                     {snapshot.auth.githubConfigured ? describeSource(snapshot.auth.githubSource) : "optional"}
                   </span>
                 </div>
-                <p>JJcoder can publish without a pasted token when GitHub CLI is already logged in. If not, launch the browser login once and come back here.</p>
+                <p>JJcoder can reuse an existing GitHub CLI login when `gh` is installed. Otherwise, the connect button opens the GitHub token page so the user can create a token and paste it here.</p>
                 <div className="setup-meta">
                   <span>CLI installed: {snapshot.auth.githubCliInstalled ? "Yes" : "No"}</span>
                 </div>
@@ -1303,7 +1303,7 @@ export function App() {
                 </label>
                 <div className="setup-actions">
                   <button type="button" className="primary-button" onClick={() => void launchProviderLogin("github")}>
-                    Connect GitHub
+                    Open GitHub setup
                   </button>
                   <button type="button" className="toolbar-chip" onClick={() => void saveTokens()}>
                     Save token
@@ -1324,7 +1324,7 @@ export function App() {
                     {snapshot.auth.vercelConfigured ? describeSource(snapshot.auth.vercelSource) : "optional"}
                   </span>
                 </div>
-                <p>Use a stored token, `VERCEL_TOKEN`, or a Vercel CLI login. The connect button opens a terminal and starts the browser-based login flow automatically.</p>
+                <p>Use a stored token, `VERCEL_TOKEN`, or an existing Vercel CLI login. If the CLI is not installed, the connect button opens the Vercel token page so the user can paste a token here instead.</p>
                 <div className="setup-meta">
                   <span>CLI installed: {snapshot.auth.vercelCliInstalled ? "Yes" : "No, login can use npx"}</span>
                 </div>
@@ -1339,7 +1339,7 @@ export function App() {
                 </label>
                 <div className="setup-actions">
                   <button type="button" className="primary-button" onClick={() => void launchProviderLogin("vercel")}>
-                    Connect Vercel
+                    Open Vercel setup
                   </button>
                   <button type="button" className="toolbar-chip" onClick={() => void saveTokens()}>
                     Save token
@@ -1669,11 +1669,11 @@ export function App() {
             <div className="settings-actions">
               <button type="button" className="toolbar-chip" onClick={() => void launchProviderLogin("github")}>
                 <SparklesIcon size={13} />
-                GitHub browser login
+                GitHub setup
               </button>
               <button type="button" className="toolbar-chip" onClick={() => void launchProviderLogin("vercel")}>
                 <SparklesIcon size={13} />
-                Vercel browser login
+                Vercel setup
               </button>
               <button type="button" className="toolbar-chip" onClick={() => void refreshConnections(true)}>
                 Refresh connections
@@ -1681,7 +1681,7 @@ export function App() {
             </div>
             <div className="settings-note">
               <p>Encryption: {snapshot.auth.encryptionAvailable ? "Available" : "Unavailable"}</p>
-              <small>Secrets stay local. When possible, JJcoder also reuses existing CLI logins and environment variables automatically.</small>
+              <small>Secrets stay local. JJcoder reuses existing CLI logins when available, otherwise users can create tokens in the browser and save them here.</small>
             </div>
             <footer className="dialog-actions">
               <button type="button" className="toolbar-chip" onClick={() => setShowSettings(false)}>
