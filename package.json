@@ -26,6 +26,7 @@
   "license": "MIT",
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.2.8",
+    "@formkit/auto-animate": "^0.9.0",
     "@octokit/rest": "^22.0.1",
     "@openrouter/sdk": "^0.10.2",
     "@vercel/sdk": "^1.19.11",

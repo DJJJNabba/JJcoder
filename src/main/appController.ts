@@ -6,17 +6,25 @@ import type {
   AppEventMap,
   AppSnapshot,
   AuthState,
+  Conversation,
+  CreateConversationInput,
   CreateWebsiteInput,
   DeployWebsiteInput,
   DispatchRunInput,
   RunEvent,
   AgentRun,
+  PendingUserInputQuestion,
+  PendingUserInputRequest,
   PublishRepoInput,
+  ReorderConversationsInput,
+  ReorderItemsInput,
+  ProposedPlan,
+  RespondUserInputInput,
   SaveSecretInput,
   UpdateSettingsInput,
   Website
 } from "@shared/types";
-import { executeWebsiteAgentRun } from "./services/agent";
+import { executeWebsiteRun } from "./services/agent";
 import { getGitHubToken, getOpenRouterApiKey, getVercelToken, launchProviderLogin, resolveAuthState } from "./services/auth";
 import { CredentialVault } from "./services/credentials";
 import { initGitRepository, publishGitHubRepository, publishGitHubRepositoryWithCli, readGitState } from "./services/git";
@@ -45,9 +53,11 @@ export class AppController {
   private state: PersistedState = {
     settings: {
       selectedWebsiteId: null,
-      selectedRunId: null,
+      selectedConversationId: null,
       preferredModelId: "openrouter/auto",
-      agentMode: "squad",
+      interactionMode: "chat",
+      projectSortMode: "recent",
+      conversationSortMode: "recent",
       ideCommand: "code",
       websitesRoot: null,
       vercelTeamId: "",
@@ -55,10 +65,22 @@ export class AppController {
       onboardingCompletedAt: null
     },
     websites: [],
+    conversations: [],
     runs: [],
+    proposedPlans: [],
+    pendingUserInputs: [],
     models: [],
     modelsFetchedAt: null
   };
+  private readonly runAbortControllers = new Map<string, AbortController>();
+  private readonly pendingUserInputResolvers = new Map<
+    string,
+    {
+      runId: string;
+      resolve: (answers: Record<string, string>) => void;
+      reject: (error: Error) => void;
+    }
+  >();
 
   constructor(
     dataDirectory: string,
@@ -103,7 +125,10 @@ export class AppController {
       models: this.state.models,
       modelsFetchedAt: this.state.modelsFetchedAt,
       websites: this.state.websites,
-      runs: this.state.runs
+      conversations: this.state.conversations,
+      runs: this.state.runs,
+      proposedPlans: this.state.proposedPlans,
+      pendingUserInputs: this.state.pendingUserInputs
     };
   }
 
@@ -175,6 +200,7 @@ export class AppController {
         target: null,
         lastDeployedAt: null
       },
+      conversationIds: [],
       runIds: []
     };
 
@@ -183,7 +209,7 @@ export class AppController {
       settings: {
         ...this.state.settings,
         selectedWebsiteId: website.id,
-        selectedRunId: null
+        selectedConversationId: null
       },
       websites: [website, ...this.state.websites]
     };
@@ -198,15 +224,17 @@ export class AppController {
     this.state = {
       ...this.state,
       websites: this.state.websites.filter((website) => website.id !== websiteId),
+      conversations: this.state.conversations.filter((conversation) => conversation.websiteId !== websiteId),
       runs: this.state.runs.filter((run) => run.websiteId !== websiteId),
       settings: {
         ...this.state.settings,
         selectedWebsiteId:
           this.state.settings.selectedWebsiteId === websiteId ? null : this.state.settings.selectedWebsiteId,
-        selectedRunId:
-          this.state.runs.find((run) => run.id === this.state.settings.selectedRunId)?.websiteId === websiteId
+        selectedConversationId:
+          this.state.conversations.find((conversation) => conversation.id === this.state.settings.selectedConversationId)
+            ?.websiteId === websiteId
             ? null
-            : this.state.settings.selectedRunId
+            : this.state.settings.selectedConversationId
       }
     };
     await this.persist();
@@ -244,6 +272,120 @@ export class AppController {
       }
     };
     await this.persist();
+    const snapshot = await this.getSnapshot();
+    this.emit("snapshot", snapshot);
+    return snapshot;
+  }
+
+  async createConversation(input: CreateConversationInput): Promise<AppSnapshot> {
+    const website = this.requireWebsite(input.websiteId);
+    const now = new Date().toISOString();
+    const conversation: Conversation = {
+      id: nanoid(),
+      websiteId: website.id,
+      title: input.title?.trim() || "New chat",
+      createdAt: now,
+      updatedAt: now,
+      runIds: []
+    };
+
+    this.state = {
+      ...this.state,
+      settings: {
+        ...this.state.settings,
+        selectedWebsiteId: website.id,
+        selectedConversationId: conversation.id,
+        conversationSortMode: "manual"
+      },
+      websites: this.state.websites.map((candidate) =>
+        candidate.id === website.id
+          ? {
+              ...candidate,
+              conversationIds: [conversation.id, ...candidate.conversationIds],
+              updatedAt: now
+            }
+          : candidate
+      ),
+      conversations: [conversation, ...this.state.conversations]
+    };
+    await this.persist();
+    const snapshot = await this.getSnapshot();
+    this.emit("snapshot", snapshot);
+    return snapshot;
+  }
+
+  async reorderWebsites(input: ReorderItemsInput): Promise<AppSnapshot> {
+    const orderedIds = input.orderedIds;
+    const ordered = orderedIds
+      .map((id) => this.state.websites.find((website) => website.id === id))
+      .filter((website): website is Website => Boolean(website));
+    const remaining = this.state.websites.filter((website) => !orderedIds.includes(website.id));
+
+    this.state = {
+      ...this.state,
+      settings: {
+        ...this.state.settings,
+        projectSortMode: "manual"
+      },
+      websites: [...ordered, ...remaining]
+    };
+    await this.persist();
+    const snapshot = await this.getSnapshot();
+    this.emit("snapshot", snapshot);
+    return snapshot;
+  }
+
+  async reorderConversations(input: ReorderConversationsInput): Promise<AppSnapshot> {
+    const website = this.requireWebsite(input.websiteId);
+    const orderedIds = input.orderedIds;
+    const scopedConversations = this.state.conversations.filter((conversation) => conversation.websiteId === website.id);
+    const ordered = orderedIds
+      .map((id) => scopedConversations.find((conversation) => conversation.id === id))
+      .filter((conversation): conversation is Conversation => Boolean(conversation));
+    const remaining = scopedConversations.filter((conversation) => !orderedIds.includes(conversation.id));
+    const nextScoped = [...ordered, ...remaining];
+
+    this.state = {
+      ...this.state,
+      settings: {
+        ...this.state.settings,
+        conversationSortMode: "manual",
+        selectedWebsiteId: website.id
+      },
+      websites: this.state.websites.map((candidate) =>
+        candidate.id === website.id
+          ? {
+              ...candidate,
+              conversationIds: nextScoped.map((conversation) => conversation.id)
+            }
+          : candidate
+      ),
+      conversations: [
+        ...nextScoped,
+        ...this.state.conversations.filter((conversation) => conversation.websiteId !== website.id)
+      ]
+    };
+    await this.persist();
+    const snapshot = await this.getSnapshot();
+    this.emit("snapshot", snapshot);
+    return snapshot;
+  }
+
+  async respondUserInput(input: RespondUserInputInput): Promise<AppSnapshot> {
+    const pendingRequest = this.state.pendingUserInputs.find(
+      (candidate) => candidate.id === input.requestId && candidate.status === "pending"
+    );
+    if (!pendingRequest) {
+      throw new Error("Pending user input request not found.");
+    }
+
+    await this.resolvePendingUserInput(input.requestId, input.answers, new Date().toISOString());
+    const resolver = this.pendingUserInputResolvers.get(input.requestId);
+    if (resolver) {
+      this.pendingUserInputResolvers.delete(input.requestId);
+      resolver.resolve(input.answers);
+    }
+
     const snapshot = await this.getSnapshot();
     this.emit("snapshot", snapshot);
     return snapshot;
@@ -357,17 +499,37 @@ export class AppController {
       throw new Error("Add an OpenRouter API key in Settings before dispatching an agent.");
     }
 
+    const now = new Date().toISOString();
+    let conversation = input.conversationId ? this.state.conversations.find((candidate) => candidate.id === input.conversationId) : null;
+    if (conversation && conversation.websiteId !== website.id) {
+      throw new Error("Conversation does not belong to the selected project.");
+    }
+    if (!conversation) {
+      conversation = {
+        id: nanoid(),
+        websiteId: website.id,
+        title: this.deriveConversationTitle(input.prompt),
+        createdAt: now,
+        updatedAt: now,
+        runIds: []
+      };
+    }
+
     const run: AgentRun = {
       id: nanoid(),
       websiteId: website.id,
+      conversationId: conversation.id,
       title: input.prompt.slice(0, 72) || "New build run",
       prompt: input.prompt,
       modelId: input.modelId || this.state.settings.preferredModelId,
-      mode: input.mode || this.state.settings.agentMode,
+      interactionMode: input.interactionMode || this.state.settings.interactionMode,
       status: "queued",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
       summary: null,
+      sourcePlanId: input.sourcePlanId ?? null,
+      awaitingUserInput: false,
+      pendingUserInputRequestId: null,
       events: []
     };
 
@@ -376,17 +538,39 @@ export class AppController {
       settings: {
         ...this.state.settings,
         selectedWebsiteId: website.id,
-        selectedRunId: run.id
+        selectedConversationId: conversation.id
       },
       websites: this.state.websites.map((candidate) =>
         candidate.id === website.id
           ? {
               ...candidate,
+              conversationIds: candidate.conversationIds.includes(conversation.id)
+                ? candidate.conversationIds
+                : [conversation.id, ...candidate.conversationIds],
               runIds: [run.id, ...candidate.runIds],
-              updatedAt: new Date().toISOString()
+              updatedAt: now
             }
           : candidate
       ),
+      conversations: this.state.conversations.some((candidate) => candidate.id === conversation.id)
+        ? this.state.conversations.map((candidate) =>
+            candidate.id === conversation!.id
+              ? {
+                  ...candidate,
+                  title: candidate.runIds.length === 0 ? this.deriveConversationTitle(input.prompt) : candidate.title,
+                  runIds: [...candidate.runIds, run.id],
+                  updatedAt: now
+                }
+              : candidate
+          )
+        : [
+            {
+              ...conversation,
+              runIds: [run.id],
+              updatedAt: now
+            },
+            ...this.state.conversations
+          ],
       runs: [run, ...this.state.runs]
     };
     await this.persist();
@@ -394,24 +578,69 @@ export class AppController {
     this.emit("snapshot", snapshot);
     this.emit("run-updated", run);
 
-    void this.executeRun(run.id, apiKey).catch((error) => {
+    const abortController = new AbortController();
+    this.runAbortControllers.set(run.id, abortController);
+
+    void this.executeRun(run.id, apiKey, abortController.signal).catch((error) => {
+      if (abortController.signal.aborted) return;
       void this.failRun(run.id, error instanceof Error ? error.message : String(error));
+    }).finally(() => {
+      this.runAbortControllers.delete(run.id);
     });
 
     return snapshot;
   }
 
-  private async executeRun(runId: string, apiKey: string): Promise<void> {
+  async cancelRun(runId: string): Promise<AppSnapshot> {
+    const abortController = this.runAbortControllers.get(runId);
+    if (abortController) {
+      abortController.abort();
+      this.runAbortControllers.delete(runId);
+    }
+    // Reject any pending user input for this run
+    const run = this.state.runs.find((r) => r.id === runId);
+    if (run?.pendingUserInputRequestId) {
+      const resolver = this.pendingUserInputResolvers.get(run.pendingUserInputRequestId);
+      if (resolver) {
+        this.pendingUserInputResolvers.delete(run.pendingUserInputRequestId);
+        resolver.reject(new Error("Run cancelled"));
+      }
+    }
+    await this.updateRun(runId, {
+      status: "cancelled",
+      awaitingUserInput: false,
+      pendingUserInputRequestId: null
+    });
+    await this.appendRunEvent(runId, {
+      id: `cancel-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      agent: "system",
+      type: "status",
+      title: "Run cancelled by user",
+      content: ""
+    });
+    return await this.getSnapshot();
+  }
+
+  private async executeRun(runId: string, apiKey: string, _signal: AbortSignal): Promise<void> {
     await this.updateRun(runId, { status: "running" });
     const run = this.requireRun(runId);
     const website = this.requireWebsite(run.websiteId);
+    const conversation = this.requireConversation(run.conversationId);
+    const priorRuns = conversation.runIds
+      .filter((candidateId) => candidateId !== run.id)
+      .map((candidateId) => this.state.runs.find((candidate) => candidate.id === candidateId))
+      .filter((candidate): candidate is AgentRun => Boolean(candidate))
+      .sort((left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime());
 
-    const summary = await executeWebsiteAgentRun({
+    const summary = await executeWebsiteRun({
       apiKey,
       website,
+      conversationHistory: this.buildConversationHistory(priorRuns),
       prompt: run.prompt,
       modelId: run.modelId,
-      mode: run.mode,
+      interactionMode: run.interactionMode,
+      sourcePlanId: run.sourcePlanId,
       callbacks: {
         appendEvent: async (event) => {
           const nextEvent: RunEvent = {
@@ -433,17 +662,63 @@ export class AppController {
         },
         startPreview: async () => {
           await this.previewManager.startPreview(website);
+        },
+        savePlan: async ({ title, planMarkdown }) => {
+          const now = new Date().toISOString();
+          const plan: ProposedPlan = {
+            id: nanoid(),
+            runId,
+            websiteId: website.id,
+            title,
+            planMarkdown,
+            createdAt: now,
+            updatedAt: now,
+            implementedAt: null,
+            implementationRunId: null,
+            status: "proposed"
+          };
+          await this.upsertProposedPlan(plan);
+          await this.appendRunEvent(runId, {
+            id: nanoid(),
+            createdAt: now,
+            agent: "builder",
+            type: "plan",
+            title,
+            content: planMarkdown,
+            metadata: {
+              presentation: "plan",
+              planId: plan.id
+            }
+          });
+          return plan;
+        },
+        requestUserInput: async ({ questions }) => {
+          return await this.requestUserInput(runId, website.id, questions);
         }
       }
     });
 
+    if (run.sourcePlanId) {
+      await this.markPlanImplemented(run.sourcePlanId, runId, new Date().toISOString());
+    }
+
     await this.updateRun(runId, {
       status: "completed",
+      awaitingUserInput: false,
+      pendingUserInputRequestId: null,
       summary
     });
   }
 
   private async failRun(runId: string, message: string): Promise<void> {
+    const pendingRequestId = this.requireRun(runId).pendingUserInputRequestId;
+    if (pendingRequestId) {
+      const resolver = this.pendingUserInputResolvers.get(pendingRequestId);
+      if (resolver) {
+        this.pendingUserInputResolvers.delete(pendingRequestId);
+        resolver.reject(new Error(message));
+      }
+    }
     await this.appendRunEvent(runId, {
       id: nanoid(),
       createdAt: new Date().toISOString(),
@@ -453,20 +728,32 @@ export class AppController {
       content: message
     });
     await this.updateRun(runId, {
-      status: "failed"
+      status: "failed",
+      awaitingUserInput: false,
+      pendingUserInputRequestId: null
     });
   }
 
   private async appendRunEvent(runId: string, event: RunEvent): Promise<void> {
+    const run = this.requireRun(runId);
+    const nextUpdatedAt = new Date().toISOString();
     const streamKey = typeof event.metadata?.streamKey === "string" ? event.metadata.streamKey : null;
     const replaceExisting = event.metadata?.replace === true && Boolean(streamKey);
     this.state = {
       ...this.state,
+      conversations: this.state.conversations.map((candidate) =>
+        candidate.id === run.conversationId
+          ? {
+              ...candidate,
+              updatedAt: nextUpdatedAt
+            }
+          : candidate
+      ),
       runs: this.state.runs.map((run) =>
         run.id === runId
           ? {
               ...run,
-              updatedAt: new Date().toISOString(),
+              updatedAt: nextUpdatedAt,
               events: replaceExisting ? this.upsertRunEvent(run.events, event, streamKey!) : [...run.events, event]
             }
           : run
@@ -474,6 +761,135 @@ export class AppController {
     };
     await this.persist();
     this.emit("run-updated", this.requireRun(runId));
+  }
+
+  private async upsertProposedPlan(plan: ProposedPlan): Promise<void> {
+    const existingIndex = this.state.proposedPlans.findIndex((candidate) => candidate.id === plan.id);
+    this.state = {
+      ...this.state,
+      proposedPlans:
+        existingIndex < 0
+          ? [plan, ...this.state.proposedPlans]
+          : this.state.proposedPlans.map((candidate, index) => (index === existingIndex ? plan : candidate))
+    };
+    await this.persist();
+    this.emit("snapshot", await this.getSnapshot());
+  }
+
+  private async markPlanImplemented(planId: string, implementationRunId: string, implementedAt: string): Promise<void> {
+    const nextPlans = this.state.proposedPlans.map((candidate) =>
+      candidate.id === planId
+        ? {
+            ...candidate,
+            status: "implemented" as const,
+            implementedAt,
+            implementationRunId,
+            updatedAt: implementedAt
+          }
+        : candidate
+    );
+    this.state = {
+      ...this.state,
+      proposedPlans: nextPlans
+    };
+    await this.persist();
+    this.emit("snapshot", await this.getSnapshot());
+  }
+
+  private async requestUserInput(
+    runId: string,
+    websiteId: string,
+    questions: PendingUserInputQuestion[]
+  ): Promise<Record<string, string>> {
+    const now = new Date().toISOString();
+    const requestId = nanoid();
+    const pendingRequest: PendingUserInputRequest = {
+      id: requestId,
+      runId,
+      websiteId,
+      createdAt: now,
+      questions,
+      answers: null,
+      resolvedAt: null,
+      status: "pending"
+    };
+
+    await this.openPendingUserInput(pendingRequest);
+    await this.appendRunEvent(runId, {
+      id: nanoid(),
+      createdAt: now,
+      agent: "builder",
+      type: "user_input",
+      title: questions[0]?.header || "User input required",
+      content: questions[0]?.question || "The agent is waiting for your answer.",
+      metadata: {
+        presentation: "user_input",
+        requestId
+      }
+    });
+
+    await this.updateRun(runId, {
+      awaitingUserInput: true,
+      pendingUserInputRequestId: requestId
+    });
+
+    return await new Promise<Record<string, string>>((resolve, reject) => {
+      this.pendingUserInputResolvers.set(requestId, {
+        runId,
+        resolve: async (answers) => {
+          await this.appendRunEvent(runId, {
+            id: nanoid(),
+            createdAt: new Date().toISOString(),
+            agent: "system",
+            type: "user_input",
+            title: "Answered user input",
+            content: Object.entries(answers)
+              .map(([key, value]) => `${key}: ${value}`)
+              .join("\n"),
+            metadata: {
+              presentation: "user_input",
+              requestId
+            }
+          });
+          await this.updateRun(runId, {
+            awaitingUserInput: false,
+            pendingUserInputRequestId: null
+          });
+          resolve(answers);
+        },
+        reject
+      });
+    });
+  }
+
+  private async openPendingUserInput(request: PendingUserInputRequest): Promise<void> {
+    this.state = {
+      ...this.state,
+      pendingUserInputs: [request, ...this.state.pendingUserInputs.filter((candidate) => candidate.id !== request.id)]
+    };
+    await this.persist();
+    this.emit("snapshot", await this.getSnapshot());
+  }
+
+  private async resolvePendingUserInput(
+    requestId: string,
+    answers: Record<string, string>,
+    resolvedAt: string
+  ): Promise<void> {
+    this.state = {
+      ...this.state,
+      pendingUserInputs: this.state.pendingUserInputs.map((candidate) =>
+        candidate.id === requestId
+          ? {
+              ...candidate,
+              answers,
+              resolvedAt,
+              status: "resolved"
+            }
+          : candidate
+      )
+    };
+    await this.persist();
   }
 
   private upsertRunEvent(events: RunEvent[], event: RunEvent, streamKey: string): RunEvent[] {
@@ -488,14 +904,24 @@ export class AppController {
   }
 
   private async updateRun(runId: string, patch: Partial<AgentRun>): Promise<void> {
+    const existingRun = this.requireRun(runId);
+    const nextUpdatedAt = new Date().toISOString();
     this.state = {
       ...this.state,
+      conversations: this.state.conversations.map((conversation) =>
+        conversation.id === existingRun.conversationId
+          ? {
+              ...conversation,
+              updatedAt: nextUpdatedAt
+            }
+          : conversation
+      ),
       runs: this.state.runs.map((run) =>
         run.id === runId
           ? {
               ...run,
               ...patch,
-              updatedAt: new Date().toISOString()
+              updatedAt: nextUpdatedAt
             }
           : run
       )
@@ -503,6 +929,39 @@ export class AppController {
     await this.persist();
     this.emit("run-updated", this.requireRun(runId));
     this.emit("snapshot", await this.getSnapshot());
+  }
+
+  private deriveConversationTitle(prompt: string): string {
+    const normalized = prompt.replace(/\s+/g, " ").trim();
+    return normalized.slice(0, 56) || "New chat";
+  }
+
+  private buildConversationHistory(runs: AgentRun[]): string {
+    if (runs.length === 0) {
+      return "";
+    }
+
+    return runs
+      .map((run, index) => {
+        const assistantParts = run.events
+          .filter((event) => event.type === "assistant" || event.type === "completion" || event.type === "plan")
+          .map((event) => event.content.trim())
+          .filter(Boolean);
+        const userInputParts = run.events
+          .filter((event) => event.type === "user_input")
+          .map((event) => event.content.trim())
+          .filter(Boolean);
+
+        return [
+          `Turn ${index + 1}:`,
+          `User: ${run.prompt}`,
+          assistantParts.length > 0 ? `Assistant: ${assistantParts.join("\n\n")}` : null,
+          userInputParts.length > 0 ? `Structured input: ${userInputParts.join("\n")}` : null
+        ]
+          .filter(Boolean)
+          .join("\n");
+      })
+      .join("\n\n");
   }
 
   private requireWebsite(websiteId: string): Website {
@@ -519,6 +978,14 @@ export class AppController {
       throw new Error("Run not found.");
     }
     return run;
+  }
+
+  private requireConversation(conversationId: string): Conversation {
+    const conversation = this.state.conversations.find((candidate) => candidate.id === conversationId);
+    if (!conversation) {
+      throw new Error("Conversation not found.");
+    }
+    return conversation;
   }
 
   private async persist(): Promise<void> {

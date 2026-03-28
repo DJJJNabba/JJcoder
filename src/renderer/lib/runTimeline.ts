@@ -5,7 +5,7 @@ export type TimelineTone = "info" | "tool" | "error";
 export interface TimelineActivity {
   id: string;
   tone: TimelineTone;
-  kind: "status" | "assistant" | "tool" | "error";
+  kind: "status" | "assistant" | "tool" | "plan" | "completion" | "user_input" | "error";
   agent: RunEvent["agent"];
   createdAt: string;
   title: string;
@@ -63,6 +63,11 @@ export function deriveTimelineActivities(events: RunEvent[]): TimelineActivity[]
       if (resolvedIndex !== null) {
         const activity = activities[resolvedIndex];
         const summary = summarizeToolResult(activity.toolName ?? "tool", event.content);
+        if ((activity.toolName ?? "tool") === "finish_build") {
+          activity.kind = "completion";
+          activity.tone = "info";
+          activity.tag = "completion";
+        }
         activity.note = summary.note ?? activity.note;
         activity.body = summary.body ?? activity.body;
         activity.rawOutput = event.content;
@@ -78,8 +83,8 @@ export function deriveTimelineActivities(events: RunEvent[]): TimelineActivity[]
       const summary = summarizeToolResult(readMetadata(event, "toolName") ?? "tool", event.content);
       activities.push({
         id: event.id,
-        tone: "tool",
-        kind: "tool",
+        tone: readMetadata(event, "toolName") === "finish_build" ? "info" : "tool",
+        kind: readMetadata(event, "toolName") === "finish_build" ? "completion" : "tool",
         agent: event.agent,
         createdAt: event.createdAt,
         title: summary.title,
@@ -131,6 +136,52 @@ export function deriveTimelineActivities(events: RunEvent[]): TimelineActivity[]
       continue;
     }
 
+    if (event.type === "plan") {
+      activities.push({
+        id: event.id,
+        tone: "info",
+        kind: "plan",
+        agent: event.agent,
+        createdAt: event.createdAt,
+        title: event.title,
+        body: event.content,
+        tag: "plan"
+      });
+      continue;
+    }
+
+    if (event.type === "completion") {
+      activities.push({
+        id: event.id,
+        tone: "info",
+        kind: "completion",
+        agent: event.agent,
+        createdAt: event.createdAt,
+        title: event.title,
+        body: event.content,
+        tag: "completion"
+      });
+      continue;
+    }
+
+    if (event.type === "user_input") {
+      activities.push({
+        id: event.id,
+        tone: "info",
+        kind: "user_input",
+        agent: event.agent,
+        createdAt: event.createdAt,
+        title: event.title,
+        body: event.content,
+        tag: "user_input"
+      });
+      continue;
+    }
+
+    if (event.metadata?.visibility === "debug") {
+      continue;
+    }
+
     activities.push({
       id: event.id,
       tone: "info",
@@ -172,6 +223,10 @@ function findToolActivityIndex(
 
 function isToolCallEvent(event: RunEvent): boolean {
   if (event.type !== "tool") {
+    return false;
+  }
+
+  if ((readMetadata(event, "toolName") ?? event.title) === "finish_build") {
     return false;
   }
 
@@ -230,7 +285,7 @@ function summarizeToolCall(toolName: string, rawInput: string): ToolSummary {
       };
     case "finish_build":
       return {
-        title: "Finished build"
+        title: "Build complete"
       };
     default:
       return {
@@ -304,8 +359,9 @@ function summarizeToolResult(
     case "finish_build": {
       const summary = readString(output, "summary");
       return {
-        title: "Finished build",
-        note: summary ? trimSentence(summary, 140) : "Build marked complete"
+        title: "Build complete",
+        note: summary ? trimSentence(summary, 140) : "Build marked complete",
+        body: summary
       };
     }
     default:

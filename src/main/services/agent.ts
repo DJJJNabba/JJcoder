@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { OpenRouter, hasToolCall, stepCountIs, tool } from "@openrouter/sdk";
 import { z } from "zod";
-import type { AgentMode, RunEvent, Website } from "@shared/types";
+import type { InteractionMode, PendingUserInputQuestion, ProposedPlan, RunEvent, Website } from "@shared/types";
 import {
   buildCommandFor,
   detectPackageManager,
@@ -18,6 +18,8 @@ export interface AgentRuntimeCallbacks {
   appendEvent: (event: Omit<RunEvent, "id" | "createdAt">) => Promise<void>;
   setStatus: (status: string) => Promise<void>;
   startPreview: () => Promise<void>;
+  savePlan: (input: { title: string; planMarkdown: string }) => Promise<ProposedPlan>;
+  requestUserInput: (input: { questions: PendingUserInputQuestion[] }) => Promise<Record<string, string>>;
 }
 
 function stringifyContent(value: unknown): string {
@@ -66,7 +68,10 @@ function createSystemPrompt(workspacePath: string, hasExistingFiles: boolean): s
     "Use tools to inspect, edit, install, build, and preview the site.",
     "Always verify the app with a build command before finishing.",
     "Keep changes inside the workspace root and prefer full-file rewrites when they are simpler than brittle search/replace edits.",
-    "When the task is complete, call finish_build with a concise ship note."
+    "When the task is complete, call finish_build with a concise ship note.",
+    "Keep chat updates short and sparse.",
+    "Do not narrate every obvious step or repeat yourself.",
+    "Prefer tools for observable actions and reserve assistant text for meaningful progress updates."
   ];
 
   if (hasExistingFiles) {
@@ -85,6 +90,27 @@ function createSystemPrompt(workspacePath: string, hasExistingFiles: boolean): s
       "Design and build the entire site based on the user's request. Do not use placeholder or generic template content.",
       "Create a distinctive, polished design that directly addresses what the user asked for."
     );
+  }
+
+  return base.join("\n");
+}
+
+function createPlanPrompt(workspacePath: string, hasExistingFiles: boolean): string {
+  const base = [
+    "You are JJcoder in plan mode.",
+    "You are operating inside a React + Vite website workspace.",
+    `Workspace root: ${workspacePath}`,
+    "You must inspect the codebase and return a concrete implementation plan only.",
+    "Do not modify files. Do not pretend work is done. Do not call mutating tools.",
+    "Return exactly one <proposed_plan> block.",
+    "Inside it, include a title, summary, likely files to change, verification steps, and assumptions.",
+    "Keep it concrete to the current workspace and request. Avoid generic PM boilerplate."
+  ];
+
+  if (hasExistingFiles) {
+    base.push("This workspace already contains source files. Inspect before planning and preserve existing patterns.");
+  } else {
+    base.push("This workspace has little or no source code yet. Plan the initial site structure and files to create.");
   }
 
   return base.join("\n");
@@ -117,38 +143,66 @@ async function readProjectSnapshot(workspacePath: string): Promise<string> {
   ].join("\n");
 }
 
-async function runPlannerPhase(client: OpenRouter, modelId: string, prompt: string, website: Website) {
-  const planner = client.callModel({
-    model: modelId,
-    instructions: [
-      "You are the planning agent for JJcoder.",
-      "Return a concise implementation plan for this website build request.",
-      "Mention likely files, dependencies, visual direction, and how to verify the result."
-    ].join("\n"),
-    input: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "input_text",
-            text: `Website: ${website.name}\nRequest: ${prompt}\n\nCurrent context:\n${await readProjectSnapshot(
-              website.workspacePath
-            )}`
-          }
-        ]
-      }
-    ]
-  });
-
-  return await planner.getText();
+function extractProposedPlanBlock(text: string): string | null {
+  const match = text.match(/<proposed_plan>\s*([\s\S]*?)\s*<\/proposed_plan>/i);
+  const plan = match?.[1]?.trim();
+  return plan ? plan : null;
 }
 
-export async function executeWebsiteAgentRun(options: {
+function derivePlanTitle(planMarkdown: string): string {
+  const heading = planMarkdown.match(/^\s{0,3}#{1,6}\s+(.+)$/m)?.[1]?.trim();
+  return heading && heading.length > 0 ? heading : "Implementation plan";
+}
+
+function buildPlanImplementationPrompt(planMarkdown: string): string {
+  return `PLEASE IMPLEMENT THIS PLAN:\n${planMarkdown.trim()}`;
+}
+
+function normalizePendingUserInputQuestions(
+  questions: Array<{
+    header: string;
+    id: string;
+    question: string;
+    options: Array<{ label: string; description: string }>;
+    allowFreeform?: boolean;
+  }>
+): PendingUserInputQuestion[] {
+  return questions.map((question) => ({
+    id: question.id,
+    header: question.header,
+    question: question.question,
+    options: question.options.map((option) => ({
+      label: option.label,
+      description: option.description
+    })),
+    allowFreeform: question.allowFreeform ?? true
+  }));
+}
+
+export async function executeWebsiteRun(options: {
   apiKey: string;
   website: Website;
+  conversationHistory: string;
   prompt: string;
   modelId: string;
-  mode: AgentMode;
+  interactionMode: InteractionMode;
+  sourcePlanId: string | null;
+  callbacks: AgentRuntimeCallbacks;
+}): Promise<string> {
+  if (options.interactionMode === "plan") {
+    return await executeWebsitePlanRun(options);
+  }
+  return await executeWebsiteChatRun(options);
+}
+
+async function executeWebsiteChatRun(options: {
+  apiKey: string;
+  website: Website;
+  conversationHistory: string;
+  prompt: string;
+  modelId: string;
+  interactionMode: InteractionMode;
+  sourcePlanId: string | null;
   callbacks: AgentRuntimeCallbacks;
 }): Promise<string> {
   const client = new OpenRouter({
@@ -156,19 +210,7 @@ export async function executeWebsiteAgentRun(options: {
   });
 
   let finalSummary = "";
-  const plannerOutput =
-    options.mode === "squad"
-      ? await runPlannerPhase(client, options.modelId, options.prompt, options.website)
-      : null;
-
-  if (plannerOutput) {
-    await options.callbacks.appendEvent({
-      agent: "planner",
-      type: "assistant",
-      title: "Planner brief",
-      content: plannerOutput
-    });
-  }
+  const plannerOutput = null;
 
   const workspacePath = options.website.workspacePath;
   const buildCommand = buildCommandFor(detectPackageManager(workspacePath));
@@ -300,6 +342,7 @@ export async function executeWebsiteAgentRun(options: {
             type: "input_text",
             text: [
               plannerOutput ? `Planner brief:\n${plannerOutput}\n` : "",
+              options.conversationHistory ? `Previous conversation turns:\n${options.conversationHistory}\n` : "",
               `User request:\n${options.prompt}\n`,
               `Project snapshot:\n${buildContext}\n`,
               `Required verification command: ${buildCommand}`
@@ -315,6 +358,37 @@ export async function executeWebsiteAgentRun(options: {
       deleteFileTool,
       runCommandTool,
       startPreviewTool,
+      tool({
+        name: "request_user_input",
+        description:
+          "Pause and ask the user 1-3 structured questions when a real product decision is required.",
+        inputSchema: z.object({
+          questions: z
+            .array(
+              z.object({
+                header: z.string(),
+                id: z.string(),
+                question: z.string(),
+                options: z.array(
+                  z.object({
+                    label: z.string(),
+                    description: z.string()
+                  })
+                ),
+                allowFreeform: z.boolean().optional()
+              })
+            )
+            .min(1)
+            .max(3)
+        }),
+        execute: async ({ questions }) => {
+          const normalizedQuestions = normalizePendingUserInputQuestions(questions);
+          const answers = await options.callbacks.requestUserInput({
+            questions: normalizedQuestions
+          });
+          return { answers };
+        }
+      }),
       finishTool
     ],
     stopWhen: [stepCountIs(20), hasToolCall("finish_build")]
@@ -396,38 +470,125 @@ export async function executeWebsiteAgentRun(options: {
     });
   }
 
-  if (options.mode === "squad") {
-    await options.callbacks.setStatus("Dispatching reviewer agent.");
-    const reviewResult = client.callModel({
-      model: options.modelId,
-      instructions: [
-        "You are the review agent for JJcoder.",
-        "Write a concise release note for the completed website build.",
-        "Focus on outcome, verification, and anything the user should inspect next."
-      ].join("\n"),
-      input: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "input_text",
-              text: `Original request:\n${options.prompt}\n\nBuilder summary:\n${finalSummary || builderText}`
-            }
-          ]
+  await options.callbacks.startPreview().catch(() => undefined);
+  return finalSummary || builderText.trim() || "Website build complete.";
+}
+
+async function executeWebsitePlanRun(options: {
+  apiKey: string;
+  website: Website;
+  conversationHistory: string;
+  prompt: string;
+  modelId: string;
+  interactionMode: InteractionMode;
+  sourcePlanId: string | null;
+  callbacks: AgentRuntimeCallbacks;
+}): Promise<string> {
+  const client = new OpenRouter({
+    apiKey: options.apiKey
+  });
+  const workspacePath = options.website.workspacePath;
+  const hasExistingFiles = await hasSourceFiles(workspacePath);
+  const buildContext = await readProjectSnapshot(workspacePath);
+
+  const builderResult = client.callModel({
+    model: options.modelId,
+    instructions: createPlanPrompt(workspacePath, hasExistingFiles),
+    input: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "input_text",
+            text: [
+              options.conversationHistory ? `Previous conversation turns:\n${options.conversationHistory}\n` : "",
+              `User request:\n${options.prompt}\n`,
+              `Project snapshot:\n${buildContext}\n`
+            ].join("\n")
+          }
+        ]
+      }
+    ],
+    tools: [
+      tool({
+        name: "list_files",
+        description: "List files inside the website workspace.",
+        inputSchema: z.object({
+          path: z.string().optional().describe("Relative path inside the workspace.")
+        }),
+        execute: async ({ path: relativePath }) => {
+          const safeRelative = relativePath ? relativeToWorkspace(workspacePath, relativePath) : "";
+          const files = await listFilesRecursive(workspacePath, safeRelative);
+          return {
+            files: files.slice(0, 400),
+            total: files.length
+          };
         }
-      ]
-    });
-    const reviewText = await reviewResult.getText();
-    if (reviewText.trim()) {
+      }),
+      tool({
+        name: "read_file",
+        description: "Read a text file from the website workspace.",
+        inputSchema: z.object({
+          path: z.string().describe("Relative path to the file.")
+        }),
+        execute: async ({ path: targetPath }) => {
+          const filePath = resolveWithinWorkspace(workspacePath, targetPath);
+          const contents = await readTextFileSafe(filePath);
+          return {
+            path: targetPath,
+            content: contents.slice(0, 20000)
+          };
+        }
+      })
+    ],
+    stopWhen: [stepCountIs(12)]
+  });
+
+  const toolNamesByCallId = new Map<string, string>();
+  for await (const event of builderResult.getFullResponsesStream()) {
+    if (event.type === "response.function_call_arguments.done") {
+      toolNamesByCallId.set(event.itemId, event.name);
       await options.callbacks.appendEvent({
-        agent: "reviewer",
-        type: "assistant",
-        title: "Reviewer note",
-        content: reviewText.trim()
+        agent: "builder",
+        type: "tool",
+        title: event.name,
+        content: parseOrStringifyArguments(event.arguments),
+        metadata: {
+          toolName: event.name,
+          toolPhase: "call",
+          toolCallId: event.itemId
+        }
+      });
+      continue;
+    }
+
+    if (event.type === "tool.result") {
+      await options.callbacks.appendEvent({
+        agent: "builder",
+        type: "tool",
+        title: "Tool result",
+        content: stringifyContent(event.result),
+        metadata: {
+          toolName: toolNamesByCallId.get(event.toolCallId) ?? null,
+          toolPhase: "result",
+          toolCallId: event.toolCallId
+        }
       });
     }
   }
 
-  await options.callbacks.startPreview().catch(() => undefined);
-  return finalSummary || builderText.trim() || "Website build complete.";
+  const text = (await builderResult.getText()).trim();
+  const planMarkdown = extractProposedPlanBlock(text);
+  if (!planMarkdown) {
+    throw new Error("Plan mode requires a valid <proposed_plan>...</proposed_plan> block.");
+  }
+
+  const title = derivePlanTitle(planMarkdown);
+  await options.callbacks.savePlan({
+    title,
+    planMarkdown
+  });
+  return title;
 }
+
+export { buildPlanImplementationPrompt, derivePlanTitle, extractProposedPlanBlock };

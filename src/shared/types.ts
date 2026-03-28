@@ -1,6 +1,7 @@
 export type ProviderKind = "openrouter";
 
-export type AgentMode = "solo" | "squad";
+export type InteractionMode = "chat" | "plan";
+export type SortMode = "recent" | "name" | "manual";
 
 export type DeploymentTarget = "preview" | "production";
 
@@ -12,7 +13,15 @@ export type PreviewStatus = "stopped" | "starting" | "running" | "error";
 
 export type RunStatus = "idle" | "queued" | "running" | "completed" | "failed" | "cancelled";
 
-export type RunEventType = "status" | "assistant" | "assistant_delta" | "tool" | "error";
+export type RunEventType =
+  | "status"
+  | "assistant"
+  | "assistant_delta"
+  | "tool"
+  | "plan"
+  | "completion"
+  | "user_input"
+  | "error";
 
 export interface ProviderModel {
   id: string;
@@ -66,7 +75,52 @@ export interface Website {
   preview: PreviewState;
   github: GitHubState;
   vercel: VercelState;
+  conversationIds: string[];
   runIds: string[];
+}
+
+export interface Conversation {
+  id: string;
+  websiteId: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  runIds: string[];
+}
+
+export interface ProposedPlan {
+  id: string;
+  runId: string;
+  websiteId: string;
+  title: string;
+  planMarkdown: string;
+  createdAt: string;
+  updatedAt: string;
+  implementedAt: string | null;
+  implementationRunId: string | null;
+  status: "proposed" | "implemented" | "superseded";
+}
+
+export interface PendingUserInputQuestion {
+  id: string;
+  header: string;
+  question: string;
+  options: Array<{
+    label: string;
+    description: string;
+  }>;
+  allowFreeform: boolean;
+}
+
+export interface PendingUserInputRequest {
+  id: string;
+  runId: string;
+  websiteId: string;
+  createdAt: string;
+  questions: PendingUserInputQuestion[];
+  answers: Record<string, string> | null;
+  resolvedAt: string | null;
+  status: "pending" | "resolved";
 }
 
 export interface RunEvent {
@@ -82,14 +136,18 @@ export interface RunEvent {
 export interface AgentRun {
   id: string;
   websiteId: string;
+  conversationId: string;
   title: string;
   prompt: string;
   modelId: string;
-  mode: AgentMode;
+  interactionMode: InteractionMode;
   status: RunStatus;
   createdAt: string;
   updatedAt: string;
   summary: string | null;
+  sourcePlanId: string | null;
+  awaitingUserInput: boolean;
+  pendingUserInputRequestId: string | null;
   events: RunEvent[];
 }
 
@@ -107,9 +165,11 @@ export interface AuthState {
 
 export interface AppSettings {
   selectedWebsiteId: string | null;
-  selectedRunId: string | null;
+  selectedConversationId: string | null;
   preferredModelId: string;
-  agentMode: AgentMode;
+  interactionMode: InteractionMode;
+  projectSortMode: SortMode;
+  conversationSortMode: SortMode;
   ideCommand: string;
   websitesRoot: string | null;
   vercelTeamId: string;
@@ -125,7 +185,10 @@ export interface AppSnapshot {
   models: ProviderModel[];
   modelsFetchedAt: string | null;
   websites: Website[];
+  conversations: Conversation[];
   runs: AgentRun[];
+  proposedPlans: ProposedPlan[];
+  pendingUserInputs: PendingUserInputRequest[];
 }
 
 export interface CreateWebsiteInput {
@@ -142,21 +205,43 @@ export interface SaveSecretInput {
 
 export interface UpdateSettingsInput {
   preferredModelId?: string;
-  agentMode?: AgentMode;
+  interactionMode?: InteractionMode;
+  projectSortMode?: SortMode;
+  conversationSortMode?: SortMode;
   ideCommand?: string;
   websitesRoot?: string | null;
   vercelTeamId?: string;
   vercelTeamSlug?: string;
   onboardingCompletedAt?: string | null;
   selectedWebsiteId?: string | null;
-  selectedRunId?: string | null;
+  selectedConversationId?: string | null;
 }
 
 export interface DispatchRunInput {
   websiteId: string;
   prompt: string;
+  conversationId?: string | null;
   modelId?: string;
-  mode?: AgentMode;
+  interactionMode?: InteractionMode;
+  sourcePlanId?: string | null;
+}
+
+export interface CreateConversationInput {
+  websiteId: string;
+  title?: string;
+}
+
+export interface ReorderItemsInput {
+  orderedIds: string[];
+}
+
+export interface ReorderConversationsInput extends ReorderItemsInput {
+  websiteId: string;
+}
+
+export interface RespondUserInputInput {
+  requestId: string;
+  answers: Record<string, string>;
 }
 
 export interface PublishRepoInput {
@@ -193,11 +278,16 @@ export interface DesktopBridgeApi {
   saveSecret: (input: SaveSecretInput) => Promise<AppSnapshot>;
   clearSecret: (kind: SaveSecretInput["kind"]) => Promise<AppSnapshot>;
   updateSettings: (input: UpdateSettingsInput) => Promise<AppSnapshot>;
+  createConversation: (input: CreateConversationInput) => Promise<AppSnapshot>;
+  reorderWebsites: (input: ReorderItemsInput) => Promise<AppSnapshot>;
+  reorderConversations: (input: ReorderConversationsInput) => Promise<AppSnapshot>;
   dispatchRun: (input: DispatchRunInput) => Promise<AppSnapshot>;
+  respondUserInput: (input: RespondUserInputInput) => Promise<AppSnapshot>;
   startPreview: (websiteId: string) => Promise<AppSnapshot>;
   stopPreview: (websiteId: string) => Promise<AppSnapshot>;
   initGitRepo: (websiteId: string) => Promise<AppSnapshot>;
   publishRepo: (input: PublishRepoInput) => Promise<AppSnapshot>;
+  cancelRun: (runId: string) => Promise<AppSnapshot>;
   deployWebsite: (input: DeployWebsiteInput) => Promise<AppSnapshot>;
   subscribe: <K extends keyof AppEventMap>(
     channel: K,

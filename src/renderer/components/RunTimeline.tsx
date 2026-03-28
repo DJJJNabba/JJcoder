@@ -63,7 +63,7 @@ export function RunTimeline({ run }: { run: AgentRun | null }) {
         <p>{run.prompt}</p>
         <div className="run-summary-meta">
           <span>{run.modelId}</span>
-          <span>{run.mode}</span>
+          <span>{run.interactionMode}</span>
           <span>{formatDateTime(run.updatedAt)}</span>
         </div>
       </div>

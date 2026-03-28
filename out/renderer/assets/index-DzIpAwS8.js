@@ -12533,26 +12533,51 @@ const createLucideIcon = (iconName, iconNode) => {
   Component.displayName = toPascalCase(iconName);
   return Component;
 };
-const __iconNode$q = [
-  ["path", { d: "M12 8V4H8", key: "hb8ula" }],
-  ["rect", { width: "16", height: "12", x: "4", y: "8", rx: "2", key: "enze0r" }],
-  ["path", { d: "M2 14h2", key: "vft8re" }],
-  ["path", { d: "M20 14h2", key: "4cs60a" }],
-  ["path", { d: "M15 13v2", key: "1xurst" }],
-  ["path", { d: "M9 13v2", key: "rq6x2g" }]
+const __iconNode$z = [
+  ["path", { d: "M5 12h14", key: "1ays0h" }],
+  ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
 ];
-const Bot = createLucideIcon("bot", __iconNode$q);
-const __iconNode$p = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
-const Check = createLucideIcon("check", __iconNode$p);
-const __iconNode$o = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-const ChevronDown = createLucideIcon("chevron-down", __iconNode$o);
-const __iconNode$n = [
+const ArrowRight = createLucideIcon("arrow-right", __iconNode$z);
+const __iconNode$y = [
+  ["path", { d: "m21 16-4 4-4-4", key: "f6ql7i" }],
+  ["path", { d: "M17 20V4", key: "1ejh1v" }],
+  ["path", { d: "m3 8 4-4 4 4", key: "11wl7u" }],
+  ["path", { d: "M7 4v16", key: "1glfcx" }]
+];
+const ArrowUpDown = createLucideIcon("arrow-up-down", __iconNode$y);
+const __iconNode$x = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
+const Check = createLucideIcon("check", __iconNode$x);
+const __iconNode$w = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+const ChevronDown = createLucideIcon("chevron-down", __iconNode$w);
+const __iconNode$v = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
+const ChevronRight = createLucideIcon("chevron-right", __iconNode$v);
+const __iconNode$u = [
+  ["rect", { width: "8", height: "4", x: "8", y: "2", rx: "1", ry: "1", key: "tgr4d6" }],
+  [
+    "path",
+    {
+      d: "M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2",
+      key: "116196"
+    }
+  ],
+  ["path", { d: "M12 11h4", key: "1jrz19" }],
+  ["path", { d: "M12 16h4", key: "n85exb" }],
+  ["path", { d: "M8 11h.01", key: "1dfujw" }],
+  ["path", { d: "M8 16h.01", key: "18s6g9" }]
+];
+const ClipboardList = createLucideIcon("clipboard-list", __iconNode$u);
+const __iconNode$t = [
+  ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
+  ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
+];
+const Copy = createLucideIcon("copy", __iconNode$t);
+const __iconNode$s = [
   ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
   ["path", { d: "M10 14 21 3", key: "gplh6r" }],
   ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
 ];
-const ExternalLink = createLucideIcon("external-link", __iconNode$n);
-const __iconNode$m = [
+const ExternalLink = createLucideIcon("external-link", __iconNode$s);
+const __iconNode$r = [
   [
     "path",
     {
@@ -12570,8 +12595,8 @@ const __iconNode$m = [
   ],
   ["path", { d: "m2 2 20 20", key: "1ooewy" }]
 ];
-const EyeOff = createLucideIcon("eye-off", __iconNode$m);
-const __iconNode$l = [
+const EyeOff = createLucideIcon("eye-off", __iconNode$r);
+const __iconNode$q = [
   [
     "path",
     {
@@ -12581,8 +12606,8 @@ const __iconNode$l = [
   ],
   ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
 ];
-const Eye = createLucideIcon("eye", __iconNode$l);
-const __iconNode$k = [
+const Eye = createLucideIcon("eye", __iconNode$q);
+const __iconNode$p = [
   [
     "path",
     {
@@ -12599,8 +12624,22 @@ const __iconNode$k = [
     }
   ]
 ];
-const FilePen = createLucideIcon("file-pen", __iconNode$k);
-const __iconNode$j = [
+const FilePen = createLucideIcon("file-pen", __iconNode$p);
+const __iconNode$o = [
+  [
+    "path",
+    {
+      d: "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z",
+      key: "1oefj6"
+    }
+  ],
+  ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5", key: "wfsgrz" }],
+  ["path", { d: "M10 9H8", key: "b1mrlr" }],
+  ["path", { d: "M16 13H8", key: "t4e002" }],
+  ["path", { d: "M16 17H8", key: "z1uh3a" }]
+];
+const FileText = createLucideIcon("file-text", __iconNode$o);
+const __iconNode$n = [
   [
     "path",
     {
@@ -12610,8 +12649,8 @@ const __iconNode$j = [
   ],
   ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5", key: "wfsgrz" }]
 ];
-const File = createLucideIcon("file", __iconNode$j);
-const __iconNode$i = [
+const File = createLucideIcon("file", __iconNode$n);
+const __iconNode$m = [
   [
     "path",
     {
@@ -12620,8 +12659,8 @@ const __iconNode$i = [
     }
   ]
 ];
-const Flag = createLucideIcon("flag", __iconNode$i);
-const __iconNode$h = [
+const Flag = createLucideIcon("flag", __iconNode$m);
+const __iconNode$l = [
   ["path", { d: "M10 10.5 8 13l2 2.5", key: "m4t9c1" }],
   ["path", { d: "m14 10.5 2 2.5-2 2.5", key: "14w2eb" }],
   [
@@ -12632,8 +12671,8 @@ const __iconNode$h = [
     }
   ]
 ];
-const FolderCode = createLucideIcon("folder-code", __iconNode$h);
-const __iconNode$g = [
+const FolderCode = createLucideIcon("folder-code", __iconNode$l);
+const __iconNode$k = [
   [
     "path",
     {
@@ -12642,22 +12681,32 @@ const __iconNode$g = [
     }
   ]
 ];
-const FolderOpen = createLucideIcon("folder-open", __iconNode$g);
-const __iconNode$f = [
+const FolderOpen = createLucideIcon("folder-open", __iconNode$k);
+const __iconNode$j = [
+  [
+    "path",
+    {
+      d: "M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z",
+      key: "1kt360"
+    }
+  ]
+];
+const Folder = createLucideIcon("folder", __iconNode$j);
+const __iconNode$i = [
   ["circle", { cx: "12", cy: "18", r: "3", key: "1mpf1b" }],
   ["circle", { cx: "6", cy: "6", r: "3", key: "1lh9wr" }],
   ["circle", { cx: "18", cy: "6", r: "3", key: "1h7g24" }],
   ["path", { d: "M18 9v2c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V9", key: "1uq4wg" }],
   ["path", { d: "M12 12v3", key: "158kv8" }]
 ];
-const GitFork = createLucideIcon("git-fork", __iconNode$f);
-const __iconNode$e = [
+const GitFork = createLucideIcon("git-fork", __iconNode$i);
+const __iconNode$h = [
   ["rect", { width: "18", height: "7", x: "3", y: "3", rx: "1", key: "f1a2em" }],
   ["rect", { width: "9", height: "7", x: "3", y: "14", rx: "1", key: "jqznyg" }],
   ["rect", { width: "5", height: "7", x: "16", y: "14", rx: "1", key: "q5h2i8" }]
 ];
-const LayoutTemplate = createLucideIcon("layout-template", __iconNode$e);
-const __iconNode$d = [
+const LayoutTemplate = createLucideIcon("layout-template", __iconNode$h);
+const __iconNode$g = [
   ["path", { d: "M12 2v4", key: "3427ic" }],
   ["path", { d: "m16.2 7.8 2.9-2.9", key: "r700ao" }],
   ["path", { d: "M18 12h4", key: "wj9ykh" }],
@@ -12667,20 +12716,30 @@ const __iconNode$d = [
   ["path", { d: "M2 12h4", key: "j09sii" }],
   ["path", { d: "m4.9 4.9 2.9 2.9", key: "giyufr" }]
 ];
-const Loader = createLucideIcon("loader", __iconNode$d);
-const __iconNode$c = [
+const Loader = createLucideIcon("loader", __iconNode$g);
+const __iconNode$f = [
+  [
+    "path",
+    {
+      d: "M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z",
+      key: "18887p"
+    }
+  ]
+];
+const MessageSquare = createLucideIcon("message-square", __iconNode$f);
+const __iconNode$e = [
   ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
   ["path", { d: "M9 3v18", key: "fh3hqa" }],
   ["path", { d: "m16 15-3-3 3-3", key: "14y99z" }]
 ];
-const PanelLeftClose = createLucideIcon("panel-left-close", __iconNode$c);
-const __iconNode$b = [
+const PanelLeftClose = createLucideIcon("panel-left-close", __iconNode$e);
+const __iconNode$d = [
   ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
   ["path", { d: "M9 3v18", key: "fh3hqa" }],
   ["path", { d: "m14 9 3 3-3 3", key: "8010ee" }]
 ];
-const PanelLeftOpen = createLucideIcon("panel-left-open", __iconNode$b);
-const __iconNode$a = [
+const PanelLeftOpen = createLucideIcon("panel-left-open", __iconNode$d);
+const __iconNode$c = [
   [
     "path",
     {
@@ -12689,13 +12748,13 @@ const __iconNode$a = [
     }
   ]
 ];
-const Play = createLucideIcon("play", __iconNode$a);
-const __iconNode$9 = [
+const Play = createLucideIcon("play", __iconNode$c);
+const __iconNode$b = [
   ["path", { d: "M5 12h14", key: "1ays0h" }],
   ["path", { d: "M12 5v14", key: "s699le" }]
 ];
-const Plus = createLucideIcon("plus", __iconNode$9);
-const __iconNode$8 = [
+const Plus = createLucideIcon("plus", __iconNode$b);
+const __iconNode$a = [
   ["path", { d: "M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5", key: "qeys4" }],
   [
     "path",
@@ -12713,13 +12772,13 @@ const __iconNode$8 = [
   ],
   ["path", { d: "M9 12H4s.55-3.03 2-4c1.62-1.08 5 .05 5 .05", key: "92ym6u" }]
 ];
-const Rocket = createLucideIcon("rocket", __iconNode$8);
-const __iconNode$7 = [
+const Rocket = createLucideIcon("rocket", __iconNode$a);
+const __iconNode$9 = [
   ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
   ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
 ];
-const Search = createLucideIcon("search", __iconNode$7);
-const __iconNode$6 = [
+const Search = createLucideIcon("search", __iconNode$9);
+const __iconNode$8 = [
   [
     "path",
     {
@@ -12729,15 +12788,15 @@ const __iconNode$6 = [
   ],
   ["path", { d: "m21.854 2.147-10.94 10.939", key: "12cjpa" }]
 ];
-const Send = createLucideIcon("send", __iconNode$6);
-const __iconNode$5 = [
+const Send = createLucideIcon("send", __iconNode$8);
+const __iconNode$7 = [
   ["path", { d: "M14 17H5", key: "gfn3mx" }],
   ["path", { d: "M19 7h-9", key: "6i9tg" }],
   ["circle", { cx: "17", cy: "17", r: "3", key: "18b49y" }],
   ["circle", { cx: "7", cy: "7", r: "3", key: "dfmy0x" }]
 ];
-const Settings2 = createLucideIcon("settings-2", __iconNode$5);
-const __iconNode$4 = [
+const Settings2 = createLucideIcon("settings-2", __iconNode$7);
+const __iconNode$6 = [
   [
     "path",
     {
@@ -12749,7 +12808,22 @@ const __iconNode$4 = [
   ["path", { d: "M22 4h-4", key: "gwowj6" }],
   ["circle", { cx: "4", cy: "20", r: "2", key: "6kqj1y" }]
 ];
-const Sparkles = createLucideIcon("sparkles", __iconNode$4);
+const Sparkles = createLucideIcon("sparkles", __iconNode$6);
+const __iconNode$5 = [
+  ["path", { d: "M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7", key: "1m0v6g" }],
+  [
+    "path",
+    {
+      d: "M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z",
+      key: "ohrbg2"
+    }
+  ]
+];
+const SquarePen = createLucideIcon("square-pen", __iconNode$5);
+const __iconNode$4 = [
+  ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }]
+];
+const Square = createLucideIcon("square", __iconNode$4);
 const __iconNode$3 = [
   ["path", { d: "M12 19h8", key: "baeox8" }],
   ["path", { d: "m4 17 6-6-6-6", key: "1yngyt" }]
@@ -12822,22 +12896,6 @@ function groupModels(models) {
     grouped.set(model.provider, current);
   }
   return [...grouped.entries()].sort(([left], [right]) => left.localeCompare(right));
-}
-function statusLabel(status) {
-  switch (status) {
-    case "queued":
-      return "Queued";
-    case "running":
-      return "Running";
-    case "completed":
-      return "Complete";
-    case "failed":
-      return "Failed";
-    case "cancelled":
-      return "Cancelled";
-    default:
-      return "Idle";
-  }
 }
 function ModelPicker({ models, selectedModelId, onSelect }) {
   const [open, setOpen] = reactExports.useState(false);
@@ -25581,6 +25639,11 @@ function deriveTimelineActivities(events) {
       if (resolvedIndex !== null) {
         const activity = activities[resolvedIndex];
         const summary2 = summarizeToolResult(activity.toolName ?? "tool", event.content);
+        if ((activity.toolName ?? "tool") === "finish_build") {
+          activity.kind = "completion";
+          activity.tone = "info";
+          activity.tag = "completion";
+        }
         activity.note = summary2.note ?? activity.note;
         activity.body = summary2.body ?? activity.body;
         activity.rawOutput = event.content;
@@ -25594,8 +25657,8 @@ function deriveTimelineActivities(events) {
       const summary = summarizeToolResult(readMetadata(event, "toolName") ?? "tool", event.content);
       activities.push({
         id: event.id,
-        tone: "tool",
-        kind: "tool",
+        tone: readMetadata(event, "toolName") === "finish_build" ? "info" : "tool",
+        kind: readMetadata(event, "toolName") === "finish_build" ? "completion" : "tool",
         agent: event.agent,
         createdAt: event.createdAt,
         title: summary.title,
@@ -25644,6 +25707,48 @@ function deriveTimelineActivities(events) {
       activities.push(activity);
       continue;
     }
+    if (event.type === "plan") {
+      activities.push({
+        id: event.id,
+        tone: "info",
+        kind: "plan",
+        agent: event.agent,
+        createdAt: event.createdAt,
+        title: event.title,
+        body: event.content,
+        tag: "plan"
+      });
+      continue;
+    }
+    if (event.type === "completion") {
+      activities.push({
+        id: event.id,
+        tone: "info",
+        kind: "completion",
+        agent: event.agent,
+        createdAt: event.createdAt,
+        title: event.title,
+        body: event.content,
+        tag: "completion"
+      });
+      continue;
+    }
+    if (event.type === "user_input") {
+      activities.push({
+        id: event.id,
+        tone: "info",
+        kind: "user_input",
+        agent: event.agent,
+        createdAt: event.createdAt,
+        title: event.title,
+        body: event.content,
+        tag: "user_input"
+      });
+      continue;
+    }
+    if (event.metadata?.visibility === "debug") {
+      continue;
+    }
     activities.push({
       id: event.id,
       tone: "info",
@@ -25674,6 +25779,9 @@ function findToolActivityIndex(activities, unresolvedToolIndices, agent, callId,
 }
 function isToolCallEvent(event) {
   if (event.type !== "tool") {
+    return false;
+  }
+  if ((readMetadata(event, "toolName") ?? event.title) === "finish_build") {
     return false;
   }
   return (readMetadata(event, "toolPhase") ?? "call") === "call";
@@ -25727,7 +25835,7 @@ function summarizeToolCall(toolName, rawInput) {
       };
     case "finish_build":
       return {
-        title: "Finished build"
+        title: "Build complete"
       };
     default:
       return {
@@ -25788,8 +25896,9 @@ function summarizeToolResult(toolName, rawOutput) {
     case "finish_build": {
       const summary = readString(output, "summary");
       return {
-        title: "Finished build",
-        note: summary ? trimSentence(summary, 140) : "Build marked complete"
+        title: "Build complete",
+        note: summary ? trimSentence(summary, 140) : "Build marked complete",
+        body: summary
       };
     }
     default:
@@ -25858,6 +25967,81 @@ function trimSentence(value, limit) {
   }
   return `${value.slice(0, limit - 3).trimEnd()}...`;
 }
+function proposedPlanTitle(planMarkdown) {
+  const heading2 = planMarkdown.match(/^\s{0,3}#{1,6}\s+(.+)$/m)?.[1]?.trim();
+  return heading2 && heading2.length > 0 ? heading2 : null;
+}
+function stripDisplayedPlanMarkdown(planMarkdown) {
+  const lines = planMarkdown.trimEnd().split(/\r?\n/);
+  const sourceLines = lines[0] && /^\s{0,3}#{1,6}\s+/.test(lines[0]) ? lines.slice(1) : [...lines];
+  while (sourceLines[0]?.trim().length === 0) {
+    sourceLines.shift();
+  }
+  if (sourceLines[0]?.trim().toLowerCase() === "summary") {
+    sourceLines.shift();
+    while (sourceLines[0]?.trim().length === 0) {
+      sourceLines.shift();
+    }
+  }
+  return sourceLines.join("\n");
+}
+function buildCollapsedProposedPlanPreviewMarkdown(planMarkdown, maxLines = 10) {
+  const lines = stripDisplayedPlanMarkdown(planMarkdown).trimEnd().split(/\r?\n/).map((line) => line.trimEnd());
+  const previewLines = [];
+  let visibleLineCount = 0;
+  let hasMoreContent = false;
+  for (const line of lines) {
+    const isVisibleLine = line.trim().length > 0;
+    if (isVisibleLine && visibleLineCount >= maxLines) {
+      hasMoreContent = true;
+      break;
+    }
+    previewLines.push(line);
+    if (isVisibleLine) {
+      visibleLineCount += 1;
+    }
+  }
+  while (previewLines.length > 0 && previewLines.at(-1)?.trim().length === 0) {
+    previewLines.pop();
+  }
+  if (previewLines.length === 0) {
+    return proposedPlanTitle(planMarkdown) ?? "Plan preview unavailable.";
+  }
+  if (hasMoreContent) {
+    previewLines.push("", "...");
+  }
+  return previewLines.join("\n");
+}
+function ProposedPlanCard({ planMarkdown }) {
+  const [expanded, setExpanded] = reactExports.useState(false);
+  const title = reactExports.useMemo(() => proposedPlanTitle(planMarkdown) ?? "Proposed plan", [planMarkdown]);
+  const lineCount = planMarkdown.split(/\r?\n/).length;
+  const canCollapse = planMarkdown.length > 900 || lineCount > 20;
+  const displayMarkdown = expanded ? stripDisplayedPlanMarkdown(planMarkdown) : buildCollapsedProposedPlanPreviewMarkdown(planMarkdown, 10);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "plan-card", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "plan-card-header", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "plan-card-title", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "plan-card-badge", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(FileText, { size: 12 }),
+          "Plan"
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { title, children: title })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          type: "button",
+          className: "icon-button",
+          title: "Copy plan",
+          onClick: () => void navigator.clipboard.writeText(planMarkdown),
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { size: 13 })
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "plan-card-body", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chat-markdown", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Markdown, { remarkPlugins: [remarkGfm], children: displayMarkdown }) }) }),
+    canCollapse ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "plan-card-actions", children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "toolbar-chip", onClick: () => setExpanded((value) => !value), children: expanded ? "Collapse plan" : "Expand plan" }) }) : null
+  ] });
+}
 function parseJson(raw) {
   try {
     const parsed = JSON.parse(raw);
@@ -25865,20 +26049,6 @@ function parseJson(raw) {
   } catch {
     return null;
   }
-}
-function countLines(text2) {
-  if (!text2) return 0;
-  return text2.split(/\r?\n/).length;
-}
-function extractWrittenContent(activity) {
-  if (!activity.rawInput) return void 0;
-  const input = parseJson(activity.rawInput);
-  return typeof input?.content === "string" ? input.content : void 0;
-}
-function extractReadContent(activity) {
-  if (!activity.rawOutput) return void 0;
-  const output = parseJson(activity.rawOutput);
-  return typeof output?.content === "string" ? output.content : void 0;
 }
 function extractFilePath(activity) {
   const input = activity.rawInput ? parseJson(activity.rawInput) : null;
@@ -25895,15 +26065,7 @@ function extractCommandOutput(activity) {
   const output = parseJson(activity.rawOutput);
   const stdout = typeof output?.stdout === "string" ? output.stdout.trim() : "";
   const stderr = typeof output?.stderr === "string" ? output.stderr.trim() : "";
-  const combined = (stderr || stdout).trim();
-  if (!combined) return void 0;
-  const lines = combined.split(/\r?\n/).filter(Boolean);
-  return lines.slice(Math.max(0, lines.length - 3)).join("\n");
-}
-function extractFinishSummary(activity) {
-  const input = activity.rawInput ? parseJson(activity.rawInput) : null;
-  const output = activity.rawOutput ? parseJson(activity.rawOutput) : null;
-  return typeof input?.summary === "string" ? input.summary : typeof output?.summary === "string" ? output.summary : void 0;
+  return (stderr || stdout).trim() || void 0;
 }
 function extractListFilesResult(activity) {
   if (!activity.rawOutput) return void 0;
@@ -25934,63 +26096,34 @@ function toolIcon(activity) {
       return /* @__PURE__ */ jsxRuntimeExports.jsx(File, { size: 13 });
   }
 }
+function toolActionLabel(activity) {
+  switch (activity.toolName) {
+    case "read_file":
+      return "Read";
+    case "write_file":
+      return "Saved changes";
+    case "delete_file":
+      return "Deleted";
+    case "list_files":
+      return "Listed";
+    case "run_workspace_command":
+      return "Command";
+    case "start_preview":
+      return "Started preview";
+    case "finish_build":
+      return "Finished";
+    case "request_user_input":
+      return "Requested input";
+    default:
+      return "Tool";
+  }
+}
 function statusIcon(activity) {
   if (!activity.resolved) return /* @__PURE__ */ jsxRuntimeExports.jsx(Loader, { size: 11, className: "chat-spin" });
   return /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { size: 11 });
 }
-function DiffStat({ activity }) {
-  const written = extractWrittenContent(activity);
-  const read = extractReadContent(activity);
-  if (activity.toolName === "write_file" && written) {
-    const lines = countLines(written);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-diff-stat", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "diff-add", children: [
-      "+",
-      lines
-    ] }) });
-  }
-  if (activity.toolName === "read_file" && read) {
-    const lines = countLines(read);
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "chat-diff-stat", children: [
-      lines,
-      " lines"
-    ] });
-  }
-  if (activity.note) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-diff-stat", children: activity.note });
-  }
-  return null;
-}
-function LiveToolRow({ activity }) {
-  const filePath = extractFilePath(activity);
-  const command = extractCommand(activity);
-  const displayName = filePath ?? command ?? activity.title;
-  const detail = getToolDetail(activity);
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `chat-inline-tool ${activity.resolved ? "resolved" : "pending"}`, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chat-inline-tool-header", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-live-status", children: statusIcon(activity) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-live-icon", children: toolIcon(activity) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-live-name", title: displayName, children: displayName }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(DiffStat, { activity })
-    ] }),
-    detail ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chat-live-detail", children: detail }) : null
-  ] });
-}
-function getToolDetail(activity) {
-  if (!activity.resolved) return null;
-  if (activity.toolName === "run_workspace_command") {
-    const output = extractCommandOutput(activity);
-    return output ?? "Command completed";
-  }
-  if (activity.toolName === "list_files") {
-    return extractListFilesResult(activity) ?? null;
-  }
-  if (activity.toolName === "start_preview") {
-    return "Preview server is running";
-  }
-  if (activity.toolName === "finish_build") {
-    return extractFinishSummary(activity) ?? "Build marked complete";
-  }
-  return null;
+function ChatMarkdown({ content: content2 }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chat-markdown", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Markdown, { remarkPlugins: [remarkGfm], children: content2 }) });
 }
 function WorkingIndicator() {
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chat-working", children: [
@@ -26002,8 +26135,62 @@ function WorkingIndicator() {
     /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Thinking..." })
   ] });
 }
-function ChatMarkdown({ content: content2 }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chat-markdown", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Markdown, { remarkPlugins: [remarkGfm], children: content2 }) });
+function LiveToolRow({ activity }) {
+  const filePath = extractFilePath(activity);
+  const command = extractCommand(activity);
+  const displayTarget = filePath ?? command ?? activity.title;
+  const actionLabel = toolActionLabel(activity);
+  const detail = getToolDetail(activity);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `chat-inline-tool ${activity.resolved ? "resolved" : "pending"}`, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chat-inline-tool-header", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-live-status", children: statusIcon(activity) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-live-icon", children: toolIcon(activity) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-tool-action", children: actionLabel }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-live-name", title: displayTarget, children: displayTarget })
+    ] }),
+    detail ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chat-live-detail", children: detail }) : null
+  ] });
+}
+function getToolDetail(activity) {
+  if (!activity.resolved) return null;
+  if (activity.toolName === "run_workspace_command") {
+    return extractCommandOutput(activity) ?? "Command completed";
+  }
+  if (activity.toolName === "list_files") {
+    return extractListFilesResult(activity) ?? null;
+  }
+  if (activity.toolName === "start_preview") {
+    return "Preview server is running";
+  }
+  return activity.note ?? null;
+}
+function SummaryCard({ activity }) {
+  const body = activity.body;
+  const note = activity.note;
+  let summaryJson = null;
+  if (body) {
+    summaryJson = parseJson(body);
+  }
+  const summaryText = summaryJson ? typeof summaryJson.summary === "string" ? summaryJson.summary : null : null;
+  const displayBody = summaryText ?? body;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "summary-card", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "summary-card-header", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "summary-card-badge", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { size: 12 }),
+      "Summary"
+    ] }) }),
+    displayBody ? /* @__PURE__ */ jsxRuntimeExports.jsx(ChatMarkdown, { content: displayBody }) : null,
+    !displayBody && note ? /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "summary-card-note", children: note }) : null
+  ] });
+}
+function UserInputResultCard({ activity }) {
+  const answerLines = activity.body?.split(/\r?\n/).filter(Boolean) ?? [];
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "user-input-card answered", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "user-input-card-header", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "summary-card-badge", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { size: 12 }),
+      "User Input"
+    ] }) }),
+    answerLines.length > 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "user-input-answer-list", children: answerLines.map((line, index2) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "user-input-answer-row", children: line }, index2)) }) : null
+  ] });
 }
 function StatusLine({ activity }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chat-status-line", children: activity.title });
@@ -26013,6 +26200,10 @@ function RunMessages({ run }) {
   const isRunning = run.status === "running" || run.status === "queued";
   const hasPendingTool = activities.some((activity) => activity.kind === "tool" && !activity.resolved);
   const hasAssistantMessage = activities.some((activity) => activity.kind === "assistant" && activity.body);
+  const filteredActivities = activities.filter((activity) => {
+    if (activity.kind !== "user_input") return true;
+    return activity.title === "Answered user input";
+  });
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chat-turn", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chat-row chat-row-user", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chat-bubble-user", children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: run.prompt }) }) }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chat-row chat-row-agent", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chat-agent-block", children: [
@@ -26020,13 +26211,16 @@ function RunMessages({ run }) {
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `chat-status-dot chat-status-${run.status}` }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-agent-model", children: run.modelId.split("/").pop() }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-meta-sep", children: "·" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-meta", children: run.mode }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-meta", children: run.interactionMode }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-meta-sep", children: "·" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "chat-meta", children: formatRelativeTime(run.updatedAt) })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chat-activity-flow", children: activities.map((activity) => /* @__PURE__ */ jsxRuntimeExports.jsxs(reactExports.Fragment, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chat-activity-flow", children: filteredActivities.map((activity) => /* @__PURE__ */ jsxRuntimeExports.jsxs(reactExports.Fragment, { children: [
         activity.kind === "assistant" && activity.body ? /* @__PURE__ */ jsxRuntimeExports.jsx(ChatMarkdown, { content: activity.body }) : null,
         activity.kind === "tool" ? /* @__PURE__ */ jsxRuntimeExports.jsx(LiveToolRow, { activity }) : null,
+        activity.kind === "plan" && activity.body ? /* @__PURE__ */ jsxRuntimeExports.jsx(ProposedPlanCard, { planMarkdown: activity.body }) : null,
+        activity.kind === "completion" ? /* @__PURE__ */ jsxRuntimeExports.jsx(SummaryCard, { activity }) : null,
+        activity.kind === "user_input" ? /* @__PURE__ */ jsxRuntimeExports.jsx(UserInputResultCard, { activity }) : null,
         activity.kind === "status" ? /* @__PURE__ */ jsxRuntimeExports.jsx(StatusLine, { activity }) : null,
         activity.kind === "error" ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chat-error", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(TriangleAlert, { size: 13 }),
@@ -26063,80 +26257,505 @@ function ChatThread({ runs }) {
   }, [runs]);
   if (runs.length === 0) {
     return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chat-empty", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Bot, { size: 20 }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Start a conversation" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "chat-empty-sub", children: "Describe what to build and the agent will handle the rest." })
+      /* @__PURE__ */ jsxRuntimeExports.jsx(MessageSquare, { size: 20 }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Start a new conversation" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "chat-empty-sub", children: "Each chat keeps the full back and forth for one project workspace." })
     ] });
   }
-  const sorted = [...runs].reverse();
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chat-scroll", ref: scrollRef, children: [
-    sorted.map((run) => /* @__PURE__ */ jsxRuntimeExports.jsx(RunMessages, { run }, run.id)),
+    runs.map((run) => /* @__PURE__ */ jsxRuntimeExports.jsx(RunMessages, { run }, run.id)),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { ref: endRef })
   ] });
 }
-function sanitizeWorkspacePath(workspacePath) {
-  return workspacePath.replace(/^[A-Za-z]:\\Users\\[^\\]+/i, "...").replace(/^\/Users\/[^/]+/i, "...").replace(/^\/home\/[^/]+/i, "...");
+function describeSortMode(value) {
+  switch (value) {
+    case "name":
+      return "A-Z";
+    case "manual":
+      return "Manual";
+    default:
+      return "Last user message";
+  }
+}
+function toFileUrl(path2) {
+  const normalized = path2.replace(/\\/g, "/");
+  return encodeURI(normalized.startsWith("/") ? `file://${normalized}` : `file:///${normalized}`);
+}
+function candidateProjectIconUrls(workspacePath) {
+  const normalized = workspacePath.replace(/[\\/]+$/, "");
+  const candidates = [
+    "favicon.ico",
+    "favicon.png",
+    "favicon.svg",
+    "public/favicon.ico",
+    "public/favicon.png",
+    "public/favicon.svg",
+    "src/favicon.ico",
+    "src/favicon.png",
+    "src/favicon.svg",
+    "src/assets/favicon.ico",
+    "src/assets/favicon.png",
+    "src/assets/favicon.svg",
+    "app/favicon.ico",
+    "app/favicon.png",
+    "app/favicon.svg"
+  ];
+  return candidates.map((relativePath) => toFileUrl(`${normalized}/${relativePath}`));
+}
+function ProjectIcon({ website }) {
+  const sources = reactExports.useMemo(() => candidateProjectIconUrls(website.workspacePath), [website.workspacePath]);
+  const [sourceIndex, setSourceIndex] = reactExports.useState(0);
+  reactExports.useEffect(() => {
+    setSourceIndex(0);
+  }, [sources]);
+  const source = sources[sourceIndex] ?? null;
+  if (!source) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Folder, { size: 14, className: "website-folder-icon" });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "img",
+    {
+      src: source,
+      alt: "",
+      className: "website-project-icon",
+      onError: () => setSourceIndex((current) => current + 1)
+    }
+  );
+}
+function SortMenu({ label, value, onChange }) {
+  const [open, setOpen] = reactExports.useState(false);
+  const menuRef = reactExports.useRef(null);
+  reactExports.useEffect(() => {
+    if (!open) return;
+    const handleClick = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+  const options = [
+    { mode: "recent", label: "Last user message" },
+    { mode: "name", label: "A-Z" },
+    { mode: "manual", label: "Manual" }
+  ];
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "sort-menu-wrapper", ref: menuRef, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "button",
+      {
+        type: "button",
+        className: "icon-button",
+        onClick: () => setOpen((prev) => !prev),
+        title: `${label}: ${describeSortMode(value)}`,
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowUpDown, { size: 14 })
+      }
+    ),
+    open ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "sort-dropdown", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "sort-dropdown-label", children: label }),
+      options.map((option) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          type: "button",
+          className: `sort-dropdown-option ${option.mode === value ? "active" : ""}`,
+          onClick: () => {
+            onChange(option.mode);
+            setOpen(false);
+          },
+          children: [
+            option.label,
+            option.mode === value ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "sort-check", children: "✓" }) : null
+          ]
+        },
+        option.mode
+      ))
+    ] }) : null
+  ] });
 }
 function WebsiteSidebar(props) {
+  const [dragItem, setDragItem] = reactExports.useState(null);
+  const dragRef = reactExports.useRef(null);
+  const [expandedWebsiteId, setExpandedWebsiteId] = reactExports.useState(props.selectedWebsiteId);
+  const [collapsingWebsiteId, setCollapsingWebsiteId] = reactExports.useState(null);
+  reactExports.useEffect(() => {
+    setExpandedWebsiteId(props.selectedWebsiteId);
+  }, [props.selectedWebsiteId]);
+  reactExports.useEffect(() => {
+    if (!collapsingWebsiteId) return;
+    const timeout = window.setTimeout(() => {
+      setCollapsingWebsiteId(null);
+    }, 180);
+    return () => window.clearTimeout(timeout);
+  }, [collapsingWebsiteId]);
+  const runsByConversationId = reactExports.useMemo(() => {
+    const map2 = /* @__PURE__ */ new Map();
+    for (const run of props.runs) {
+      const next = map2.get(run.conversationId) ?? [];
+      next.push(run);
+      map2.set(run.conversationId, next);
+    }
+    return map2;
+  }, [props.runs]);
+  const conversationsByWebsiteId = reactExports.useMemo(() => {
+    const map2 = /* @__PURE__ */ new Map();
+    for (const conversation of props.conversations) {
+      const next = map2.get(conversation.websiteId) ?? [];
+      next.push(conversation);
+      map2.set(conversation.websiteId, next);
+    }
+    return map2;
+  }, [props.conversations]);
+  const orderedWebsites = reactExports.useMemo(() => {
+    switch (props.projectSortMode) {
+      case "name":
+        return [...props.websites].sort((left, right) => left.name.localeCompare(right.name));
+      case "manual":
+        return props.websites;
+      default:
+        return [...props.websites].sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime());
+    }
+  }, [props.projectSortMode, props.websites]);
+  const getOrderedConversations = reactExports.useCallback((website) => {
+    const conversations = conversationsByWebsiteId.get(website.id) ?? [];
+    const manualOrder = new Map(website.conversationIds.map((id, index2) => [id, index2]));
+    switch (props.projectSortMode) {
+      case "name":
+        return [...conversations].sort((left, right) => left.title.localeCompare(right.title));
+      case "manual":
+        return [...conversations].sort(
+          (left, right) => (manualOrder.get(left.id) ?? Number.MAX_SAFE_INTEGER) - (manualOrder.get(right.id) ?? Number.MAX_SAFE_INTEGER)
+        );
+      default:
+        return [...conversations].sort(
+          (left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()
+        );
+    }
+  }, [conversationsByWebsiteId, props.projectSortMode]);
+  const handlePointerDown = reactExports.useCallback((event, type, id, websiteId) => {
+    const target = event.currentTarget;
+    const container = target.parentElement;
+    if (!container) return;
+    const items = Array.from(container.querySelectorAll(
+      type === "website" ? ".website-row" : ".conversation-row"
+    ));
+    const startIndex = items.indexOf(target);
+    if (startIndex < 0) return;
+    const rect = target.getBoundingClientRect();
+    const item = {
+      type,
+      id,
+      websiteId,
+      startY: event.clientY,
+      startIndex,
+      currentIndex: startIndex,
+      offsetY: 0,
+      containerEl: container,
+      itemEls: items,
+      itemHeight: rect.height + 4
+      // gap
+    };
+    dragRef.current = item;
+    setDragItem(item);
+    target.setPointerCapture(event.pointerId);
+    document.body.style.cursor = "grabbing";
+    document.body.style.userSelect = "none";
+  }, []);
+  reactExports.useEffect(() => {
+    const handlePointerMove = (event) => {
+      const drag = dragRef.current;
+      if (!drag) return;
+      const deltaY = event.clientY - drag.startY;
+      const indexDelta = Math.round(deltaY / drag.itemHeight);
+      const newIndex = Math.max(0, Math.min(drag.itemEls.length - 1, drag.startIndex + indexDelta));
+      drag.offsetY = deltaY;
+      drag.currentIndex = newIndex;
+      dragRef.current = { ...drag };
+      setDragItem({ ...drag });
+    };
+    const handlePointerUp = () => {
+      const drag = dragRef.current;
+      if (!drag) return;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      if (drag.currentIndex !== drag.startIndex) {
+        if (drag.type === "website") {
+          const ids = orderedWebsites.map((w) => w.id);
+          const [moved] = ids.splice(drag.startIndex, 1);
+          ids.splice(drag.currentIndex, 0, moved);
+          props.onReorderWebsites(ids);
+        } else if (drag.websiteId) {
+          const website = props.websites.find((w) => w.id === drag.websiteId);
+          if (website) {
+            const convos = getOrderedConversations(website);
+            const ids = convos.map((c) => c.id);
+            const [moved] = ids.splice(drag.startIndex, 1);
+            ids.splice(drag.currentIndex, 0, moved);
+            props.onReorderConversations(drag.websiteId, ids);
+          }
+        }
+      }
+      dragRef.current = null;
+      setDragItem(null);
+    };
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+  }, [orderedWebsites, getOrderedConversations, props]);
+  const isManualProjects = props.projectSortMode === "manual";
+  const isManualConversations = props.projectSortMode === "manual";
+  const getDragStyle = (type, index2) => {
+    if (!dragItem || dragItem.type !== type) return {};
+    if (index2 === dragItem.startIndex) {
+      return {
+        transform: `translateY(${dragItem.offsetY}px)`,
+        zIndex: 10,
+        position: "relative",
+        opacity: 0.9,
+        transition: "none"
+      };
+    }
+    if (dragItem.currentIndex > dragItem.startIndex) {
+      if (index2 > dragItem.startIndex && index2 <= dragItem.currentIndex) {
+        return { transform: `translateY(-${dragItem.itemHeight}px)`, transition: "transform 150ms ease" };
+      }
+    } else if (dragItem.currentIndex < dragItem.startIndex) {
+      if (index2 < dragItem.startIndex && index2 >= dragItem.currentIndex) {
+        return { transform: `translateY(${dragItem.itemHeight}px)`, transition: "transform 150ms ease" };
+      }
+    }
+    return { transition: "transform 150ms ease" };
+  };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("aside", { className: `website-sidebar ${props.collapsed ? "collapsed" : ""}`, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "sidebar-brand", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: !props.collapsed ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "eyebrow", children: "JJcoder" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { children: "Projects" })
-      ] }) : null }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "sidebar-brand-actions", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "icon-button", onClick: props.onToggleCollapse, title: props.collapsed ? "Expand sidebar" : "Collapse sidebar", children: props.collapsed ? /* @__PURE__ */ jsxRuntimeExports.jsx(PanelLeftOpen, { size: 14 }) : /* @__PURE__ */ jsxRuntimeExports.jsx(PanelLeftClose, { size: 14 }) }),
-        !props.collapsed ? /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "icon-button", onClick: props.onCreateWebsite, title: "New website", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { size: 14 }) }) : null
-      ] })
+      !props.collapsed ? /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { children: "JJcoder" }) : null,
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "sidebar-brand-actions", children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "icon-button", onClick: props.onToggleCollapse, title: props.collapsed ? "Expand sidebar" : "Collapse sidebar", children: props.collapsed ? /* @__PURE__ */ jsxRuntimeExports.jsx(PanelLeftOpen, { size: 14 }) : /* @__PURE__ */ jsxRuntimeExports.jsx(PanelLeftClose, { size: 14 }) }) })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "sidebar-scroll", children: [
-      props.websites.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "empty-sidebar", children: [
+      !props.collapsed ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "sidebar-section-header", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "sidebar-subtitle", children: "Projects" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "sidebar-section-actions", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(SortMenu, { label: "Sort projects", value: props.projectSortMode, onChange: props.onChangeProjectSortMode }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "icon-button", onClick: props.onCreateWebsite, title: "New project", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { size: 14 }) })
+        ] })
+      ] }) : null,
+      orderedWebsites.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "empty-sidebar", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(FolderCode, { size: 16 }),
         !props.collapsed ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "No websites yet" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "text-button", onClick: props.onCreateWebsite, children: "Create your first workspace" })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "No projects yet" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "text-button", onClick: props.onCreateWebsite, children: "Create your first project" })
         ] }) : null
       ] }) : null,
-      props.websites.map((website) => {
-        const websiteRuns = props.runs.filter((run) => run.websiteId === website.id);
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "website-list", children: orderedWebsites.map((website, index2) => {
         const selected = website.id === props.selectedWebsiteId;
-        return /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: `website-group ${selected ? "selected" : ""}`, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { type: "button", className: "website-row", onClick: () => props.onSelectWebsite(website.id), children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "website-copy", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: props.collapsed ? website.name.slice(0, 1).toUpperCase() : website.name }),
-              !props.collapsed ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: website.description }) : null
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "website-meta", children: [
-              website.preview.url ? /* @__PURE__ */ jsxRuntimeExports.jsx(Eye, { size: 12 }) : null,
-              website.github.repoUrl ? /* @__PURE__ */ jsxRuntimeExports.jsx(GitFork, { size: 12 }) : null,
-              website.vercel.deploymentUrl ? /* @__PURE__ */ jsxRuntimeExports.jsx(Rocket, { size: 12 }) : null
-            ] })
-          ] }),
-          !props.collapsed ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "website-path", children: sanitizeWorkspacePath(website.workspacePath) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "website-runs", children: [
-              websiteRuns.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "run-placeholder", children: "No runs" }) : null,
-              websiteRuns.map((run) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        const conversations = getOrderedConversations(website);
+        const expanded = expandedWebsiteId === website.id;
+        const collapsing = collapsingWebsiteId === website.id;
+        const pinnedCollapsedConversation = !expanded && selected ? conversations.find((conversation) => conversation.id === props.selectedConversationId) ?? conversations[0] ?? null : null;
+        const renderedConversations = expanded || collapsing ? conversations : [];
+        const shouldShowConversationPanel = expanded || collapsing;
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `website-group ${selected ? "selected" : ""}`, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "button",
+            {
+              type: "button",
+              className: "website-row",
+              style: isManualProjects && !props.collapsed ? getDragStyle("website", index2) : {},
+              onClick: () => {
+                setExpandedWebsiteId((current) => {
+                  if (current === website.id) {
+                    setCollapsingWebsiteId(website.id);
+                    return null;
+                  }
+                  setCollapsingWebsiteId(null);
+                  return website.id;
+                });
+                props.onSelectWebsite(website.id);
+              },
+              onPointerDown: isManualProjects && !props.collapsed ? (event) => handlePointerDown(event, "website", website.id) : void 0,
+              children: [
+                !props.collapsed ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "website-expander", "aria-hidden": "true", children: shouldShowConversationPanel ? /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronDown, { size: 14 }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronRight, { size: 14 }) }) : null,
+                !props.collapsed ? /* @__PURE__ */ jsxRuntimeExports.jsx(ProjectIcon, { website }) : null,
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "website-copy", children: /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: props.collapsed ? website.name.slice(0, 1).toUpperCase() : website.name }) }),
+                !props.collapsed && selected ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "button",
+                  {
+                    type: "button",
+                    className: "project-compose-button",
+                    title: "New chat",
+                    onClick: (event) => {
+                      event.stopPropagation();
+                      props.onCreateConversation(website.id);
+                    },
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(SquarePen, { size: 14 })
+                  }
+                ) : null
+              ]
+            }
+          ),
+          !props.collapsed ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: `conversation-panel ${shouldShowConversationPanel ? "open" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "conversation-list-shell", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "website-runs", children: [
+            renderedConversations.length === 0 && expanded ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "run-placeholder", children: "No chats yet" }) : null,
+            renderedConversations.map((conversation, convIndex) => {
+              const isSelectedConversation = conversation.id === props.selectedConversationId;
+              const hasActiveRun = (runsByConversationId.get(conversation.id) ?? []).some(
+                (run) => run.status === "queued" || run.status === "running"
+              );
+              return /* @__PURE__ */ jsxRuntimeExports.jsxs(
                 "button",
                 {
                   type: "button",
-                  className: `run-row ${run.id === props.selectedRunId ? "selected" : ""}`,
-                  onClick: () => props.onSelectRun(run.id, website.id),
+                  className: `conversation-row ${isSelectedConversation ? "selected" : ""}`,
+                  style: isManualConversations ? getDragStyle("conversation", convIndex) : {},
+                  onPointerDown: isManualConversations ? (event) => handlePointerDown(event, "conversation", conversation.id, website.id) : void 0,
+                  onClick: () => props.onSelectConversation(conversation.id, website.id),
                   children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: run.title }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: formatRelativeTime(run.updatedAt) })
-                    ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `status-pill status-${run.status}`, children: statusLabel(run.status) })
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "conversation-copy", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "conversation-line", children: [
+                      hasActiveRun ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "conversation-active-dot", "aria-hidden": "true" }) : null,
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: conversation.title })
+                    ] }) }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("time", { children: formatRelativeTime(conversation.updatedAt) })
                   ]
                 },
-                run.id
-              ))
-            ] })
-          ] }) : null
+                conversation.id
+              );
+            })
+          ] }) }) }) : null,
+          !props.collapsed && !expanded && !collapsing && pinnedCollapsedConversation ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "conversation-pinned-shell", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "conversation-list-shell", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "website-runs", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "button",
+            {
+              type: "button",
+              className: `conversation-row ${pinnedCollapsedConversation.id === props.selectedConversationId ? "selected" : ""}`,
+              onClick: () => props.onSelectConversation(pinnedCollapsedConversation.id, website.id),
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "conversation-copy", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "conversation-line", children: [
+                  (runsByConversationId.get(pinnedCollapsedConversation.id) ?? []).some(
+                    (run) => run.status === "queued" || run.status === "running"
+                  ) ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "conversation-active-dot", "aria-hidden": "true" }) : null,
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: pinnedCollapsedConversation.title })
+                ] }) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("time", { children: formatRelativeTime(pinnedCollapsedConversation.updatedAt) })
+              ]
+            }
+          ) }) }) }) : null
         ] }, website.id);
-      })
+      }) })
     ] })
+  ] });
+}
+function normalizeDraftAnswer(value) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+function resolvePendingUserInputAnswer(draft) {
+  return normalizeDraftAnswer(draft?.customAnswer) ?? normalizeDraftAnswer(draft?.selectedOptionLabel);
+}
+function setPendingUserInputCustomAnswer(draft, customAnswer) {
+  const selectedOptionLabel = customAnswer.trim().length > 0 ? void 0 : draft?.selectedOptionLabel;
+  return {
+    customAnswer,
+    ...selectedOptionLabel ? { selectedOptionLabel } : {}
+  };
+}
+function buildPendingUserInputAnswers(questions, draftAnswers) {
+  const answers = {};
+  for (const question of questions) {
+    const answer = resolvePendingUserInputAnswer(draftAnswers[question.id]);
+    if (!answer) {
+      return null;
+    }
+    answers[question.id] = answer;
+  }
+  return answers;
+}
+function derivePendingUserInputProgress(questions, draftAnswers, questionIndex) {
+  const normalizedIndex = questions.length === 0 ? 0 : Math.max(0, Math.min(questionIndex, questions.length - 1));
+  const activeQuestion = questions[normalizedIndex] ?? null;
+  const activeDraft = activeQuestion ? draftAnswers[activeQuestion.id] : void 0;
+  const resolvedAnswer = resolvePendingUserInputAnswer(activeDraft);
+  const customAnswer = activeDraft?.customAnswer ?? "";
+  const isLastQuestion = questions.length === 0 ? true : normalizedIndex >= questions.length - 1;
+  return {
+    questionIndex: normalizedIndex,
+    activeQuestion,
+    selectedOptionLabel: activeDraft?.selectedOptionLabel,
+    customAnswer,
+    resolvedAnswer,
+    isLastQuestion,
+    isComplete: buildPendingUserInputAnswers(questions, draftAnswers) !== null,
+    canAdvance: Boolean(resolvedAnswer)
+  };
+}
+function PendingUserInputPanel({
+  request,
+  answers,
+  questionIndex,
+  isResponding,
+  onSelectOption,
+  onAdvance
+}) {
+  const timerRef = reactExports.useRef(null);
+  reactExports.useEffect(() => {
+    return () => {
+      if (timerRef.current !== null) {
+        window.clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+  if (!request || request.questions.length === 0) {
+    return null;
+  }
+  const progress = derivePendingUserInputProgress(request.questions, answers, questionIndex);
+  const activeQuestion = progress.activeQuestion;
+  if (!activeQuestion) {
+    return null;
+  }
+  const selectOptionAndAutoAdvance = (questionId, optionLabel) => {
+    onSelectOption(questionId, optionLabel);
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+    }
+    timerRef.current = window.setTimeout(() => {
+      timerRef.current = null;
+      onAdvance();
+    }, 200);
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "pending-user-input", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "pending-user-input-header", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "summary-card-badge", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(ClipboardList, { size: 12 }),
+        "Request User Input"
+      ] }),
+      request.questions.length > 1 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+        progress.questionIndex + 1,
+        " of ",
+        request.questions.length
+      ] }) : null
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "pending-user-input-question", children: activeQuestion.question }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "pending-user-input-options", children: activeQuestion.options.map((option, index2) => {
+      const isSelected = progress.selectedOptionLabel === option.label;
+      return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          type: "button",
+          className: `pending-user-input-option ${isSelected ? "selected" : ""}`,
+          disabled: isResponding,
+          onClick: () => selectOptionAndAutoAdvance(activeQuestion.id, option.label),
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("kbd", { children: index2 + 1 }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: option.label }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("small", { children: option.description })
+            ] }),
+            isSelected ? /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { size: 13 }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowRight, { size: 13 })
+          ]
+        },
+        `${activeQuestion.id}:${option.label}`
+      );
+    }) })
   ] });
 }
 const EMPTY_SNAPSHOT = {
@@ -26155,9 +26774,11 @@ const EMPTY_SNAPSHOT = {
   },
   settings: {
     selectedWebsiteId: null,
-    selectedRunId: null,
+    selectedConversationId: null,
     preferredModelId: "openrouter/auto",
-    agentMode: "squad",
+    interactionMode: "chat",
+    projectSortMode: "recent",
+    conversationSortMode: "recent",
     ideCommand: "code",
     websitesRoot: null,
     vercelTeamId: "",
@@ -26167,7 +26788,10 @@ const EMPTY_SNAPSHOT = {
   models: [],
   modelsFetchedAt: null,
   websites: [],
-  runs: []
+  conversations: [],
+  runs: [],
+  proposedPlans: [],
+  pendingUserInputs: []
 };
 const SIDEBAR_WIDTH_KEY = "jjcoder.sidebar.width";
 const SIDEBAR_COLLAPSED_KEY = "jjcoder.sidebar.collapsed";
@@ -26215,6 +26839,7 @@ function describeSource(source) {
   }
 }
 function App() {
+  const bridge = window.jjcoder;
   const [snapshot, setSnapshot] = reactExports.useState(EMPTY_SNAPSHOT);
   const [loading, setLoading] = reactExports.useState(true);
   const [error, setError] = reactExports.useState(null);
@@ -26230,6 +26855,9 @@ function App() {
   const [openrouterKey, setOpenrouterKey] = reactExports.useState("");
   const [githubToken, setGithubToken] = reactExports.useState("");
   const [vercelToken, setVercelToken] = reactExports.useState("");
+  const [pendingUserInputAnswers, setPendingUserInputAnswers] = reactExports.useState({});
+  const [pendingUserInputQuestionIndex, setPendingUserInputQuestionIndex] = reactExports.useState(0);
+  const [respondingUserInput, setRespondingUserInput] = reactExports.useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = reactExports.useState(() => readStoredBoolean(SIDEBAR_COLLAPSED_KEY, false));
   const [sidebarWidth, setSidebarWidth] = reactExports.useState(() => readStoredNumber(SIDEBAR_WIDTH_KEY, DEFAULT_SIDEBAR_WIDTH));
   const [workbenchLeftWidth, setWorkbenchLeftWidth] = reactExports.useState(
@@ -26239,8 +26867,13 @@ function App() {
   const workbenchRef = reactExports.useRef(null);
   const resizeRef = reactExports.useRef(null);
   reactExports.useEffect(() => {
+    if (!bridge) {
+      setError("The JJcoder desktop bridge is unavailable. Reload the app or restart Electron.");
+      setLoading(false);
+      return;
+    }
     let disposed = false;
-    void window.jjcoder.getSnapshot().then((next) => {
+    void bridge.getSnapshot().then((next) => {
       if (!disposed) {
         setSnapshot(next);
       }
@@ -26253,16 +26886,16 @@ function App() {
         setLoading(false);
       }
     });
-    const unsubscribeSnapshot = window.jjcoder.subscribe("snapshot", (next) => {
+    const unsubscribeSnapshot = bridge.subscribe("snapshot", (next) => {
       setSnapshot(next);
     });
-    const unsubscribeRun = window.jjcoder.subscribe("run-updated", (run) => {
+    const unsubscribeRun = bridge.subscribe("run-updated", (run) => {
       setSnapshot((prev) => ({
         ...prev,
         runs: [run, ...prev.runs.filter((candidate) => candidate.id !== run.id)]
       }));
     });
-    const unsubscribePreview = window.jjcoder.subscribe("preview-updated", ({ websiteId, preview }) => {
+    const unsubscribePreview = bridge.subscribe("preview-updated", ({ websiteId, preview }) => {
       setSnapshot((prev) => ({
         ...prev,
         websites: prev.websites.map((website) => website.id === websiteId ? { ...website, preview } : website)
@@ -26274,7 +26907,7 @@ function App() {
       unsubscribeRun();
       unsubscribePreview();
     };
-  }, []);
+  }, [bridge]);
   reactExports.useEffect(() => {
     const needsOnboarding = !loading && !snapshot.settings.onboardingCompletedAt && (!snapshot.auth.openRouterConfigured || snapshot.websites.length === 0);
     setShowOnboarding(needsOnboarding);
@@ -26377,10 +27010,67 @@ function App() {
     return snapshot.websites.find((website) => website.id === snapshot.settings.selectedWebsiteId) ?? null;
   }, [snapshot.settings.selectedWebsiteId, snapshot.websites]);
   const activeWebsite = selectedWebsite ?? snapshot.websites[0] ?? null;
-  const activeWebsiteRuns = reactExports.useMemo(() => {
+  const activeWebsiteConversations = reactExports.useMemo(() => {
     if (!activeWebsite) return [];
-    return snapshot.runs.filter((run) => run.websiteId === activeWebsite.id);
-  }, [snapshot.runs, activeWebsite]);
+    const conversations = snapshot.conversations.filter((conversation) => conversation.websiteId === activeWebsite.id);
+    const manualOrder = new Map(activeWebsite.conversationIds.map((id, index2) => [id, index2]));
+    switch (snapshot.settings.projectSortMode) {
+      case "name":
+        return [...conversations].sort((left, right) => left.title.localeCompare(right.title));
+      case "manual":
+        return [...conversations].sort(
+          (left, right) => (manualOrder.get(left.id) ?? Number.MAX_SAFE_INTEGER) - (manualOrder.get(right.id) ?? Number.MAX_SAFE_INTEGER)
+        );
+      default:
+        return [...conversations].sort(
+          (left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()
+        );
+    }
+  }, [activeWebsite, snapshot.conversations, snapshot.settings.projectSortMode]);
+  const selectedConversation = reactExports.useMemo(() => {
+    const selectedId = snapshot.settings.selectedConversationId;
+    if (!selectedId) {
+      return activeWebsiteConversations[0] ?? null;
+    }
+    return snapshot.conversations.find((conversation) => conversation.id === selectedId) ?? activeWebsiteConversations[0] ?? null;
+  }, [activeWebsiteConversations, snapshot.conversations, snapshot.settings.selectedConversationId]);
+  const activeConversationRuns = reactExports.useMemo(() => {
+    if (!selectedConversation) return [];
+    const runsById = new Map(snapshot.runs.map((run) => [run.id, run]));
+    return selectedConversation.runIds.map((runId) => runsById.get(runId)).filter((run) => Boolean(run)).sort((left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime());
+  }, [selectedConversation, snapshot.runs]);
+  const activePlan = reactExports.useMemo(() => {
+    const selectedRun = activeConversationRuns[activeConversationRuns.length - 1];
+    if (!selectedRun) return null;
+    return (snapshot.proposedPlans ?? []).find(
+      (plan) => plan.runId === selectedRun.id && (plan.status === "proposed" || plan.status === "implemented")
+    ) ?? null;
+  }, [activeConversationRuns, snapshot.proposedPlans]);
+  const activePendingUserInput = reactExports.useMemo(() => {
+    const pendingRunIds = new Set(activeConversationRuns.map((run) => run.id));
+    return (snapshot.pendingUserInputs ?? []).find(
+      (request) => pendingRunIds.has(request.runId) && request.status === "pending"
+    ) ?? null;
+  }, [activeConversationRuns, snapshot.pendingUserInputs]);
+  const activePendingUserInputProgress = reactExports.useMemo(() => {
+    if (!activePendingUserInput) return null;
+    return derivePendingUserInputProgress(
+      activePendingUserInput.questions,
+      pendingUserInputAnswers,
+      pendingUserInputQuestionIndex
+    );
+  }, [activePendingUserInput, pendingUserInputAnswers, pendingUserInputQuestionIndex]);
+  const isAgentRunning = reactExports.useMemo(() => {
+    return activeConversationRuns.some((run) => run.status === "running" || run.status === "queued");
+  }, [activeConversationRuns]);
+  const activeRunId = reactExports.useMemo(() => {
+    const running = activeConversationRuns.find((run) => run.status === "running" || run.status === "queued");
+    return running?.id ?? null;
+  }, [activeConversationRuns]);
+  reactExports.useEffect(() => {
+    setPendingUserInputAnswers({});
+    setPendingUserInputQuestionIndex(0);
+  }, [activePendingUserInput?.id]);
   const handleError = (reason) => {
     setError(reason instanceof Error ? reason.message : String(reason));
   };
@@ -26439,20 +27129,26 @@ function App() {
   };
   const selectWebsite = async (websiteId) => {
     await mutateSnapshot(async () => {
-      const nextRun = snapshot.runs.find((run) => run.websiteId === websiteId)?.id ?? null;
+      const currentSelectedConversation = snapshot.conversations.find(
+        (conversation) => conversation.id === snapshot.settings.selectedConversationId
+      );
+      const nextConversation = currentSelectedConversation?.websiteId === websiteId ? currentSelectedConversation.id : snapshot.conversations.find((conversation) => conversation.websiteId === websiteId)?.id ?? null;
       return await window.jjcoder.updateSettings({
         selectedWebsiteId: websiteId,
-        selectedRunId: nextRun
+        selectedConversationId: nextConversation
       });
     });
   };
-  const selectRun = async (runId, websiteId) => {
+  const selectConversation = async (conversationId, websiteId) => {
     await mutateSnapshot(async () => {
       return await window.jjcoder.updateSettings({
         selectedWebsiteId: websiteId,
-        selectedRunId: runId
+        selectedConversationId: conversationId
       });
     });
+  };
+  const createConversation = async (websiteId) => {
+    await mutateSnapshot(async () => await window.jjcoder.createConversation({ websiteId }));
   };
   const createWebsite = async () => {
     const normalizedCreatePath = createPath.trim() ? createPath.trim() : snapshot.settings.websitesRoot && createName.trim() ? joinPath(snapshot.settings.websitesRoot, sanitizeSegment(createName) || "my-website") : "";
@@ -26480,19 +27176,121 @@ function App() {
     });
   };
   const dispatchRun = async () => {
-    if (!activeWebsite || !prompt.trim()) {
+    if (!activeWebsite) {
+      return;
+    }
+    if (activePendingUserInput) {
+      const answers = buildPendingUserInputAnswers(activePendingUserInput.questions, pendingUserInputAnswers);
+      if (!answers) {
+        setError("Answer the current question before continuing.");
+        return;
+      }
+      try {
+        setRespondingUserInput(true);
+        await window.jjcoder.respondUserInput({
+          requestId: activePendingUserInput.id,
+          answers
+        });
+        setPrompt("");
+        setPendingUserInputAnswers({});
+        setPendingUserInputQuestionIndex(0);
+        setError(null);
+      } catch (reason) {
+        handleError(reason);
+      } finally {
+        setRespondingUserInput(false);
+      }
+      return;
+    }
+    if (activePlan && activePlan.status === "proposed") {
+      const trimmedPrompt = prompt.trim();
+      try {
+        if (trimmedPrompt) {
+          await window.jjcoder.dispatchRun({
+            websiteId: activeWebsite.id,
+            conversationId: selectedConversation?.id ?? null,
+            prompt: trimmedPrompt,
+            interactionMode: "plan"
+          });
+        } else {
+          await window.jjcoder.dispatchRun({
+            websiteId: activeWebsite.id,
+            conversationId: selectedConversation?.id ?? null,
+            prompt: `PLEASE IMPLEMENT THIS PLAN:
+${activePlan.planMarkdown}`,
+            interactionMode: "chat",
+            sourcePlanId: activePlan.id
+          });
+        }
+        setPrompt("");
+        setError(null);
+      } catch (reason) {
+        handleError(reason);
+      }
+      return;
+    }
+    if (!prompt.trim()) {
       return;
     }
     try {
       await window.jjcoder.dispatchRun({
         websiteId: activeWebsite.id,
-        prompt: prompt.trim()
+        conversationId: selectedConversation?.id ?? null,
+        prompt: prompt.trim(),
+        interactionMode: snapshot.settings.interactionMode
       });
       setPrompt("");
       setError(null);
     } catch (reason) {
       handleError(reason);
     }
+  };
+  const implementPlan = async () => {
+    if (!activeWebsite || !activePlan || activePlan.status !== "proposed") {
+      return;
+    }
+    try {
+      await window.jjcoder.dispatchRun({
+        websiteId: activeWebsite.id,
+        conversationId: selectedConversation?.id ?? null,
+        prompt: `PLEASE IMPLEMENT THIS PLAN:
+${activePlan.planMarkdown}`,
+        interactionMode: "chat",
+        sourcePlanId: activePlan.id
+      });
+      setPrompt("");
+      setError(null);
+    } catch (reason) {
+      handleError(reason);
+    }
+  };
+  const cancelCurrentRun = async () => {
+    if (!activeRunId) return;
+    try {
+      const next = await window.jjcoder.cancelRun(activeRunId);
+      setSnapshot(next);
+      setError(null);
+    } catch (reason) {
+      handleError(reason);
+    }
+  };
+  const handleSelectPendingOption = (questionId, optionLabel) => {
+    setPendingUserInputAnswers((prev) => ({
+      ...prev,
+      [questionId]: {
+        selectedOptionLabel: optionLabel
+      }
+    }));
+  };
+  const handleAdvancePendingInput = () => {
+    if (!activePendingUserInput || !activePendingUserInputProgress) {
+      return;
+    }
+    if (activePendingUserInputProgress.isLastQuestion) {
+      void dispatchRun();
+      return;
+    }
+    setPendingUserInputQuestionIndex((prev) => Math.min(prev + 1, activePendingUserInput.questions.length - 1));
   };
   const beginResize = (target) => (event) => {
     event.preventDefault();
@@ -26508,6 +27306,17 @@ function App() {
     event.currentTarget.setPointerCapture(event.pointerId);
     document.body.classList.add("is-resizing");
   };
+  if (!bridge) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "app-shell", children: /* @__PURE__ */ jsxRuntimeExports.jsx("main", { className: "workspace-shell", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "empty-panel", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "eyebrow", children: "Bridge Error" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { children: "JJcoder could not connect to the desktop preload bridge" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { children: [
+        "The renderer loaded, but ",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("code", { children: "window.jjcoder" }),
+        " was not injected. Restart the app. If this keeps happening, check the Electron preload path and main-process logs."
+      ] })
+    ] }) }) });
+  }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
     "div",
     {
@@ -26521,12 +27330,18 @@ function App() {
           WebsiteSidebar,
           {
             websites: snapshot.websites,
+            conversations: snapshot.conversations,
             runs: snapshot.runs,
             collapsed: sidebarCollapsed,
+            projectSortMode: snapshot.settings.projectSortMode,
             selectedWebsiteId: snapshot.settings.selectedWebsiteId,
-            selectedRunId: snapshot.settings.selectedRunId,
+            selectedConversationId: snapshot.settings.selectedConversationId,
             onSelectWebsite: (websiteId) => void selectWebsite(websiteId),
-            onSelectRun: (runId, websiteId) => void selectRun(runId, websiteId),
+            onSelectConversation: (conversationId, websiteId) => void selectConversation(conversationId, websiteId),
+            onCreateConversation: (websiteId) => void createConversation(websiteId),
+            onChangeProjectSortMode: (sortMode) => void mutateSnapshot(async () => await window.jjcoder.updateSettings({ projectSortMode: sortMode })),
+            onReorderWebsites: (orderedIds) => void mutateSnapshot(async () => await window.jjcoder.reorderWebsites({ orderedIds })),
+            onReorderConversations: (websiteId, orderedIds) => void mutateSnapshot(async () => await window.jjcoder.reorderConversations({ websiteId, orderedIds })),
             onCreateWebsite: () => setShowCreateWebsite(true),
             onToggleCollapse: () => {
               const next = !sidebarCollapsed;
@@ -26556,40 +27371,6 @@ function App() {
               /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "header-caption", children: activeWebsite ? `${activeWebsite.workspacePath}` : "Run the guided setup to create your first website" })
             ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "header-actions", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                ModelPicker,
-                {
-                  models: snapshot.models,
-                  selectedModelId: snapshot.settings.preferredModelId,
-                  onSelect: (modelId) => {
-                    void mutateSnapshot(async () => await window.jjcoder.updateSettings({ preferredModelId: modelId }));
-                  }
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "segmented", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "button",
-                  {
-                    type: "button",
-                    className: snapshot.settings.agentMode === "solo" ? "active" : "",
-                    onClick: () => {
-                      void mutateSnapshot(async () => await window.jjcoder.updateSettings({ agentMode: "solo" }));
-                    },
-                    children: "Solo"
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "button",
-                  {
-                    type: "button",
-                    className: snapshot.settings.agentMode === "squad" ? "active" : "",
-                    onClick: () => {
-                      void mutateSnapshot(async () => await window.jjcoder.updateSettings({ agentMode: "squad" }));
-                    },
-                    children: "Squad"
-                  }
-                )
-              ] }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { type: "button", className: "toolbar-chip", onClick: () => setShowOnboarding(true), children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx(WandSparkles, { size: 13 }),
                 "Setup"
@@ -26726,40 +27507,128 @@ function App() {
               style: { gridTemplateColumns: `${workbenchLeftWidth}px var(--divider-size) minmax(${MIN_PREVIEW_WIDTH}px, 1fr)` },
               children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "left-column", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(ChatThread, { runs: activeWebsiteRuns }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chat-plan-shell", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ChatThread, { runs: activeConversationRuns }) }),
                   /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "composer-area", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      PendingUserInputPanel,
+                      {
+                        request: activePendingUserInput,
+                        answers: pendingUserInputAnswers,
+                        questionIndex: pendingUserInputQuestionIndex,
+                        isResponding: respondingUserInput,
+                        onSelectOption: handleSelectPendingOption,
+                        onAdvance: handleAdvancePendingInput
+                      }
+                    ),
                     /* @__PURE__ */ jsxRuntimeExports.jsx(
                       "textarea",
                       {
                         value: prompt,
-                        onChange: (event) => setPrompt(event.target.value),
-                        placeholder: "Describe what to build...",
+                        disabled: isAgentRunning && !activePendingUserInput,
+                        onChange: (event) => {
+                          setPrompt(event.target.value);
+                          if (activePendingUserInputProgress?.activeQuestion?.allowFreeform) {
+                            const question = activePendingUserInputProgress.activeQuestion;
+                            setPendingUserInputAnswers((prev) => ({
+                              ...prev,
+                              [question.id]: setPendingUserInputCustomAnswer(prev[question.id], event.target.value)
+                            }));
+                          }
+                        },
+                        placeholder: isAgentRunning && !activePendingUserInput ? "Agent is working..." : activePendingUserInputProgress?.activeQuestion?.allowFreeform ? "Type a custom answer or choose an option..." : activePlan && activePlan.status === "proposed" ? "Add refinements, or leave empty to implement the plan..." : "Describe what to build...",
                         onKeyDown: (event) => {
                           if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-                            void dispatchRun();
+                            if (!isAgentRunning || activePendingUserInput) {
+                              void dispatchRun();
+                            }
                           }
+                          if (!activePendingUserInput || event.metaKey || event.ctrlKey || event.altKey) {
+                            return;
+                          }
+                          const digit = Number.parseInt(event.key, 10);
+                          if (Number.isNaN(digit) || digit < 1 || digit > 9) {
+                            return;
+                          }
+                          const question = activePendingUserInputProgress?.activeQuestion;
+                          const option = question?.options[digit - 1];
+                          if (!question || !option) {
+                            return;
+                          }
+                          event.preventDefault();
+                          handleSelectPendingOption(question.id, option.label);
+                          window.setTimeout(() => {
+                            handleAdvancePendingInput();
+                          }, 200);
                         }
                       }
                     ),
                     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "composer-footer", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
-                        snapshot.settings.agentMode,
-                        " mode",
-                        snapshot.auth.openRouterConfigured ? "" : " · Add OpenRouter in setup"
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "composer-left-controls", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          ModelPicker,
+                          {
+                            models: snapshot.models,
+                            selectedModelId: snapshot.settings.preferredModelId,
+                            onSelect: (modelId) => {
+                              void mutateSnapshot(async () => await window.jjcoder.updateSettings({ preferredModelId: modelId }));
+                            }
+                          }
+                        ),
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "segmented", children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            "button",
+                            {
+                              type: "button",
+                              className: snapshot.settings.interactionMode === "chat" ? "active" : "",
+                              onClick: () => {
+                                void mutateSnapshot(async () => await window.jjcoder.updateSettings({ interactionMode: "chat" }));
+                              },
+                              children: "Chat"
+                            }
+                          ),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            "button",
+                            {
+                              type: "button",
+                              className: snapshot.settings.interactionMode === "plan" ? "active" : "",
+                              onClick: () => {
+                                void mutateSnapshot(async () => await window.jjcoder.updateSettings({ interactionMode: "plan" }));
+                              },
+                              children: "Plan"
+                            }
+                          )
+                        ] })
                       ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                        "button",
-                        {
-                          type: "button",
-                          className: "primary-button",
-                          disabled: !activeWebsite || !prompt.trim(),
-                          onClick: () => void dispatchRun(),
-                          children: [
-                            /* @__PURE__ */ jsxRuntimeExports.jsx(Send, { size: 13 }),
-                            "Send"
-                          ]
-                        }
-                      )
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "composer-actions", children: [
+                        activePlan && activePlan.status === "proposed" && !prompt.trim() && !isAgentRunning ? /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { type: "button", className: "toolbar-chip", onClick: () => void implementPlan(), children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronDown, { size: 13 }),
+                          "Implement plan"
+                        ] }) : null,
+                        isAgentRunning && !activePendingUserInput ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                          "button",
+                          {
+                            type: "button",
+                            className: "stop-button",
+                            onClick: () => void cancelCurrentRun(),
+                            children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(Square, { size: 11 }),
+                              "Stop"
+                            ]
+                          }
+                        ) : /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                          "button",
+                          {
+                            type: "button",
+                            className: "primary-button",
+                            disabled: !activeWebsite || (activePendingUserInput ? !activePendingUserInputProgress?.canAdvance && !activePendingUserInputProgress?.isComplete : !prompt.trim() && !(activePlan && activePlan.status === "proposed")),
+                            onClick: () => void dispatchRun(),
+                            children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsx(Send, { size: 13 }),
+                              activePendingUserInput ? activePendingUserInputProgress?.isLastQuestion ? "Submit answers" : "Next question" : activePlan && activePlan.status === "proposed" ? prompt.trim() ? "Refine" : "Implement" : "Send"
+                            ]
+                          }
+                        )
+                      ] })
                     ] })
                   ] })
                 ] }),

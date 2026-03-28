@@ -1,50 +1,32 @@
 import { Fragment, useEffect, useRef } from "react";
 import {
-  CheckIcon,
   AlertTriangleIcon,
-  LoaderIcon,
-  FileIcon,
-  FileEditIcon,
-  TerminalIcon,
+  CheckIcon,
   EyeIcon,
-  PlayIcon,
+  FileEditIcon,
+  FileIcon,
   FlagIcon,
-  BotIcon,
-  TrashIcon,
-  FolderOpenIcon
+  FolderOpenIcon,
+  LoaderIcon,
+  MessageSquareIcon,
+  PlayIcon,
+  TerminalIcon,
+  TrashIcon
 } from "lucide-react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { AgentRun } from "@shared/types";
 import { formatRelativeTime } from "@renderer/lib/format";
 import { deriveTimelineActivities, type TimelineActivity } from "@renderer/lib/runTimeline";
+import { ProposedPlanCard } from "./ProposedPlanCard";
 
 function parseJson(raw: string): Record<string, unknown> | null {
   try {
     const parsed = JSON.parse(raw) as unknown;
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : null;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
   } catch {
     return null;
   }
-}
-
-function countLines(text: string | undefined): number {
-  if (!text) return 0;
-  return text.split(/\r?\n/).length;
-}
-
-function extractWrittenContent(activity: TimelineActivity): string | undefined {
-  if (!activity.rawInput) return undefined;
-  const input = parseJson(activity.rawInput);
-  return typeof input?.content === "string" ? input.content : undefined;
-}
-
-function extractReadContent(activity: TimelineActivity): string | undefined {
-  if (!activity.rawOutput) return undefined;
-  const output = parseJson(activity.rawOutput);
-  return typeof output?.content === "string" ? output.content : undefined;
 }
 
 function extractFilePath(activity: TimelineActivity): string | undefined {
@@ -64,20 +46,7 @@ function extractCommandOutput(activity: TimelineActivity): string | undefined {
   const output = parseJson(activity.rawOutput);
   const stdout = typeof output?.stdout === "string" ? output.stdout.trim() : "";
   const stderr = typeof output?.stderr === "string" ? output.stderr.trim() : "";
-  const combined = (stderr || stdout).trim();
-  if (!combined) return undefined;
-  const lines = combined.split(/\r?\n/).filter(Boolean);
-  return lines.slice(Math.max(0, lines.length - 3)).join("\n");
-}
-
-function extractFinishSummary(activity: TimelineActivity): string | undefined {
-  const input = activity.rawInput ? parseJson(activity.rawInput) : null;
-  const output = activity.rawOutput ? parseJson(activity.rawOutput) : null;
-  return typeof input?.summary === "string"
-    ? input.summary
-    : typeof output?.summary === "string"
-      ? output.summary
-      : undefined;
+  return (stderr || stdout).trim() || undefined;
 }
 
 function extractListFilesResult(activity: TimelineActivity): string | undefined {
@@ -111,72 +80,40 @@ function toolIcon(activity: TimelineActivity) {
   }
 }
 
+function toolActionLabel(activity: TimelineActivity): string {
+  switch (activity.toolName) {
+    case "read_file":
+      return "Read";
+    case "write_file":
+      return "Saved changes";
+    case "delete_file":
+      return "Deleted";
+    case "list_files":
+      return "Listed";
+    case "run_workspace_command":
+      return "Command";
+    case "start_preview":
+      return "Started preview";
+    case "finish_build":
+      return "Finished";
+    case "request_user_input":
+      return "Requested input";
+    default:
+      return "Tool";
+  }
+}
+
 function statusIcon(activity: TimelineActivity) {
   if (!activity.resolved) return <LoaderIcon size={11} className="chat-spin" />;
   return <CheckIcon size={11} />;
 }
 
-function DiffStat({ activity }: { activity: TimelineActivity }) {
-  const written = extractWrittenContent(activity);
-  const read = extractReadContent(activity);
-
-  if (activity.toolName === "write_file" && written) {
-    const lines = countLines(written);
-    return (
-      <span className="chat-diff-stat">
-        <span className="diff-add">+{lines}</span>
-      </span>
-    );
-  }
-
-  if (activity.toolName === "read_file" && read) {
-    const lines = countLines(read);
-    return <span className="chat-diff-stat">{lines} lines</span>;
-  }
-
-  if (activity.note) {
-    return <span className="chat-diff-stat">{activity.note}</span>;
-  }
-
-  return null;
-}
-
-function LiveToolRow({ activity }: { activity: TimelineActivity }) {
-  const filePath = extractFilePath(activity);
-  const command = extractCommand(activity);
-  const displayName = filePath ?? command ?? activity.title;
-  const detail = getToolDetail(activity);
-
+function ChatMarkdown({ content }: { content: string }) {
   return (
-    <div className={`chat-inline-tool ${activity.resolved ? "resolved" : "pending"}`}>
-      <div className="chat-inline-tool-header">
-        <span className="chat-live-status">{statusIcon(activity)}</span>
-        <span className="chat-live-icon">{toolIcon(activity)}</span>
-        <span className="chat-live-name" title={displayName}>{displayName}</span>
-        <DiffStat activity={activity} />
-      </div>
-      {detail ? <div className="chat-live-detail">{detail}</div> : null}
+    <div className="chat-markdown">
+      <Markdown remarkPlugins={[remarkGfm]}>{content}</Markdown>
     </div>
   );
-}
-
-function getToolDetail(activity: TimelineActivity): string | null {
-  if (!activity.resolved) return null;
-
-  if (activity.toolName === "run_workspace_command") {
-    const output = extractCommandOutput(activity);
-    return output ?? "Command completed";
-  }
-  if (activity.toolName === "list_files") {
-    return extractListFilesResult(activity) ?? null;
-  }
-  if (activity.toolName === "start_preview") {
-    return "Preview server is running";
-  }
-  if (activity.toolName === "finish_build") {
-    return extractFinishSummary(activity) ?? "Build marked complete";
-  }
-  return null;
 }
 
 function WorkingIndicator() {
@@ -192,10 +129,86 @@ function WorkingIndicator() {
   );
 }
 
-function ChatMarkdown({ content }: { content: string }) {
+function LiveToolRow({ activity }: { activity: TimelineActivity }) {
+  const filePath = extractFilePath(activity);
+  const command = extractCommand(activity);
+  const displayTarget = filePath ?? command ?? activity.title;
+  const actionLabel = toolActionLabel(activity);
+  const detail = getToolDetail(activity);
+
   return (
-    <div className="chat-markdown">
-      <Markdown remarkPlugins={[remarkGfm]}>{content}</Markdown>
+    <div className={`chat-inline-tool ${activity.resolved ? "resolved" : "pending"}`}>
+      <div className="chat-inline-tool-header">
+        <span className="chat-live-status">{statusIcon(activity)}</span>
+        <span className="chat-live-icon">{toolIcon(activity)}</span>
+        <span className="chat-tool-action">{actionLabel}</span>
+        <span className="chat-live-name" title={displayTarget}>{displayTarget}</span>
+      </div>
+      {detail ? <div className="chat-live-detail">{detail}</div> : null}
+    </div>
+  );
+}
+
+function getToolDetail(activity: TimelineActivity): string | null {
+  if (!activity.resolved) return null;
+  if (activity.toolName === "run_workspace_command") {
+    return extractCommandOutput(activity) ?? "Command completed";
+  }
+  if (activity.toolName === "list_files") {
+    return extractListFilesResult(activity) ?? null;
+  }
+  if (activity.toolName === "start_preview") {
+    return "Preview server is running";
+  }
+  return activity.note ?? null;
+}
+
+function SummaryCard({ activity }: { activity: TimelineActivity }) {
+  const body = activity.body;
+  const note = activity.note;
+  let summaryJson: Record<string, unknown> | null = null;
+  if (body) {
+    summaryJson = parseJson(body);
+  }
+
+  const summaryText = summaryJson
+    ? (typeof summaryJson.summary === "string" ? summaryJson.summary : null)
+    : null;
+  const displayBody = summaryText ?? body;
+
+  return (
+    <div className="summary-card">
+      <div className="summary-card-header">
+        <span className="summary-card-badge">
+          <CheckIcon size={12} />
+          Summary
+        </span>
+      </div>
+      {displayBody ? <ChatMarkdown content={displayBody} /> : null}
+      {!displayBody && note ? <p className="summary-card-note">{note}</p> : null}
+    </div>
+  );
+}
+
+function UserInputResultCard({ activity }: { activity: TimelineActivity }) {
+  // Consolidated card: show questions + answers together
+  const answerLines = activity.body?.split(/\r?\n/).filter(Boolean) ?? [];
+
+  return (
+    <div className="user-input-card answered">
+      <div className="user-input-card-header">
+        <span className="summary-card-badge">
+          <CheckIcon size={12} />
+          User Input
+        </span>
+      </div>
+      {answerLines.length > 0 ? (
+        <div className="user-input-answer-list">
+          {answerLines.map((line, index) => (
+            <div key={index} className="user-input-answer-row">{line}</div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -209,6 +222,14 @@ function RunMessages({ run }: { run: AgentRun }) {
   const isRunning = run.status === "running" || run.status === "queued";
   const hasPendingTool = activities.some((activity) => activity.kind === "tool" && !activity.resolved);
   const hasAssistantMessage = activities.some((activity) => activity.kind === "assistant" && activity.body);
+
+  // Filter user_input activities: skip "Request" entries (only show when pending in popup),
+  // show "Answered" entries as consolidated cards
+  const filteredActivities = activities.filter((activity) => {
+    if (activity.kind !== "user_input") return true;
+    // Only show answered/resolved user input in chat
+    return activity.title === "Answered user input";
+  });
 
   return (
     <div className="chat-turn">
@@ -224,16 +245,19 @@ function RunMessages({ run }: { run: AgentRun }) {
             <span className={`chat-status-dot chat-status-${run.status}`} />
             <span className="chat-agent-model">{run.modelId.split("/").pop()}</span>
             <span className="chat-meta-sep">·</span>
-            <span className="chat-meta">{run.mode}</span>
+            <span className="chat-meta">{run.interactionMode}</span>
             <span className="chat-meta-sep">·</span>
             <span className="chat-meta">{formatRelativeTime(run.updatedAt)}</span>
           </div>
 
           <div className="chat-activity-flow">
-            {activities.map((activity) => (
+            {filteredActivities.map((activity) => (
               <Fragment key={activity.id}>
                 {activity.kind === "assistant" && activity.body ? <ChatMarkdown content={activity.body} /> : null}
                 {activity.kind === "tool" ? <LiveToolRow activity={activity} /> : null}
+                {activity.kind === "plan" && activity.body ? <ProposedPlanCard planMarkdown={activity.body} /> : null}
+                {activity.kind === "completion" ? <SummaryCard activity={activity} /> : null}
+                {activity.kind === "user_input" ? <UserInputResultCard activity={activity} /> : null}
                 {activity.kind === "status" ? <StatusLine activity={activity} /> : null}
                 {activity.kind === "error" ? (
                   <div className="chat-error">
@@ -286,18 +310,16 @@ export function ChatThread({ runs }: ChatThreadProps) {
   if (runs.length === 0) {
     return (
       <div className="chat-empty">
-        <BotIcon size={20} />
-        <p>Start a conversation</p>
-        <p className="chat-empty-sub">Describe what to build and the agent will handle the rest.</p>
+        <MessageSquareIcon size={20} />
+        <p>Start a new conversation</p>
+        <p className="chat-empty-sub">Each chat keeps the full back and forth for one project workspace.</p>
       </div>
     );
   }
 
-  const sorted = [...runs].reverse();
-
   return (
     <div className="chat-scroll" ref={scrollRef}>
-      {sorted.map((run) => (
+      {runs.map((run) => (
         <RunMessages key={run.id} run={run} />
       ))}
       <div ref={endRef} />

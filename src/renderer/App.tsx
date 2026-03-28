@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import {
+  ChevronDownIcon,
   GitForkIcon,
   LayoutTemplateIcon,
   PlayIcon,
@@ -7,13 +8,21 @@ import {
   Settings2Icon,
   SendIcon,
   SparklesIcon,
+  SquareIcon,
   WandSparklesIcon
 } from "lucide-react";
-import type { AppSnapshot, AuthSource, ProviderLoginKind } from "@shared/types";
+import type { AgentRun, AppSnapshot, AuthSource, PendingUserInputRequest, ProviderLoginKind, ProposedPlan } from "@shared/types";
 import { ModelPicker } from "./components/ModelPicker";
 import { PreviewPane } from "./components/PreviewPane";
 import { ChatThread } from "./components/ChatThread";
 import { WebsiteSidebar } from "./components/WebsiteSidebar";
+import { PendingUserInputPanel } from "./components/PendingUserInputPanel";
+import {
+  buildPendingUserInputAnswers,
+  derivePendingUserInputProgress,
+  setPendingUserInputCustomAnswer,
+  type PendingUserInputDraftAnswer
+} from "./lib/pendingUserInput";
 
 const EMPTY_SNAPSHOT: AppSnapshot = {
   productName: "JJcoder",
@@ -31,9 +40,11 @@ const EMPTY_SNAPSHOT: AppSnapshot = {
   },
   settings: {
     selectedWebsiteId: null,
-    selectedRunId: null,
+    selectedConversationId: null,
     preferredModelId: "openrouter/auto",
-    agentMode: "squad",
+    interactionMode: "chat",
+    projectSortMode: "recent",
+    conversationSortMode: "recent",
     ideCommand: "code",
     websitesRoot: null,
     vercelTeamId: "",
@@ -43,7 +54,10 @@ const EMPTY_SNAPSHOT: AppSnapshot = {
   models: [],
   modelsFetchedAt: null,
   websites: [],
-  runs: []
+  conversations: [],
+  runs: [],
+  proposedPlans: [],
+  pendingUserInputs: []
 };
 
 const SIDEBAR_WIDTH_KEY = "jjcoder.sidebar.width";
@@ -105,6 +119,7 @@ function describeSource(source: AuthSource): string {
 type ResizeTarget = "sidebar" | "workbench";
 
 export function App() {
+  const bridge = window.jjcoder;
   const [snapshot, setSnapshot] = useState<AppSnapshot>(EMPTY_SNAPSHOT);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,6 +135,9 @@ export function App() {
   const [openrouterKey, setOpenrouterKey] = useState("");
   const [githubToken, setGithubToken] = useState("");
   const [vercelToken, setVercelToken] = useState("");
+  const [pendingUserInputAnswers, setPendingUserInputAnswers] = useState<Record<string, PendingUserInputDraftAnswer>>({});
+  const [pendingUserInputQuestionIndex, setPendingUserInputQuestionIndex] = useState(0);
+  const [respondingUserInput, setRespondingUserInput] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => readStoredBoolean(SIDEBAR_COLLAPSED_KEY, false));
   const [sidebarWidth, setSidebarWidth] = useState(() => readStoredNumber(SIDEBAR_WIDTH_KEY, DEFAULT_SIDEBAR_WIDTH));
   const [workbenchLeftWidth, setWorkbenchLeftWidth] = useState(() =>
@@ -135,8 +153,14 @@ export function App() {
   } | null>(null);
 
   useEffect(() => {
+    if (!bridge) {
+      setError("The JJcoder desktop bridge is unavailable. Reload the app or restart Electron.");
+      setLoading(false);
+      return;
+    }
+
     let disposed = false;
-    void window.jjcoder
+    void bridge
       .getSnapshot()
       .then((next) => {
         if (!disposed) {
@@ -154,16 +178,16 @@ export function App() {
         }
       });
 
-    const unsubscribeSnapshot = window.jjcoder.subscribe("snapshot", (next) => {
+    const unsubscribeSnapshot = bridge.subscribe("snapshot", (next) => {
       setSnapshot(next);
     });
-    const unsubscribeRun = window.jjcoder.subscribe("run-updated", (run) => {
+    const unsubscribeRun = bridge.subscribe("run-updated", (run) => {
       setSnapshot((prev) => ({
         ...prev,
         runs: [run, ...prev.runs.filter((candidate) => candidate.id !== run.id)]
       }));
     });
-    const unsubscribePreview = window.jjcoder.subscribe("preview-updated", ({ websiteId, preview }) => {
+    const unsubscribePreview = bridge.subscribe("preview-updated", ({ websiteId, preview }) => {
       setSnapshot((prev) => ({
         ...prev,
         websites: prev.websites.map((website) => (website.id === websiteId ? { ...website, preview } : website))
@@ -176,7 +200,7 @@ export function App() {
       unsubscribeRun();
       unsubscribePreview();
     };
-  }, []);
+  }, [bridge]);
 
   useEffect(() => {
     const needsOnboarding =
@@ -298,10 +322,83 @@ export function App() {
 
   const activeWebsite = selectedWebsite ?? snapshot.websites[0] ?? null;
 
-  const activeWebsiteRuns = useMemo(() => {
+  const activeWebsiteConversations = useMemo(() => {
     if (!activeWebsite) return [];
-    return snapshot.runs.filter((run) => run.websiteId === activeWebsite.id);
-  }, [snapshot.runs, activeWebsite]);
+    const conversations = snapshot.conversations.filter((conversation) => conversation.websiteId === activeWebsite.id);
+    const manualOrder = new Map(activeWebsite.conversationIds.map((id, index) => [id, index]));
+
+    switch (snapshot.settings.projectSortMode) {
+      case "name":
+        return [...conversations].sort((left, right) => left.title.localeCompare(right.title));
+      case "manual":
+        return [...conversations].sort(
+          (left, right) => (manualOrder.get(left.id) ?? Number.MAX_SAFE_INTEGER) - (manualOrder.get(right.id) ?? Number.MAX_SAFE_INTEGER)
+        );
+      default:
+        return [...conversations].sort(
+          (left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()
+        );
+    }
+  }, [activeWebsite, snapshot.conversations, snapshot.settings.projectSortMode]);
+
+  const selectedConversation = useMemo(() => {
+    const selectedId = snapshot.settings.selectedConversationId;
+    if (!selectedId) {
+      return activeWebsiteConversations[0] ?? null;
+    }
+    return snapshot.conversations.find((conversation) => conversation.id === selectedId) ?? activeWebsiteConversations[0] ?? null;
+  }, [activeWebsiteConversations, snapshot.conversations, snapshot.settings.selectedConversationId]);
+
+  const activeConversationRuns = useMemo(() => {
+    if (!selectedConversation) return [];
+    const runsById = new Map(snapshot.runs.map((run) => [run.id, run]));
+    return selectedConversation.runIds
+      .map((runId) => runsById.get(runId))
+      .filter((run): run is AgentRun => Boolean(run))
+      .sort((left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime());
+  }, [selectedConversation, snapshot.runs]);
+
+  const activePlan = useMemo<ProposedPlan | null>(() => {
+    const selectedRun = activeConversationRuns[activeConversationRuns.length - 1];
+    if (!selectedRun) return null;
+    return (
+      (snapshot.proposedPlans ?? []).find(
+        (plan) => plan.runId === selectedRun.id && (plan.status === "proposed" || plan.status === "implemented")
+      ) ?? null
+    );
+  }, [activeConversationRuns, snapshot.proposedPlans]);
+
+  const activePendingUserInput = useMemo<PendingUserInputRequest | null>(() => {
+    const pendingRunIds = new Set(activeConversationRuns.map((run) => run.id));
+    return (
+      (snapshot.pendingUserInputs ?? []).find(
+        (request) => pendingRunIds.has(request.runId) && request.status === "pending"
+      ) ?? null
+    );
+  }, [activeConversationRuns, snapshot.pendingUserInputs]);
+
+  const activePendingUserInputProgress = useMemo(() => {
+    if (!activePendingUserInput) return null;
+    return derivePendingUserInputProgress(
+      activePendingUserInput.questions,
+      pendingUserInputAnswers,
+      pendingUserInputQuestionIndex
+    );
+  }, [activePendingUserInput, pendingUserInputAnswers, pendingUserInputQuestionIndex]);
+
+  const isAgentRunning = useMemo(() => {
+    return activeConversationRuns.some((run) => run.status === "running" || run.status === "queued");
+  }, [activeConversationRuns]);
+
+  const activeRunId = useMemo(() => {
+    const running = activeConversationRuns.find((run) => run.status === "running" || run.status === "queued");
+    return running?.id ?? null;
+  }, [activeConversationRuns]);
+
+  useEffect(() => {
+    setPendingUserInputAnswers({});
+    setPendingUserInputQuestionIndex(0);
+  }, [activePendingUserInput?.id]);
 
   const handleError = (reason: unknown) => {
     setError(reason instanceof Error ? reason.message : String(reason));
@@ -367,21 +464,31 @@ export function App() {
 
   const selectWebsite = async (websiteId: string) => {
     await mutateSnapshot(async () => {
-      const nextRun = snapshot.runs.find((run) => run.websiteId === websiteId)?.id ?? null;
+      const currentSelectedConversation = snapshot.conversations.find(
+        (conversation) => conversation.id === snapshot.settings.selectedConversationId
+      );
+      const nextConversation =
+        currentSelectedConversation?.websiteId === websiteId
+          ? currentSelectedConversation.id
+          : snapshot.conversations.find((conversation) => conversation.websiteId === websiteId)?.id ?? null;
       return await window.jjcoder.updateSettings({
         selectedWebsiteId: websiteId,
-        selectedRunId: nextRun
+        selectedConversationId: nextConversation
       });
     });
   };
 
-  const selectRun = async (runId: string, websiteId: string) => {
+  const selectConversation = async (conversationId: string, websiteId: string) => {
     await mutateSnapshot(async () => {
       return await window.jjcoder.updateSettings({
         selectedWebsiteId: websiteId,
-        selectedRunId: runId
+        selectedConversationId: conversationId
       });
     });
+  };
+
+  const createConversation = async (websiteId: string) => {
+    await mutateSnapshot(async () => await window.jjcoder.createConversation({ websiteId }));
   };
 
   const createWebsite = async () => {
@@ -417,19 +524,127 @@ export function App() {
   };
 
   const dispatchRun = async () => {
-    if (!activeWebsite || !prompt.trim()) {
+    if (!activeWebsite) {
       return;
     }
+
+    if (activePendingUserInput) {
+      const answers = buildPendingUserInputAnswers(activePendingUserInput.questions, pendingUserInputAnswers);
+      if (!answers) {
+        setError("Answer the current question before continuing.");
+        return;
+      }
+      try {
+        setRespondingUserInput(true);
+        await window.jjcoder.respondUserInput({
+          requestId: activePendingUserInput.id,
+          answers
+        });
+        setPrompt("");
+        setPendingUserInputAnswers({});
+        setPendingUserInputQuestionIndex(0);
+        setError(null);
+      } catch (reason) {
+        handleError(reason);
+      } finally {
+        setRespondingUserInput(false);
+      }
+      return;
+    }
+
+    if (activePlan && activePlan.status === "proposed") {
+      const trimmedPrompt = prompt.trim();
+      try {
+        if (trimmedPrompt) {
+          await window.jjcoder.dispatchRun({
+            websiteId: activeWebsite.id,
+            conversationId: selectedConversation?.id ?? null,
+            prompt: trimmedPrompt,
+            interactionMode: "plan"
+          });
+        } else {
+          await window.jjcoder.dispatchRun({
+            websiteId: activeWebsite.id,
+            conversationId: selectedConversation?.id ?? null,
+            prompt: `PLEASE IMPLEMENT THIS PLAN:\n${activePlan.planMarkdown}`,
+            interactionMode: "chat",
+            sourcePlanId: activePlan.id
+          });
+        }
+        setPrompt("");
+        setError(null);
+      } catch (reason) {
+        handleError(reason);
+      }
+      return;
+    }
+
+    if (!prompt.trim()) {
+      return;
+    }
+
     try {
       await window.jjcoder.dispatchRun({
         websiteId: activeWebsite.id,
-        prompt: prompt.trim()
+        conversationId: selectedConversation?.id ?? null,
+        prompt: prompt.trim(),
+        interactionMode: snapshot.settings.interactionMode
       });
       setPrompt("");
       setError(null);
     } catch (reason) {
       handleError(reason);
     }
+  };
+
+  const implementPlan = async () => {
+    if (!activeWebsite || !activePlan || activePlan.status !== "proposed") {
+      return;
+    }
+    try {
+      await window.jjcoder.dispatchRun({
+        websiteId: activeWebsite.id,
+        conversationId: selectedConversation?.id ?? null,
+        prompt: `PLEASE IMPLEMENT THIS PLAN:\n${activePlan.planMarkdown}`,
+        interactionMode: "chat",
+        sourcePlanId: activePlan.id
+      });
+      setPrompt("");
+      setError(null);
+    } catch (reason) {
+      handleError(reason);
+    }
+  };
+
+  const cancelCurrentRun = async () => {
+    if (!activeRunId) return;
+    try {
+      const next = await window.jjcoder.cancelRun(activeRunId);
+      setSnapshot(next);
+      setError(null);
+    } catch (reason) {
+      handleError(reason);
+    }
+  };
+
+  const handleSelectPendingOption = (questionId: string, optionLabel: string) => {
+    setPendingUserInputAnswers((prev) => ({
+      ...prev,
+      [questionId]: {
+        selectedOptionLabel: optionLabel
+      }
+    }));
+  };
+
+  const handleAdvancePendingInput = () => {
+    if (!activePendingUserInput || !activePendingUserInputProgress) {
+      return;
+    }
+    if (activePendingUserInputProgress.isLastQuestion) {
+      void dispatchRun();
+      return;
+    }
+    setPendingUserInputQuestionIndex((prev) => Math.min(prev + 1, activePendingUserInput.questions.length - 1));
   };
 
   const beginResize = (target: ResizeTarget) => (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -447,6 +662,23 @@ export function App() {
     document.body.classList.add("is-resizing");
   };
 
+  if (!bridge) {
+    return (
+      <div className="app-shell">
+        <main className="workspace-shell">
+          <div className="empty-panel">
+            <p className="eyebrow">Bridge Error</p>
+            <h2>JJcoder could not connect to the desktop preload bridge</h2>
+            <p>
+              The renderer loaded, but <code>window.jjcoder</code> was not injected. Restart the app. If this keeps
+              happening, check the Electron preload path and main-process logs.
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={appShellRef}
@@ -457,12 +689,22 @@ export function App() {
     >
       <WebsiteSidebar
         websites={snapshot.websites}
+        conversations={snapshot.conversations}
         runs={snapshot.runs}
         collapsed={sidebarCollapsed}
+        projectSortMode={snapshot.settings.projectSortMode}
         selectedWebsiteId={snapshot.settings.selectedWebsiteId}
-        selectedRunId={snapshot.settings.selectedRunId}
+        selectedConversationId={snapshot.settings.selectedConversationId}
         onSelectWebsite={(websiteId) => void selectWebsite(websiteId)}
-        onSelectRun={(runId, websiteId) => void selectRun(runId, websiteId)}
+        onSelectConversation={(conversationId, websiteId) => void selectConversation(conversationId, websiteId)}
+        onCreateConversation={(websiteId) => void createConversation(websiteId)}
+        onChangeProjectSortMode={(sortMode) =>
+          void mutateSnapshot(async () => await window.jjcoder.updateSettings({ projectSortMode: sortMode }))
+        }
+        onReorderWebsites={(orderedIds) => void mutateSnapshot(async () => await window.jjcoder.reorderWebsites({ orderedIds }))}
+        onReorderConversations={(websiteId, orderedIds) =>
+          void mutateSnapshot(async () => await window.jjcoder.reorderConversations({ websiteId, orderedIds }))
+        }
         onCreateWebsite={() => setShowCreateWebsite(true)}
         onToggleCollapse={() => {
           const next = !sidebarCollapsed;
@@ -492,33 +734,6 @@ export function App() {
             </span>
           </div>
           <div className="header-actions">
-            <ModelPicker
-              models={snapshot.models}
-              selectedModelId={snapshot.settings.preferredModelId}
-              onSelect={(modelId) => {
-                void mutateSnapshot(async () => await window.jjcoder.updateSettings({ preferredModelId: modelId }));
-              }}
-            />
-            <div className="segmented">
-              <button
-                type="button"
-                className={snapshot.settings.agentMode === "solo" ? "active" : ""}
-                onClick={() => {
-                  void mutateSnapshot(async () => await window.jjcoder.updateSettings({ agentMode: "solo" }));
-                }}
-              >
-                Solo
-              </button>
-              <button
-                type="button"
-                className={snapshot.settings.agentMode === "squad" ? "active" : ""}
-                onClick={() => {
-                  void mutateSnapshot(async () => await window.jjcoder.updateSettings({ agentMode: "squad" }));
-                }}
-              >
-                Squad
-              </button>
-            </div>
             <button type="button" className="toolbar-chip" onClick={() => setShowOnboarding(true)}>
               <WandSparklesIcon size={13} />
               Setup
@@ -658,33 +873,137 @@ export function App() {
           style={{ gridTemplateColumns: `${workbenchLeftWidth}px var(--divider-size) minmax(${MIN_PREVIEW_WIDTH}px, 1fr)` }}
         >
           <div className="left-column">
-            <ChatThread runs={activeWebsiteRuns} />
+            <div className="chat-plan-shell">
+              <ChatThread runs={activeConversationRuns} />
+            </div>
 
             <div className="composer-area">
+              <PendingUserInputPanel
+                request={activePendingUserInput}
+                answers={pendingUserInputAnswers}
+                questionIndex={pendingUserInputQuestionIndex}
+                isResponding={respondingUserInput}
+                onSelectOption={handleSelectPendingOption}
+                onAdvance={handleAdvancePendingInput}
+              />
               <textarea
                 value={prompt}
-                onChange={(event) => setPrompt(event.target.value)}
-                placeholder="Describe what to build..."
+                disabled={isAgentRunning && !activePendingUserInput}
+                onChange={(event) => {
+                  setPrompt(event.target.value);
+                  if (activePendingUserInputProgress?.activeQuestion?.allowFreeform) {
+                    const question = activePendingUserInputProgress.activeQuestion;
+                    setPendingUserInputAnswers((prev) => ({
+                      ...prev,
+                      [question.id]: setPendingUserInputCustomAnswer(prev[question.id], event.target.value)
+                    }));
+                  }
+                }}
+                placeholder={
+                  isAgentRunning && !activePendingUserInput
+                    ? "Agent is working..."
+                    : activePendingUserInputProgress?.activeQuestion?.allowFreeform
+                      ? "Type a custom answer or choose an option..."
+                      : activePlan && activePlan.status === "proposed"
+                        ? "Add refinements, or leave empty to implement the plan..."
+                        : "Describe what to build..."
+                }
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-                    void dispatchRun();
+                    if (!isAgentRunning || activePendingUserInput) {
+                      void dispatchRun();
+                    }
                   }
+                  if (!activePendingUserInput || event.metaKey || event.ctrlKey || event.altKey) {
+                    return;
+                  }
+                  const digit = Number.parseInt(event.key, 10);
+                  if (Number.isNaN(digit) || digit < 1 || digit > 9) {
+                    return;
+                  }
+                  const question = activePendingUserInputProgress?.activeQuestion;
+                  const option = question?.options[digit - 1];
+                  if (!question || !option) {
+                    return;
+                  }
+                  event.preventDefault();
+                  handleSelectPendingOption(question.id, option.label);
+                  window.setTimeout(() => {
+                    handleAdvancePendingInput();
+                  }, 200);
                 }}
               />
               <div className="composer-footer">
-                <span>
-                  {snapshot.settings.agentMode} mode
-                  {snapshot.auth.openRouterConfigured ? "" : " · Add OpenRouter in setup"}
-                </span>
-                <button
-                  type="button"
-                  className="primary-button"
-                  disabled={!activeWebsite || !prompt.trim()}
-                  onClick={() => void dispatchRun()}
-                >
-                  <SendIcon size={13} />
-                  Send
-                </button>
+                <div className="composer-left-controls">
+                  <ModelPicker
+                    models={snapshot.models}
+                    selectedModelId={snapshot.settings.preferredModelId}
+                    onSelect={(modelId) => {
+                      void mutateSnapshot(async () => await window.jjcoder.updateSettings({ preferredModelId: modelId }));
+                    }}
+                  />
+                  <div className="segmented">
+                    <button
+                      type="button"
+                      className={snapshot.settings.interactionMode === "chat" ? "active" : ""}
+                      onClick={() => {
+                        void mutateSnapshot(async () => await window.jjcoder.updateSettings({ interactionMode: "chat" }));
+                      }}
+                    >
+                      Chat
+                    </button>
+                    <button
+                      type="button"
+                      className={snapshot.settings.interactionMode === "plan" ? "active" : ""}
+                      onClick={() => {
+                        void mutateSnapshot(async () => await window.jjcoder.updateSettings({ interactionMode: "plan" }));
+                      }}
+                    >
+                      Plan
+                    </button>
+                  </div>
+                </div>
+                <div className="composer-actions">
+                  {activePlan && activePlan.status === "proposed" && !prompt.trim() && !isAgentRunning ? (
+                    <button type="button" className="toolbar-chip" onClick={() => void implementPlan()}>
+                      <ChevronDownIcon size={13} />
+                      Implement plan
+                    </button>
+                  ) : null}
+                  {isAgentRunning && !activePendingUserInput ? (
+                    <button
+                      type="button"
+                      className="stop-button"
+                      onClick={() => void cancelCurrentRun()}
+                    >
+                      <SquareIcon size={11} />
+                      Stop
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="primary-button"
+                      disabled={
+                        !activeWebsite ||
+                        (activePendingUserInput
+                          ? !activePendingUserInputProgress?.canAdvance && !activePendingUserInputProgress?.isComplete
+                          : !prompt.trim() && !(activePlan && activePlan.status === "proposed"))
+                      }
+                      onClick={() => void dispatchRun()}
+                    >
+                      <SendIcon size={13} />
+                      {activePendingUserInput
+                        ? activePendingUserInputProgress?.isLastQuestion
+                          ? "Submit answers"
+                          : "Next question"
+                        : activePlan && activePlan.status === "proposed"
+                          ? prompt.trim()
+                            ? "Refine"
+                            : "Implement"
+                          : "Send"}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

@@ -62,11 +62,16 @@ async function registerIpcHandlers() {
   ipcMain.handle("jjcoder:save-secret", async (_event, input) => await controller!.saveSecret(input));
   ipcMain.handle("jjcoder:clear-secret", async (_event, kind) => await controller!.clearSecret(kind));
   ipcMain.handle("jjcoder:update-settings", async (_event, input) => await controller!.updateSettings(input));
+  ipcMain.handle("jjcoder:create-conversation", async (_event, input) => await controller!.createConversation(input));
+  ipcMain.handle("jjcoder:reorder-websites", async (_event, input) => await controller!.reorderWebsites(input));
+  ipcMain.handle("jjcoder:reorder-conversations", async (_event, input) => await controller!.reorderConversations(input));
   ipcMain.handle("jjcoder:dispatch-run", async (_event, input) => await controller!.dispatchRun(input));
+  ipcMain.handle("jjcoder:respond-user-input", async (_event, input) => await controller!.respondUserInput(input));
   ipcMain.handle("jjcoder:start-preview", async (_event, websiteId) => await controller!.startPreview(websiteId));
   ipcMain.handle("jjcoder:stop-preview", async (_event, websiteId) => await controller!.stopPreview(websiteId));
   ipcMain.handle("jjcoder:init-git", async (_event, websiteId) => await controller!.initGitRepo(websiteId));
   ipcMain.handle("jjcoder:publish-repo", async (_event, input) => await controller!.publishRepo(input));
+  ipcMain.handle("jjcoder:cancel-run", async (_event, runId) => await controller!.cancelRun(runId));
   ipcMain.handle("jjcoder:deploy-website", async (_event, input) => await controller!.deployWebsite(input));
   ipcMain.handle("jjcoder:pick-folder", async () => {
     const owner = BrowserWindow.getFocusedWindow() ?? mainWindow;
