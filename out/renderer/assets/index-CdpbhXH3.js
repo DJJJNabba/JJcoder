@@ -1,3 +1,22 @@
+function _mergeNamespaces(n, m) {
+  for (var i = 0; i < m.length; i++) {
+    const e = m[i];
+    if (typeof e !== "string" && !Array.isArray(e)) {
+      for (const k in e) {
+        if (k !== "default" && !(k in n)) {
+          const d = Object.getOwnPropertyDescriptor(e, k);
+          if (d) {
+            Object.defineProperty(n, k, d.get ? d : {
+              enumerable: true,
+              get: () => e[k]
+            });
+          }
+        }
+      }
+    }
+  }
+  return Object.freeze(Object.defineProperty(n, Symbol.toStringTag, { value: "Module" }));
+}
 function getDefaultExportFromCjs(x) {
   return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, "default") ? x["default"] : x;
 }
@@ -47,7 +66,7 @@ var hasRequiredReact_production;
 function requireReact_production() {
   if (hasRequiredReact_production) return react_production;
   hasRequiredReact_production = 1;
-  var REACT_ELEMENT_TYPE = /* @__PURE__ */ Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = /* @__PURE__ */ Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = /* @__PURE__ */ Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = /* @__PURE__ */ Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = /* @__PURE__ */ Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = /* @__PURE__ */ Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = /* @__PURE__ */ Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = /* @__PURE__ */ Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = /* @__PURE__ */ Symbol.for("react.suspense"), REACT_MEMO_TYPE = /* @__PURE__ */ Symbol.for("react.memo"), REACT_LAZY_TYPE = /* @__PURE__ */ Symbol.for("react.lazy"), REACT_ACTIVITY_TYPE = /* @__PURE__ */ Symbol.for("react.activity"), MAYBE_ITERATOR_SYMBOL = Symbol.iterator;
+  var REACT_ELEMENT_TYPE = /* @__PURE__ */ Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = /* @__PURE__ */ Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = /* @__PURE__ */ Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = /* @__PURE__ */ Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = /* @__PURE__ */ Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = /* @__PURE__ */ Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = /* @__PURE__ */ Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = /* @__PURE__ */ Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = /* @__PURE__ */ Symbol.for("react.suspense"), REACT_MEMO_TYPE = /* @__PURE__ */ Symbol.for("react.memo"), REACT_LAZY_TYPE2 = /* @__PURE__ */ Symbol.for("react.lazy"), REACT_ACTIVITY_TYPE = /* @__PURE__ */ Symbol.for("react.activity"), MAYBE_ITERATOR_SYMBOL = Symbol.iterator;
   function getIteratorFn(maybeIterable) {
     if (null === maybeIterable || "object" !== typeof maybeIterable) return null;
     maybeIterable = MAYBE_ITERATOR_SYMBOL && maybeIterable[MAYBE_ITERATOR_SYMBOL] || maybeIterable["@@iterator"];
@@ -95,7 +114,7 @@ function requireReact_production() {
   assign(pureComponentPrototype, Component.prototype);
   pureComponentPrototype.isPureReactComponent = true;
   var isArrayImpl = Array.isArray;
-  function noop() {
+  function noop2() {
   }
   var ReactSharedInternals = { H: null, A: null, T: null, S: null }, hasOwnProperty2 = Object.prototype.hasOwnProperty;
   function ReactElement(type, key, props) {
@@ -131,7 +150,7 @@ function requireReact_production() {
       case "rejected":
         throw thenable.reason;
       default:
-        switch ("string" === typeof thenable.status ? thenable.then(noop, noop) : (thenable.status = "pending", thenable.then(
+        switch ("string" === typeof thenable.status ? thenable.then(noop2, noop2) : (thenable.status = "pending", thenable.then(
           function(fulfilledValue) {
             "pending" === thenable.status && (thenable.status = "fulfilled", thenable.value = fulfilledValue);
           },
@@ -165,7 +184,7 @@ function requireReact_production() {
             case REACT_PORTAL_TYPE:
               invokeCallback = true;
               break;
-            case REACT_LAZY_TYPE:
+            case REACT_LAZY_TYPE2:
               return invokeCallback = children._init, mapIntoArray(
                 invokeCallback(children._payload),
                 array,
@@ -376,7 +395,7 @@ function requireReact_production() {
   react_production.isValidElement = isValidElement;
   react_production.lazy = function(ctor) {
     return {
-      $$typeof: REACT_LAZY_TYPE,
+      $$typeof: REACT_LAZY_TYPE2,
       _payload: { _status: -1, _result: ctor },
       _init: lazyInitializer
     };
@@ -394,7 +413,7 @@ function requireReact_production() {
     try {
       var returnValue = scope(), onStartTransitionFinish = ReactSharedInternals.S;
       null !== onStartTransitionFinish && onStartTransitionFinish(currentTransition, returnValue);
-      "object" === typeof returnValue && null !== returnValue && "function" === typeof returnValue.then && returnValue.then(noop, reportGlobalError);
+      "object" === typeof returnValue && null !== returnValue && "function" === typeof returnValue.then && returnValue.then(noop2, reportGlobalError);
     } catch (error) {
       reportGlobalError(error);
     } finally {
@@ -478,9 +497,13 @@ function requireReact() {
 }
 var reactExports = requireReact();
 const React = /* @__PURE__ */ getDefaultExportFromCjs(reactExports);
+const React$1 = /* @__PURE__ */ _mergeNamespaces({
+  __proto__: null,
+  default: React
+}, [reactExports]);
 var client = { exports: {} };
 var reactDomClient_production = {};
-var scheduler = { exports: {} };
+var scheduler$1 = { exports: {} };
 var scheduler_production = {};
 var hasRequiredScheduler_production;
 function requireScheduler_production() {
@@ -690,9 +713,9 @@ function requireScheduler_production() {
         currentPriorityLevel = previousPriorityLevel;
       }
     };
-    exports$1.unstable_scheduleCallback = function(priorityLevel, callback, options) {
+    exports$1.unstable_scheduleCallback = function(priorityLevel, callback, options2) {
       var currentTime = exports$1.unstable_now();
-      "object" === typeof options && null !== options ? (options = options.delay, options = "number" === typeof options && 0 < options ? currentTime + options : currentTime) : options = currentTime;
+      "object" === typeof options2 && null !== options2 ? (options2 = options2.delay, options2 = "number" === typeof options2 && 0 < options2 ? currentTime + options2 : currentTime) : options2 = currentTime;
       switch (priorityLevel) {
         case 1:
           var timeout = -1;
@@ -709,16 +732,16 @@ function requireScheduler_production() {
         default:
           timeout = 5e3;
       }
-      timeout = options + timeout;
+      timeout = options2 + timeout;
       priorityLevel = {
         id: taskIdCounter++,
         callback,
         priorityLevel,
-        startTime: options,
+        startTime: options2,
         expirationTime: timeout,
         sortIndex: -1
       };
-      options > currentTime ? (priorityLevel.sortIndex = options, push2(timerQueue, priorityLevel), null === peek(taskQueue) && priorityLevel === peek(timerQueue) && (isHostTimeoutScheduled ? (localClearTimeout(taskTimeoutID), taskTimeoutID = -1) : isHostTimeoutScheduled = true, requestHostTimeout(handleTimeout, options - currentTime))) : (priorityLevel.sortIndex = timeout, push2(taskQueue, priorityLevel), isHostCallbackScheduled || isPerformingWork || (isHostCallbackScheduled = true, isMessageLoopRunning || (isMessageLoopRunning = true, schedulePerformWorkUntilDeadline())));
+      options2 > currentTime ? (priorityLevel.sortIndex = options2, push2(timerQueue, priorityLevel), null === peek(taskQueue) && priorityLevel === peek(timerQueue) && (isHostTimeoutScheduled ? (localClearTimeout(taskTimeoutID), taskTimeoutID = -1) : isHostTimeoutScheduled = true, requestHostTimeout(handleTimeout, options2 - currentTime))) : (priorityLevel.sortIndex = timeout, push2(taskQueue, priorityLevel), isHostCallbackScheduled || isPerformingWork || (isHostCallbackScheduled = true, isMessageLoopRunning || (isMessageLoopRunning = true, schedulePerformWorkUntilDeadline())));
       return priorityLevel;
     };
     exports$1.unstable_shouldYield = shouldYieldToHost;
@@ -739,12 +762,12 @@ function requireScheduler_production() {
 }
 var hasRequiredScheduler;
 function requireScheduler() {
-  if (hasRequiredScheduler) return scheduler.exports;
+  if (hasRequiredScheduler) return scheduler$1.exports;
   hasRequiredScheduler = 1;
   {
-    scheduler.exports = requireScheduler_production();
+    scheduler$1.exports = requireScheduler_production();
   }
-  return scheduler.exports;
+  return scheduler$1.exports;
 }
 var reactDom = { exports: {} };
 var reactDom_production = {};
@@ -762,21 +785,21 @@ function requireReactDom_production() {
     }
     return "Minified React error #" + code2 + "; visit " + url + " for the full message or use the non-minified dev environment for full errors and additional helpful warnings.";
   }
-  function noop() {
+  function noop2() {
   }
   var Internals = {
     d: {
-      f: noop,
+      f: noop2,
       r: function() {
         throw Error(formatProdErrorMessage(522));
       },
-      D: noop,
-      C: noop,
-      L: noop,
-      m: noop,
-      X: noop,
-      S: noop,
-      M: noop
+      D: noop2,
+      C: noop2,
+      L: noop2,
+      m: noop2,
+      X: noop2,
+      S: noop2,
+      M: noop2
     },
     p: 0,
     findDOMNode: null
@@ -812,18 +835,18 @@ function requireReactDom_production() {
       ReactSharedInternals.T = previousTransition, Internals.p = previousUpdatePriority, Internals.d.f();
     }
   };
-  reactDom_production.preconnect = function(href, options) {
-    "string" === typeof href && (options ? (options = options.crossOrigin, options = "string" === typeof options ? "use-credentials" === options ? options : "" : void 0) : options = null, Internals.d.C(href, options));
+  reactDom_production.preconnect = function(href, options2) {
+    "string" === typeof href && (options2 ? (options2 = options2.crossOrigin, options2 = "string" === typeof options2 ? "use-credentials" === options2 ? options2 : "" : void 0) : options2 = null, Internals.d.C(href, options2));
   };
   reactDom_production.prefetchDNS = function(href) {
     "string" === typeof href && Internals.d.D(href);
   };
-  reactDom_production.preinit = function(href, options) {
-    if ("string" === typeof href && options && "string" === typeof options.as) {
-      var as = options.as, crossOrigin = getCrossOriginStringAs(as, options.crossOrigin), integrity = "string" === typeof options.integrity ? options.integrity : void 0, fetchPriority = "string" === typeof options.fetchPriority ? options.fetchPriority : void 0;
+  reactDom_production.preinit = function(href, options2) {
+    if ("string" === typeof href && options2 && "string" === typeof options2.as) {
+      var as = options2.as, crossOrigin = getCrossOriginStringAs(as, options2.crossOrigin), integrity = "string" === typeof options2.integrity ? options2.integrity : void 0, fetchPriority = "string" === typeof options2.fetchPriority ? options2.fetchPriority : void 0;
       "style" === as ? Internals.d.S(
         href,
-        "string" === typeof options.precedence ? options.precedence : void 0,
+        "string" === typeof options2.precedence ? options2.precedence : void 0,
         {
           crossOrigin,
           integrity,
@@ -833,50 +856,50 @@ function requireReactDom_production() {
         crossOrigin,
         integrity,
         fetchPriority,
-        nonce: "string" === typeof options.nonce ? options.nonce : void 0
+        nonce: "string" === typeof options2.nonce ? options2.nonce : void 0
       });
     }
   };
-  reactDom_production.preinitModule = function(href, options) {
+  reactDom_production.preinitModule = function(href, options2) {
     if ("string" === typeof href)
-      if ("object" === typeof options && null !== options) {
-        if (null == options.as || "script" === options.as) {
+      if ("object" === typeof options2 && null !== options2) {
+        if (null == options2.as || "script" === options2.as) {
           var crossOrigin = getCrossOriginStringAs(
-            options.as,
-            options.crossOrigin
+            options2.as,
+            options2.crossOrigin
           );
           Internals.d.M(href, {
             crossOrigin,
-            integrity: "string" === typeof options.integrity ? options.integrity : void 0,
-            nonce: "string" === typeof options.nonce ? options.nonce : void 0
+            integrity: "string" === typeof options2.integrity ? options2.integrity : void 0,
+            nonce: "string" === typeof options2.nonce ? options2.nonce : void 0
           });
         }
-      } else null == options && Internals.d.M(href);
+      } else null == options2 && Internals.d.M(href);
   };
-  reactDom_production.preload = function(href, options) {
-    if ("string" === typeof href && "object" === typeof options && null !== options && "string" === typeof options.as) {
-      var as = options.as, crossOrigin = getCrossOriginStringAs(as, options.crossOrigin);
+  reactDom_production.preload = function(href, options2) {
+    if ("string" === typeof href && "object" === typeof options2 && null !== options2 && "string" === typeof options2.as) {
+      var as = options2.as, crossOrigin = getCrossOriginStringAs(as, options2.crossOrigin);
       Internals.d.L(href, as, {
         crossOrigin,
-        integrity: "string" === typeof options.integrity ? options.integrity : void 0,
-        nonce: "string" === typeof options.nonce ? options.nonce : void 0,
-        type: "string" === typeof options.type ? options.type : void 0,
-        fetchPriority: "string" === typeof options.fetchPriority ? options.fetchPriority : void 0,
-        referrerPolicy: "string" === typeof options.referrerPolicy ? options.referrerPolicy : void 0,
-        imageSrcSet: "string" === typeof options.imageSrcSet ? options.imageSrcSet : void 0,
-        imageSizes: "string" === typeof options.imageSizes ? options.imageSizes : void 0,
-        media: "string" === typeof options.media ? options.media : void 0
+        integrity: "string" === typeof options2.integrity ? options2.integrity : void 0,
+        nonce: "string" === typeof options2.nonce ? options2.nonce : void 0,
+        type: "string" === typeof options2.type ? options2.type : void 0,
+        fetchPriority: "string" === typeof options2.fetchPriority ? options2.fetchPriority : void 0,
+        referrerPolicy: "string" === typeof options2.referrerPolicy ? options2.referrerPolicy : void 0,
+        imageSrcSet: "string" === typeof options2.imageSrcSet ? options2.imageSrcSet : void 0,
+        imageSizes: "string" === typeof options2.imageSizes ? options2.imageSizes : void 0,
+        media: "string" === typeof options2.media ? options2.media : void 0
       });
     }
   };
-  reactDom_production.preloadModule = function(href, options) {
+  reactDom_production.preloadModule = function(href, options2) {
     if ("string" === typeof href)
-      if (options) {
-        var crossOrigin = getCrossOriginStringAs(options.as, options.crossOrigin);
+      if (options2) {
+        var crossOrigin = getCrossOriginStringAs(options2.as, options2.crossOrigin);
         Internals.d.m(href, {
-          as: "string" === typeof options.as && "script" !== options.as ? options.as : void 0,
+          as: "string" === typeof options2.as && "script" !== options2.as ? options2.as : void 0,
           crossOrigin,
-          integrity: "string" === typeof options.integrity ? options.integrity : void 0
+          integrity: "string" === typeof options2.integrity ? options2.integrity : void 0
         });
       } else Internals.d.m(href);
   };
@@ -919,7 +942,7 @@ var hasRequiredReactDomClient_production;
 function requireReactDomClient_production() {
   if (hasRequiredReactDomClient_production) return reactDomClient_production;
   hasRequiredReactDomClient_production = 1;
-  var Scheduler = requireScheduler(), React2 = requireReact(), ReactDOM2 = requireReactDom();
+  var Scheduler2 = requireScheduler(), React2 = requireReact(), ReactDOM2 = requireReactDom();
   function formatProdErrorMessage(code2) {
     var url = "https://react.dev/errors/" + code2;
     if (1 < arguments.length) {
@@ -1041,7 +1064,7 @@ function requireReactDomClient_production() {
     }
     return null;
   }
-  var assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = /* @__PURE__ */ Symbol.for("react.element"), REACT_ELEMENT_TYPE = /* @__PURE__ */ Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = /* @__PURE__ */ Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = /* @__PURE__ */ Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = /* @__PURE__ */ Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = /* @__PURE__ */ Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = /* @__PURE__ */ Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = /* @__PURE__ */ Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = /* @__PURE__ */ Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = /* @__PURE__ */ Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = /* @__PURE__ */ Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = /* @__PURE__ */ Symbol.for("react.memo"), REACT_LAZY_TYPE = /* @__PURE__ */ Symbol.for("react.lazy");
+  var assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = /* @__PURE__ */ Symbol.for("react.element"), REACT_ELEMENT_TYPE = /* @__PURE__ */ Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = /* @__PURE__ */ Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = /* @__PURE__ */ Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = /* @__PURE__ */ Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = /* @__PURE__ */ Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = /* @__PURE__ */ Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = /* @__PURE__ */ Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = /* @__PURE__ */ Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = /* @__PURE__ */ Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = /* @__PURE__ */ Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = /* @__PURE__ */ Symbol.for("react.memo"), REACT_LAZY_TYPE2 = /* @__PURE__ */ Symbol.for("react.lazy");
   var REACT_ACTIVITY_TYPE = /* @__PURE__ */ Symbol.for("react.activity");
   var REACT_MEMO_CACHE_SENTINEL = /* @__PURE__ */ Symbol.for("react.memo_cache_sentinel");
   var MAYBE_ITERATOR_SYMBOL = Symbol.iterator;
@@ -1085,7 +1108,7 @@ function requireReactDomClient_production() {
           return type;
         case REACT_MEMO_TYPE:
           return innerType = type.displayName || null, null !== innerType ? innerType : getComponentNameFromType(type.type) || "Memo";
-        case REACT_LAZY_TYPE:
+        case REACT_LAZY_TYPE2:
           innerType = type._payload;
           type = type._init;
           try {
@@ -1294,7 +1317,7 @@ function requireReactDomClient_production() {
       return "\nError generating stack: " + x.message + "\n" + x.stack;
     }
   }
-  var hasOwnProperty2 = Object.prototype.hasOwnProperty, scheduleCallback$3 = Scheduler.unstable_scheduleCallback, cancelCallback$1 = Scheduler.unstable_cancelCallback, shouldYield = Scheduler.unstable_shouldYield, requestPaint = Scheduler.unstable_requestPaint, now = Scheduler.unstable_now, getCurrentPriorityLevel = Scheduler.unstable_getCurrentPriorityLevel, ImmediatePriority = Scheduler.unstable_ImmediatePriority, UserBlockingPriority = Scheduler.unstable_UserBlockingPriority, NormalPriority$1 = Scheduler.unstable_NormalPriority, LowPriority = Scheduler.unstable_LowPriority, IdlePriority = Scheduler.unstable_IdlePriority, log$1 = Scheduler.log, unstable_setDisableYieldValue = Scheduler.unstable_setDisableYieldValue, rendererID = null, injectedHook = null;
+  var hasOwnProperty2 = Object.prototype.hasOwnProperty, scheduleCallback$3 = Scheduler2.unstable_scheduleCallback, cancelCallback$1 = Scheduler2.unstable_cancelCallback, shouldYield = Scheduler2.unstable_shouldYield, requestPaint = Scheduler2.unstable_requestPaint, now = Scheduler2.unstable_now, getCurrentPriorityLevel = Scheduler2.unstable_getCurrentPriorityLevel, ImmediatePriority = Scheduler2.unstable_ImmediatePriority, UserBlockingPriority = Scheduler2.unstable_UserBlockingPriority, NormalPriority$1 = Scheduler2.unstable_NormalPriority, LowPriority = Scheduler2.unstable_LowPriority, IdlePriority = Scheduler2.unstable_IdlePriority, log$1 = Scheduler2.log, unstable_setDisableYieldValue = Scheduler2.unstable_setDisableYieldValue, rendererID = null, injectedHook = null;
   function setIsStrictModeForDevtools(newIsStrictMode) {
     "function" === typeof log$1 && unstable_setDisableYieldValue(newIsStrictMode);
     if (injectedHook && "function" === typeof injectedHook.setStrictMode)
@@ -1449,8 +1472,8 @@ function requireReactDomClient_production() {
       var hiddenUpdatesForLane = hiddenUpdates[index$7];
       if (null !== hiddenUpdatesForLane)
         for (hiddenUpdates[index$7] = null, index$7 = 0; index$7 < hiddenUpdatesForLane.length; index$7++) {
-          var update = hiddenUpdatesForLane[index$7];
-          null !== update && (update.lane &= -536870913);
+          var update2 = hiddenUpdatesForLane[index$7];
+          null !== update2 && (update2.lane &= -536870913);
         }
       remainingLanes &= ~lane;
     }
@@ -1967,14 +1990,14 @@ function requireReactDomClient_production() {
     return 3 === nativeEvent.nodeType ? nativeEvent.parentNode : nativeEvent;
   }
   var restoreTarget = null, restoreQueue = null;
-  function restoreStateOfTarget(target) {
-    var internalInstance = getInstanceFromNode(target);
-    if (internalInstance && (target = internalInstance.stateNode)) {
-      var props = target[internalPropsKey] || null;
-      a: switch (target = internalInstance.stateNode, internalInstance.type) {
+  function restoreStateOfTarget(target2) {
+    var internalInstance = getInstanceFromNode(target2);
+    if (internalInstance && (target2 = internalInstance.stateNode)) {
+      var props = target2[internalPropsKey] || null;
+      a: switch (target2 = internalInstance.stateNode, internalInstance.type) {
         case "input":
           updateInput(
-            target,
+            target2,
             props.value,
             props.defaultValue,
             props.defaultValue,
@@ -1985,7 +2008,7 @@ function requireReactDomClient_production() {
           );
           internalInstance = props.name;
           if ("radio" === props.type && null != internalInstance) {
-            for (props = target; props.parentNode; ) props = props.parentNode;
+            for (props = target2; props.parentNode; ) props = props.parentNode;
             props = props.querySelectorAll(
               'input[name="' + escapeSelectorAttributeValueInsideDoubleQuotes(
                 "" + internalInstance
@@ -1993,7 +2016,7 @@ function requireReactDomClient_production() {
             );
             for (internalInstance = 0; internalInstance < props.length; internalInstance++) {
               var otherNode = props[internalInstance];
-              if (otherNode !== target && otherNode.form === target.form) {
+              if (otherNode !== target2 && otherNode.form === target2.form) {
                 var otherProps = otherNode[internalPropsKey] || null;
                 if (!otherProps) throw Error(formatProdErrorMessage(90));
                 updateInput(
@@ -2009,14 +2032,14 @@ function requireReactDomClient_production() {
               }
             }
             for (internalInstance = 0; internalInstance < props.length; internalInstance++)
-              otherNode = props[internalInstance], otherNode.form === target.form && updateValueIfChanged(otherNode);
+              otherNode = props[internalInstance], otherNode.form === target2.form && updateValueIfChanged(otherNode);
           }
           break a;
         case "textarea":
-          updateTextarea(target, props.value, props.defaultValue);
+          updateTextarea(target2, props.value, props.defaultValue);
           break a;
         case "select":
-          internalInstance = props.value, null != internalInstance && updateOptions(target, !!props.multiple, internalInstance, false);
+          internalInstance = props.value, null != internalInstance && updateOptions(target2, !!props.multiple, internalInstance, false);
       }
     }
   }
@@ -2068,14 +2091,14 @@ function requireReactDomClient_production() {
   var canUseDOM = !("undefined" === typeof window || "undefined" === typeof window.document || "undefined" === typeof window.document.createElement), passiveBrowserEventsSupported = false;
   if (canUseDOM)
     try {
-      var options = {};
-      Object.defineProperty(options, "passive", {
+      var options2 = {};
+      Object.defineProperty(options2, "passive", {
         get: function() {
           passiveBrowserEventsSupported = true;
         }
       });
-      window.addEventListener("test", options, options);
-      window.removeEventListener("test", options, options);
+      window.addEventListener("test", options2, options2);
+      window.removeEventListener("test", options2, options2);
     } catch (e) {
       passiveBrowserEventsSupported = false;
     }
@@ -2373,15 +2396,15 @@ function requireReactDomClient_production() {
     var nodeName = elem && elem.nodeName && elem.nodeName.toLowerCase();
     return "input" === nodeName ? !!supportedInputTypes[elem.type] : "textarea" === nodeName ? true : false;
   }
-  function createAndAccumulateChangeEvent(dispatchQueue, inst, nativeEvent, target) {
-    restoreTarget ? restoreQueue ? restoreQueue.push(target) : restoreQueue = [target] : restoreTarget = target;
+  function createAndAccumulateChangeEvent(dispatchQueue, inst, nativeEvent, target2) {
+    restoreTarget ? restoreQueue ? restoreQueue.push(target2) : restoreQueue = [target2] : restoreTarget = target2;
     inst = accumulateTwoPhaseListeners(inst, "onChange");
     0 < inst.length && (nativeEvent = new SyntheticEvent(
       "onChange",
       "change",
       null,
       nativeEvent,
-      target
+      target2
     ), dispatchQueue.push({ event: nativeEvent, listeners: inst }));
   }
   var activeElement$1 = null, activeElementInst$1 = null;
@@ -2424,8 +2447,8 @@ function requireReactDomClient_production() {
       batchedUpdates$1(runEventInBatch, dispatchQueue);
     }
   }
-  function handleEventsForInputEventPolyfill(domEventName, target, targetInst) {
-    "focusin" === domEventName ? (stopWatchingForValueChange(), activeElement$1 = target, activeElementInst$1 = targetInst, activeElement$1.attachEvent("onpropertychange", handlePropertyChange)) : "focusout" === domEventName && stopWatchingForValueChange();
+  function handleEventsForInputEventPolyfill(domEventName, target2, targetInst) {
+    "focusin" === domEventName ? (stopWatchingForValueChange(), activeElement$1 = target2, activeElementInst$1 = targetInst, activeElement$1.attachEvent("onpropertychange", handlePropertyChange)) : "focusout" === domEventName && stopWatchingForValueChange();
   }
   function getTargetInstForInputEventPolyfill(domEventName) {
     if ("selectionchange" === domEventName || "keyup" === domEventName || "keydown" === domEventName)
@@ -2574,43 +2597,43 @@ function requireReactDomClient_production() {
       concurrentQueues[i++] = null;
       var queue = concurrentQueues[i];
       concurrentQueues[i++] = null;
-      var update = concurrentQueues[i];
+      var update2 = concurrentQueues[i];
       concurrentQueues[i++] = null;
       var lane = concurrentQueues[i];
       concurrentQueues[i++] = null;
-      if (null !== queue && null !== update) {
+      if (null !== queue && null !== update2) {
         var pending = queue.pending;
-        null === pending ? update.next = update : (update.next = pending.next, pending.next = update);
-        queue.pending = update;
+        null === pending ? update2.next = update2 : (update2.next = pending.next, pending.next = update2);
+        queue.pending = update2;
       }
-      0 !== lane && markUpdateLaneFromFiberToRoot(fiber, update, lane);
+      0 !== lane && markUpdateLaneFromFiberToRoot(fiber, update2, lane);
     }
   }
-  function enqueueUpdate$1(fiber, queue, update, lane) {
+  function enqueueUpdate$1(fiber, queue, update2, lane) {
     concurrentQueues[concurrentQueuesIndex++] = fiber;
     concurrentQueues[concurrentQueuesIndex++] = queue;
-    concurrentQueues[concurrentQueuesIndex++] = update;
+    concurrentQueues[concurrentQueuesIndex++] = update2;
     concurrentQueues[concurrentQueuesIndex++] = lane;
     concurrentlyUpdatedLanes |= lane;
     fiber.lanes |= lane;
     fiber = fiber.alternate;
     null !== fiber && (fiber.lanes |= lane);
   }
-  function enqueueConcurrentHookUpdate(fiber, queue, update, lane) {
-    enqueueUpdate$1(fiber, queue, update, lane);
+  function enqueueConcurrentHookUpdate(fiber, queue, update2, lane) {
+    enqueueUpdate$1(fiber, queue, update2, lane);
     return getRootForUpdatedFiber(fiber);
   }
   function enqueueConcurrentRenderForLane(fiber, lane) {
     enqueueUpdate$1(fiber, null, null, lane);
     return getRootForUpdatedFiber(fiber);
   }
-  function markUpdateLaneFromFiberToRoot(sourceFiber, update, lane) {
+  function markUpdateLaneFromFiberToRoot(sourceFiber, update2, lane) {
     sourceFiber.lanes |= lane;
     var alternate = sourceFiber.alternate;
     null !== alternate && (alternate.lanes |= lane);
     for (var isHidden = false, parent = sourceFiber.return; null !== parent; )
       parent.childLanes |= lane, alternate = parent.alternate, null !== alternate && (alternate.childLanes |= lane), 22 === parent.tag && (sourceFiber = parent.stateNode, null === sourceFiber || sourceFiber._visibility & 1 || (isHidden = true)), sourceFiber = parent, parent = parent.return;
-    return 3 === sourceFiber.tag ? (parent = sourceFiber.stateNode, isHidden && null !== update && (isHidden = 31 - clz32(lane), sourceFiber = parent.hiddenUpdates, alternate = sourceFiber[isHidden], null === alternate ? sourceFiber[isHidden] = [update] : alternate.push(update), update.lane = lane | 536870912), parent) : null;
+    return 3 === sourceFiber.tag ? (parent = sourceFiber.stateNode, isHidden && null !== update2 && (isHidden = 31 - clz32(lane), sourceFiber = parent.hiddenUpdates, alternate = sourceFiber[isHidden], null === alternate ? sourceFiber[isHidden] = [update2] : alternate.push(update2), update2.lane = lane | 536870912), parent) : null;
   }
   function getRootForUpdatedFiber(sourceFiber) {
     if (50 < nestedUpdateCount)
@@ -2714,7 +2737,7 @@ function requireReactDomClient_production() {
               case REACT_MEMO_TYPE:
                 fiberTag = 14;
                 break a;
-              case REACT_LAZY_TYPE:
+              case REACT_LAZY_TYPE2:
                 fiberTag = 16;
                 owner = null;
                 break a;
@@ -3095,7 +3118,7 @@ function requireReactDomClient_production() {
         return listener();
       });
     };
-  }, scheduleCallback$2 = Scheduler.unstable_scheduleCallback, NormalPriority = Scheduler.unstable_NormalPriority, CacheContext = {
+  }, scheduleCallback$2 = Scheduler2.unstable_scheduleCallback, NormalPriority = Scheduler2.unstable_NormalPriority, CacheContext = {
     $$typeof: REACT_CONTEXT_TYPE,
     Consumer: null,
     Provider: null,
@@ -3333,7 +3356,7 @@ function requireReactDomClient_production() {
           lanes,
           element2.key
         );
-      if (null !== current && (current.elementType === elementType || "object" === typeof elementType && null !== elementType && elementType.$$typeof === REACT_LAZY_TYPE && resolveLazy(elementType) === current.type))
+      if (null !== current && (current.elementType === elementType || "object" === typeof elementType && null !== elementType && elementType.$$typeof === REACT_LAZY_TYPE2 && resolveLazy(elementType) === current.type))
         return current = useFiber(current, element2.props), coerceRef(current, element2), current.return = returnFiber, current;
       current = createFiberFromTypeAndProps(
         element2.type,
@@ -3390,7 +3413,7 @@ function requireReactDomClient_production() {
               returnFiber.mode,
               lanes
             ), newChild.return = returnFiber, newChild;
-          case REACT_LAZY_TYPE:
+          case REACT_LAZY_TYPE2:
             return newChild = resolveLazy(newChild), createChild(returnFiber, newChild, lanes);
         }
         if (isArrayImpl(newChild) || getIteratorFn(newChild))
@@ -3422,7 +3445,7 @@ function requireReactDomClient_production() {
             return newChild.key === key ? updateElement(returnFiber, oldFiber, newChild, lanes) : null;
           case REACT_PORTAL_TYPE:
             return newChild.key === key ? updatePortal(returnFiber, oldFiber, newChild, lanes) : null;
-          case REACT_LAZY_TYPE:
+          case REACT_LAZY_TYPE2:
             return newChild = resolveLazy(newChild), updateSlot(returnFiber, oldFiber, newChild, lanes);
         }
         if (isArrayImpl(newChild) || getIteratorFn(newChild))
@@ -3458,7 +3481,7 @@ function requireReactDomClient_production() {
             return existingChildren = existingChildren.get(
               null === newChild.key ? newIdx : newChild.key
             ) || null, updatePortal(returnFiber, existingChildren, newChild, lanes);
-          case REACT_LAZY_TYPE:
+          case REACT_LAZY_TYPE2:
             return newChild = resolveLazy(newChild), updateFromMap(
               existingChildren,
               returnFiber,
@@ -3594,7 +3617,7 @@ function requireReactDomClient_production() {
                       returnFiber = lanes;
                       break a;
                     }
-                  } else if (currentFirstChild.elementType === key || "object" === typeof key && null !== key && key.$$typeof === REACT_LAZY_TYPE && resolveLazy(key) === currentFirstChild.type) {
+                  } else if (currentFirstChild.elementType === key || "object" === typeof key && null !== key && key.$$typeof === REACT_LAZY_TYPE2 && resolveLazy(key) === currentFirstChild.type) {
                     deleteRemainingChildren(
                       returnFiber,
                       currentFirstChild.sibling
@@ -3650,7 +3673,7 @@ function requireReactDomClient_production() {
               returnFiber = lanes;
             }
             return placeSingleChild(returnFiber);
-          case REACT_LAZY_TYPE:
+          case REACT_LAZY_TYPE2:
             return newChild = resolveLazy(newChild), reconcileChildFibersImpl(
               returnFiber,
               currentFirstChild,
@@ -3738,19 +3761,19 @@ function requireReactDomClient_production() {
   function createUpdate(lane) {
     return { lane, tag: 0, payload: null, callback: null, next: null };
   }
-  function enqueueUpdate(fiber, update, lane) {
+  function enqueueUpdate(fiber, update2, lane) {
     var updateQueue = fiber.updateQueue;
     if (null === updateQueue) return null;
     updateQueue = updateQueue.shared;
     if (0 !== (executionContext & 2)) {
       var pending = updateQueue.pending;
-      null === pending ? update.next = update : (update.next = pending.next, pending.next = update);
-      updateQueue.pending = update;
-      update = getRootForUpdatedFiber(fiber);
+      null === pending ? update2.next = update2 : (update2.next = pending.next, pending.next = update2);
+      updateQueue.pending = update2;
+      update2 = getRootForUpdatedFiber(fiber);
       markUpdateLaneFromFiberToRoot(fiber, null, lane);
-      return update;
+      return update2;
     }
-    enqueueUpdate$1(fiber, updateQueue, update, lane);
+    enqueueUpdate$1(fiber, updateQueue, update2, lane);
     return getRootForUpdatedFiber(fiber);
   }
   function entangleTransitions(root3, fiber, lane) {
@@ -3834,12 +3857,12 @@ function requireReactDomClient_production() {
             next: null
           });
           a: {
-            var workInProgress2 = workInProgress$jscomp$0, update = pendingQueue;
+            var workInProgress2 = workInProgress$jscomp$0, update2 = pendingQueue;
             updateLane = props;
             var instance = instance$jscomp$0;
-            switch (update.tag) {
+            switch (update2.tag) {
               case 1:
-                workInProgress2 = update.payload;
+                workInProgress2 = update2.payload;
                 if ("function" === typeof workInProgress2) {
                   newState = workInProgress2.call(instance, newState, updateLane);
                   break a;
@@ -3849,7 +3872,7 @@ function requireReactDomClient_production() {
               case 3:
                 workInProgress2.flags = workInProgress2.flags & -65537 | 128;
               case 0:
-                workInProgress2 = update.payload;
+                workInProgress2 = update2.payload;
                 updateLane = "function" === typeof workInProgress2 ? workInProgress2.call(instance, newState, updateLane) : workInProgress2;
                 if (null === updateLane || void 0 === updateLane) break a;
                 newState = assign({}, newState, updateLane);
@@ -4157,50 +4180,50 @@ function requireReactDomClient_production() {
     if (null === baseQueue) hook.memoizedState = pendingQueue;
     else {
       current = baseQueue.next;
-      var newBaseQueueFirst = baseFirst = null, newBaseQueueLast = null, update = current, didReadFromEntangledAsyncAction$60 = false;
+      var newBaseQueueFirst = baseFirst = null, newBaseQueueLast = null, update2 = current, didReadFromEntangledAsyncAction$60 = false;
       do {
-        var updateLane = update.lane & -536870913;
-        if (updateLane !== update.lane ? (workInProgressRootRenderLanes & updateLane) === updateLane : (renderLanes & updateLane) === updateLane) {
-          var revertLane = update.revertLane;
+        var updateLane = update2.lane & -536870913;
+        if (updateLane !== update2.lane ? (workInProgressRootRenderLanes & updateLane) === updateLane : (renderLanes & updateLane) === updateLane) {
+          var revertLane = update2.revertLane;
           if (0 === revertLane)
             null !== newBaseQueueLast && (newBaseQueueLast = newBaseQueueLast.next = {
               lane: 0,
               revertLane: 0,
               gesture: null,
-              action: update.action,
-              hasEagerState: update.hasEagerState,
-              eagerState: update.eagerState,
+              action: update2.action,
+              hasEagerState: update2.hasEagerState,
+              eagerState: update2.eagerState,
               next: null
             }), updateLane === currentEntangledLane && (didReadFromEntangledAsyncAction$60 = true);
           else if ((renderLanes & revertLane) === revertLane) {
-            update = update.next;
+            update2 = update2.next;
             revertLane === currentEntangledLane && (didReadFromEntangledAsyncAction$60 = true);
             continue;
           } else
             updateLane = {
               lane: 0,
-              revertLane: update.revertLane,
+              revertLane: update2.revertLane,
               gesture: null,
-              action: update.action,
-              hasEagerState: update.hasEagerState,
-              eagerState: update.eagerState,
+              action: update2.action,
+              hasEagerState: update2.hasEagerState,
+              eagerState: update2.eagerState,
               next: null
             }, null === newBaseQueueLast ? (newBaseQueueFirst = newBaseQueueLast = updateLane, baseFirst = pendingQueue) : newBaseQueueLast = newBaseQueueLast.next = updateLane, currentlyRenderingFiber.lanes |= revertLane, workInProgressRootSkippedLanes |= revertLane;
-          updateLane = update.action;
+          updateLane = update2.action;
           shouldDoubleInvokeUserFnsInHooksDEV && reducer(pendingQueue, updateLane);
-          pendingQueue = update.hasEagerState ? update.eagerState : reducer(pendingQueue, updateLane);
+          pendingQueue = update2.hasEagerState ? update2.eagerState : reducer(pendingQueue, updateLane);
         } else
           revertLane = {
             lane: updateLane,
-            revertLane: update.revertLane,
-            gesture: update.gesture,
-            action: update.action,
-            hasEagerState: update.hasEagerState,
-            eagerState: update.eagerState,
+            revertLane: update2.revertLane,
+            gesture: update2.gesture,
+            action: update2.action,
+            hasEagerState: update2.hasEagerState,
+            eagerState: update2.eagerState,
             next: null
           }, null === newBaseQueueLast ? (newBaseQueueFirst = newBaseQueueLast = revertLane, baseFirst = pendingQueue) : newBaseQueueLast = newBaseQueueLast.next = revertLane, currentlyRenderingFiber.lanes |= updateLane, workInProgressRootSkippedLanes |= updateLane;
-        update = update.next;
-      } while (null !== update && update !== current);
+        update2 = update2.next;
+      } while (null !== update2 && update2 !== current);
       null === newBaseQueueLast ? baseFirst = pendingQueue : newBaseQueueLast.next = newBaseQueueFirst;
       if (!objectIs(pendingQueue, hook.memoizedState) && (didReceiveUpdate = true, didReadFromEntangledAsyncAction$60 && (reducer = currentEntangledActionThenable, null !== reducer)))
         throw reducer;
@@ -4219,10 +4242,10 @@ function requireReactDomClient_production() {
     var dispatch = queue.dispatch, lastRenderPhaseUpdate = queue.pending, newState = hook.memoizedState;
     if (null !== lastRenderPhaseUpdate) {
       queue.pending = null;
-      var update = lastRenderPhaseUpdate = lastRenderPhaseUpdate.next;
+      var update2 = lastRenderPhaseUpdate = lastRenderPhaseUpdate.next;
       do
-        newState = reducer(newState, update.action), update = update.next;
-      while (update !== lastRenderPhaseUpdate);
+        newState = reducer(newState, update2.action), update2 = update2.next;
+      while (update2 !== lastRenderPhaseUpdate);
       objectIs(newState, hook.memoizedState) || (didReceiveUpdate = true);
       hook.memoizedState = newState;
       null === hook.baseQueue && (hook.baseState = newState);
@@ -4699,7 +4722,7 @@ function requireReactDomClient_production() {
       ReactDOMSharedInternals.p = previousPriority, null !== prevTransition && null !== currentTransition.types && (prevTransition.types = currentTransition.types), ReactSharedInternals.T = prevTransition;
     }
   }
-  function noop() {
+  function noop2() {
   }
   function startHostTransition(formFiber, pendingState, action, formData) {
     if (5 !== formFiber.tag) throw Error(formatProdErrorMessage(476));
@@ -4709,7 +4732,7 @@ function requireReactDomClient_production() {
       queue,
       pendingState,
       sharedNotPendingObject,
-      null === action ? noop : function() {
+      null === action ? noop2 : function() {
         requestFormReset$1(formFiber);
         return action(formData);
       }
@@ -4803,7 +4826,7 @@ function requireReactDomClient_production() {
     dispatchSetStateInternal(fiber, queue, action, lane);
   }
   function dispatchSetStateInternal(fiber, queue, action, lane) {
-    var update = {
+    var update2 = {
       lane,
       revertLane: 0,
       gesture: null,
@@ -4812,20 +4835,20 @@ function requireReactDomClient_production() {
       eagerState: null,
       next: null
     };
-    if (isRenderPhaseUpdate(fiber)) enqueueRenderPhaseUpdate(queue, update);
+    if (isRenderPhaseUpdate(fiber)) enqueueRenderPhaseUpdate(queue, update2);
     else {
       var alternate = fiber.alternate;
       if (0 === fiber.lanes && (null === alternate || 0 === alternate.lanes) && (alternate = queue.lastRenderedReducer, null !== alternate))
         try {
           var currentState = queue.lastRenderedState, eagerState = alternate(currentState, action);
-          update.hasEagerState = true;
-          update.eagerState = eagerState;
+          update2.hasEagerState = true;
+          update2.eagerState = eagerState;
           if (objectIs(eagerState, currentState))
-            return enqueueUpdate$1(fiber, queue, update, 0), null === workInProgressRoot && finishQueueingConcurrentUpdates(), false;
+            return enqueueUpdate$1(fiber, queue, update2, 0), null === workInProgressRoot && finishQueueingConcurrentUpdates(), false;
         } catch (error) {
         } finally {
         }
-      action = enqueueConcurrentHookUpdate(fiber, queue, update, lane);
+      action = enqueueConcurrentHookUpdate(fiber, queue, update2, lane);
       if (null !== action)
         return scheduleUpdateOnFiber(action, fiber, lane), entangleTransitionUpdate(action, queue, lane), true;
     }
@@ -4855,11 +4878,11 @@ function requireReactDomClient_production() {
     var alternate = fiber.alternate;
     return fiber === currentlyRenderingFiber || null !== alternate && alternate === currentlyRenderingFiber;
   }
-  function enqueueRenderPhaseUpdate(queue, update) {
+  function enqueueRenderPhaseUpdate(queue, update2) {
     didScheduleRenderPhaseUpdateDuringThisPass = didScheduleRenderPhaseUpdate = true;
     var pending = queue.pending;
-    null === pending ? update.next = update : (update.next = pending.next, pending.next = update);
-    queue.pending = update;
+    null === pending ? update2.next = update2 : (update2.next = pending.next, pending.next = update2);
+    queue.pending = update2;
   }
   function entangleTransitionUpdate(root3, queue, lane) {
     if (0 !== (lane & 4194048)) {
@@ -5184,27 +5207,27 @@ function requireReactDomClient_production() {
   var classComponentUpdater = {
     enqueueSetState: function(inst, payload, callback) {
       inst = inst._reactInternals;
-      var lane = requestUpdateLane(), update = createUpdate(lane);
-      update.payload = payload;
-      void 0 !== callback && null !== callback && (update.callback = callback);
-      payload = enqueueUpdate(inst, update, lane);
+      var lane = requestUpdateLane(), update2 = createUpdate(lane);
+      update2.payload = payload;
+      void 0 !== callback && null !== callback && (update2.callback = callback);
+      payload = enqueueUpdate(inst, update2, lane);
       null !== payload && (scheduleUpdateOnFiber(payload, inst, lane), entangleTransitions(payload, inst, lane));
     },
     enqueueReplaceState: function(inst, payload, callback) {
       inst = inst._reactInternals;
-      var lane = requestUpdateLane(), update = createUpdate(lane);
-      update.tag = 1;
-      update.payload = payload;
-      void 0 !== callback && null !== callback && (update.callback = callback);
-      payload = enqueueUpdate(inst, update, lane);
+      var lane = requestUpdateLane(), update2 = createUpdate(lane);
+      update2.tag = 1;
+      update2.payload = payload;
+      void 0 !== callback && null !== callback && (update2.callback = callback);
+      payload = enqueueUpdate(inst, update2, lane);
       null !== payload && (scheduleUpdateOnFiber(payload, inst, lane), entangleTransitions(payload, inst, lane));
     },
     enqueueForceUpdate: function(inst, callback) {
       inst = inst._reactInternals;
-      var lane = requestUpdateLane(), update = createUpdate(lane);
-      update.tag = 2;
-      void 0 !== callback && null !== callback && (update.callback = callback);
-      callback = enqueueUpdate(inst, update, lane);
+      var lane = requestUpdateLane(), update2 = createUpdate(lane);
+      update2.tag = 2;
+      void 0 !== callback && null !== callback && (update2.callback = callback);
+      callback = enqueueUpdate(inst, update2, lane);
       null !== callback && (scheduleUpdateOnFiber(callback, inst, lane), entangleTransitions(callback, inst, lane));
     }
   };
@@ -5278,19 +5301,19 @@ function requireReactDomClient_production() {
     lane.tag = 3;
     return lane;
   }
-  function initializeClassErrorUpdate(update, root3, fiber, errorInfo) {
+  function initializeClassErrorUpdate(update2, root3, fiber, errorInfo) {
     var getDerivedStateFromError = fiber.type.getDerivedStateFromError;
     if ("function" === typeof getDerivedStateFromError) {
       var error = errorInfo.value;
-      update.payload = function() {
+      update2.payload = function() {
         return getDerivedStateFromError(error);
       };
-      update.callback = function() {
+      update2.callback = function() {
         logCaughtError(root3, fiber, errorInfo);
       };
     }
     var inst = fiber.stateNode;
-    null !== inst && "function" === typeof inst.componentDidCatch && (update.callback = function() {
+    null !== inst && "function" === typeof inst.componentDidCatch && (update2.callback = function() {
       logCaughtError(root3, fiber, errorInfo);
       "function" !== typeof getDerivedStateFromError && (null === legacyErrorBoundariesThatAlreadyFailed ? legacyErrorBoundariesThatAlreadyFailed = /* @__PURE__ */ new Set([this]) : legacyErrorBoundariesThatAlreadyFailed.add(this));
       var stack = errorInfo.stack;
@@ -9733,11 +9756,11 @@ function requireReactDomClient_production() {
     var listenerSetKey = domEventName + "__bubble";
     JSCompiler_inline_result.has(listenerSetKey) || (addTrappedEventListener(targetElement, domEventName, 2, false), JSCompiler_inline_result.add(listenerSetKey));
   }
-  function listenToNativeEvent(domEventName, isCapturePhaseListener, target) {
+  function listenToNativeEvent(domEventName, isCapturePhaseListener, target2) {
     var eventSystemFlags = 0;
     isCapturePhaseListener && (eventSystemFlags |= 4);
     addTrappedEventListener(
-      target,
+      target2,
       domEventName,
       eventSystemFlags,
       isCapturePhaseListener
@@ -10124,17 +10147,17 @@ function requireReactDomClient_production() {
     while (inst && 5 !== inst.tag && 27 !== inst.tag);
     return inst ? inst : null;
   }
-  function accumulateEnterLeaveListenersForEvent(dispatchQueue, event, target, common, inCapturePhase) {
-    for (var registrationName = event._reactName, listeners = []; null !== target && target !== common; ) {
-      var _instance3 = target, alternate = _instance3.alternate, stateNode = _instance3.stateNode;
+  function accumulateEnterLeaveListenersForEvent(dispatchQueue, event, target2, common, inCapturePhase) {
+    for (var registrationName = event._reactName, listeners = []; null !== target2 && target2 !== common; ) {
+      var _instance3 = target2, alternate = _instance3.alternate, stateNode = _instance3.stateNode;
       _instance3 = _instance3.tag;
       if (null !== alternate && alternate === common) break;
-      5 !== _instance3 && 26 !== _instance3 && 27 !== _instance3 || null === stateNode || (alternate = stateNode, inCapturePhase ? (stateNode = getListener(target, registrationName), null != stateNode && listeners.unshift(
-        createDispatchListener(target, stateNode, alternate)
-      )) : inCapturePhase || (stateNode = getListener(target, registrationName), null != stateNode && listeners.push(
-        createDispatchListener(target, stateNode, alternate)
+      5 !== _instance3 && 26 !== _instance3 && 27 !== _instance3 || null === stateNode || (alternate = stateNode, inCapturePhase ? (stateNode = getListener(target2, registrationName), null != stateNode && listeners.unshift(
+        createDispatchListener(target2, stateNode, alternate)
+      )) : inCapturePhase || (stateNode = getListener(target2, registrationName), null != stateNode && listeners.push(
+        createDispatchListener(target2, stateNode, alternate)
       )));
-      target = target.return;
+      target2 = target2.return;
     }
     0 !== listeners.length && dispatchQueue.push({ event, listeners });
   }
@@ -11253,15 +11276,15 @@ function requireReactDomClient_production() {
     previousDispatcher.C(href, crossOrigin);
     preconnectAs("preconnect", href, crossOrigin);
   }
-  function preload(href, as, options2) {
-    previousDispatcher.L(href, as, options2);
+  function preload(href, as, options3) {
+    previousDispatcher.L(href, as, options3);
     var ownerDocument = globalDocument;
     if (ownerDocument && href && as) {
       var preloadSelector = 'link[rel="preload"][as="' + escapeSelectorAttributeValueInsideDoubleQuotes(as) + '"]';
-      "image" === as ? options2 && options2.imageSrcSet ? (preloadSelector += '[imagesrcset="' + escapeSelectorAttributeValueInsideDoubleQuotes(
-        options2.imageSrcSet
-      ) + '"]', "string" === typeof options2.imageSizes && (preloadSelector += '[imagesizes="' + escapeSelectorAttributeValueInsideDoubleQuotes(
-        options2.imageSizes
+      "image" === as ? options3 && options3.imageSrcSet ? (preloadSelector += '[imagesrcset="' + escapeSelectorAttributeValueInsideDoubleQuotes(
+        options3.imageSrcSet
+      ) + '"]', "string" === typeof options3.imageSizes && (preloadSelector += '[imagesizes="' + escapeSelectorAttributeValueInsideDoubleQuotes(
+        options3.imageSizes
       ) + '"]')) : preloadSelector += '[href="' + escapeSelectorAttributeValueInsideDoubleQuotes(href) + '"]' : preloadSelector += '[href="' + escapeSelectorAttributeValueInsideDoubleQuotes(href) + '"]';
       var key = preloadSelector;
       switch (as) {
@@ -11274,18 +11297,18 @@ function requireReactDomClient_production() {
       preloadPropsMap.has(key) || (href = assign(
         {
           rel: "preload",
-          href: "image" === as && options2 && options2.imageSrcSet ? void 0 : href,
+          href: "image" === as && options3 && options3.imageSrcSet ? void 0 : href,
           as
         },
-        options2
+        options3
       ), preloadPropsMap.set(key, href), null !== ownerDocument.querySelector(preloadSelector) || "style" === as && ownerDocument.querySelector(getStylesheetSelectorFromKey(key)) || "script" === as && ownerDocument.querySelector(getScriptSelectorFromKey(key)) || (as = ownerDocument.createElement("link"), setInitialProperties(as, "link", href), markNodeAsHoistable(as), ownerDocument.head.appendChild(as)));
     }
   }
-  function preloadModule(href, options2) {
-    previousDispatcher.m(href, options2);
+  function preloadModule(href, options3) {
+    previousDispatcher.m(href, options3);
     var ownerDocument = globalDocument;
     if (ownerDocument && href) {
-      var as = options2 && "string" === typeof options2.as ? options2.as : "script", preloadSelector = 'link[rel="modulepreload"][as="' + escapeSelectorAttributeValueInsideDoubleQuotes(as) + '"][href="' + escapeSelectorAttributeValueInsideDoubleQuotes(href) + '"]', key = preloadSelector;
+      var as = options3 && "string" === typeof options3.as ? options3.as : "script", preloadSelector = 'link[rel="modulepreload"][as="' + escapeSelectorAttributeValueInsideDoubleQuotes(as) + '"][href="' + escapeSelectorAttributeValueInsideDoubleQuotes(href) + '"]', key = preloadSelector;
       switch (as) {
         case "audioworklet":
         case "paintworklet":
@@ -11295,7 +11318,7 @@ function requireReactDomClient_production() {
         case "script":
           key = getScriptKey(href);
       }
-      if (!preloadPropsMap.has(key) && (href = assign({ rel: "modulepreload", href }, options2), preloadPropsMap.set(key, href), null === ownerDocument.querySelector(preloadSelector))) {
+      if (!preloadPropsMap.has(key) && (href = assign({ rel: "modulepreload", href }, options3), preloadPropsMap.set(key, href), null === ownerDocument.querySelector(preloadSelector))) {
         switch (as) {
           case "audioworklet":
           case "paintworklet":
@@ -11313,8 +11336,8 @@ function requireReactDomClient_production() {
       }
     }
   }
-  function preinitStyle(href, precedence, options2) {
-    previousDispatcher.S(href, precedence, options2);
+  function preinitStyle(href, precedence, options3) {
+    previousDispatcher.S(href, precedence, options3);
     var ownerDocument = globalDocument;
     if (ownerDocument && href) {
       var styles = getResourcesFromRoot(ownerDocument).hoistableStyles, key = getStyleKey(href);
@@ -11329,9 +11352,9 @@ function requireReactDomClient_production() {
         else {
           href = assign(
             { rel: "stylesheet", href, "data-precedence": precedence },
-            options2
+            options3
           );
-          (options2 = preloadPropsMap.get(key)) && adoptPreloadPropsForStylesheet(href, options2);
+          (options3 = preloadPropsMap.get(key)) && adoptPreloadPropsForStylesheet(href, options3);
           var link2 = resource = ownerDocument.createElement("link");
           markNodeAsHoistable(link2);
           setInitialProperties(link2, "link", href);
@@ -11358,12 +11381,12 @@ function requireReactDomClient_production() {
       }
     }
   }
-  function preinitScript(src, options2) {
-    previousDispatcher.X(src, options2);
+  function preinitScript(src, options3) {
+    previousDispatcher.X(src, options3);
     var ownerDocument = globalDocument;
     if (ownerDocument && src) {
       var scripts = getResourcesFromRoot(ownerDocument).hoistableScripts, key = getScriptKey(src), resource = scripts.get(key);
-      resource || (resource = ownerDocument.querySelector(getScriptSelectorFromKey(key)), resource || (src = assign({ src, async: true }, options2), (options2 = preloadPropsMap.get(key)) && adoptPreloadPropsForScript(src, options2), resource = ownerDocument.createElement("script"), markNodeAsHoistable(resource), setInitialProperties(resource, "link", src), ownerDocument.head.appendChild(resource)), resource = {
+      resource || (resource = ownerDocument.querySelector(getScriptSelectorFromKey(key)), resource || (src = assign({ src, async: true }, options3), (options3 = preloadPropsMap.get(key)) && adoptPreloadPropsForScript(src, options3), resource = ownerDocument.createElement("script"), markNodeAsHoistable(resource), setInitialProperties(resource, "link", src), ownerDocument.head.appendChild(resource)), resource = {
         type: "script",
         instance: resource,
         count: 1,
@@ -11371,12 +11394,12 @@ function requireReactDomClient_production() {
       }, scripts.set(key, resource));
     }
   }
-  function preinitModuleScript(src, options2) {
-    previousDispatcher.M(src, options2);
+  function preinitModuleScript(src, options3) {
+    previousDispatcher.M(src, options3);
     var ownerDocument = globalDocument;
     if (ownerDocument && src) {
       var scripts = getResourcesFromRoot(ownerDocument).hoistableScripts, key = getScriptKey(src), resource = scripts.get(key);
-      resource || (resource = ownerDocument.querySelector(getScriptSelectorFromKey(key)), resource || (src = assign({ src, async: true, type: "module" }, options2), (options2 = preloadPropsMap.get(key)) && adoptPreloadPropsForScript(src, options2), resource = ownerDocument.createElement("script"), markNodeAsHoistable(resource), setInitialProperties(resource, "link", src), ownerDocument.head.appendChild(resource)), resource = {
+      resource || (resource = ownerDocument.querySelector(getScriptSelectorFromKey(key)), resource || (src = assign({ src, async: true, type: "module" }, options3), (options3 = preloadPropsMap.get(key)) && adoptPreloadPropsForScript(src, options3), resource = ownerDocument.createElement("script"), markNodeAsHoistable(resource), setInitialProperties(resource, "link", src), ownerDocument.head.appendChild(resource)), resource = {
         type: "script",
         instance: resource,
         count: 1,
@@ -12195,15 +12218,15 @@ function requireReactDomClient_production() {
     queuedPointerCaptures.forEach(attemptReplayContinuousQueuedEventInMap);
   }
   function scheduleCallbackIfUnblocked(queuedEvent, unblocked) {
-    queuedEvent.blockedOn === unblocked && (queuedEvent.blockedOn = null, hasScheduledReplayAttempt || (hasScheduledReplayAttempt = true, Scheduler.unstable_scheduleCallback(
-      Scheduler.unstable_NormalPriority,
+    queuedEvent.blockedOn === unblocked && (queuedEvent.blockedOn = null, hasScheduledReplayAttempt || (hasScheduledReplayAttempt = true, Scheduler2.unstable_scheduleCallback(
+      Scheduler2.unstable_NormalPriority,
       replayUnblockedEvents
     )));
   }
   var lastScheduledReplayQueue = null;
   function scheduleReplayQueueIfNeeded(formReplayingQueue) {
-    lastScheduledReplayQueue !== formReplayingQueue && (lastScheduledReplayQueue = formReplayingQueue, Scheduler.unstable_scheduleCallback(
-      Scheduler.unstable_NormalPriority,
+    lastScheduledReplayQueue !== formReplayingQueue && (lastScheduledReplayQueue = formReplayingQueue, Scheduler2.unstable_scheduleCallback(
+      Scheduler2.unstable_NormalPriority,
       function() {
         lastScheduledReplayQueue === formReplayingQueue && (lastScheduledReplayQueue = null);
         for (var i = 0; i < formReplayingQueue.length; i += 3) {
@@ -12326,13 +12349,13 @@ function requireReactDomClient_production() {
   function ReactDOMHydrationRoot(internalRoot) {
     this._internalRoot = internalRoot;
   }
-  ReactDOMHydrationRoot.prototype.unstable_scheduleHydration = function(target) {
-    if (target) {
+  ReactDOMHydrationRoot.prototype.unstable_scheduleHydration = function(target2) {
+    if (target2) {
       var updatePriority = resolveUpdatePriority();
-      target = { blockedOn: null, target, priority: updatePriority };
+      target2 = { blockedOn: null, target: target2, priority: updatePriority };
       for (var i = 0; i < queuedExplicitHydrationTargets.length && 0 !== updatePriority && updatePriority < queuedExplicitHydrationTargets[i].priority; i++) ;
-      queuedExplicitHydrationTargets.splice(i, 0, target);
-      0 === i && attemptExplicitHydrationTarget(target);
+      queuedExplicitHydrationTargets.splice(i, 0, target2);
+      0 === i && attemptExplicitHydrationTarget(target2);
     }
   };
   var isomorphicReactPackageVersion$jscomp$inline_1840 = React2.version;
@@ -12374,11 +12397,11 @@ function requireReactDomClient_production() {
       } catch (err) {
       }
   }
-  reactDomClient_production.createRoot = function(container, options2) {
+  reactDomClient_production.createRoot = function(container, options3) {
     if (!isValidContainer(container)) throw Error(formatProdErrorMessage(299));
     var isStrictMode = false, identifierPrefix = "", onUncaughtError = defaultOnUncaughtError, onCaughtError = defaultOnCaughtError, onRecoverableError = defaultOnRecoverableError;
-    null !== options2 && void 0 !== options2 && (true === options2.unstable_strictMode && (isStrictMode = true), void 0 !== options2.identifierPrefix && (identifierPrefix = options2.identifierPrefix), void 0 !== options2.onUncaughtError && (onUncaughtError = options2.onUncaughtError), void 0 !== options2.onCaughtError && (onCaughtError = options2.onCaughtError), void 0 !== options2.onRecoverableError && (onRecoverableError = options2.onRecoverableError));
-    options2 = createFiberRoot(
+    null !== options3 && void 0 !== options3 && (true === options3.unstable_strictMode && (isStrictMode = true), void 0 !== options3.identifierPrefix && (identifierPrefix = options3.identifierPrefix), void 0 !== options3.onUncaughtError && (onUncaughtError = options3.onUncaughtError), void 0 !== options3.onCaughtError && (onCaughtError = options3.onCaughtError), void 0 !== options3.onRecoverableError && (onRecoverableError = options3.onRecoverableError));
+    options3 = createFiberRoot(
       container,
       1,
       false,
@@ -12392,20 +12415,20 @@ function requireReactDomClient_production() {
       onRecoverableError,
       defaultOnDefaultTransitionIndicator
     );
-    container[internalContainerInstanceKey] = options2.current;
+    container[internalContainerInstanceKey] = options3.current;
     listenToAllSupportedEvents(container);
-    return new ReactDOMRoot(options2);
+    return new ReactDOMRoot(options3);
   };
-  reactDomClient_production.hydrateRoot = function(container, initialChildren, options2) {
+  reactDomClient_production.hydrateRoot = function(container, initialChildren, options3) {
     if (!isValidContainer(container)) throw Error(formatProdErrorMessage(299));
     var isStrictMode = false, identifierPrefix = "", onUncaughtError = defaultOnUncaughtError, onCaughtError = defaultOnCaughtError, onRecoverableError = defaultOnRecoverableError, formState = null;
-    null !== options2 && void 0 !== options2 && (true === options2.unstable_strictMode && (isStrictMode = true), void 0 !== options2.identifierPrefix && (identifierPrefix = options2.identifierPrefix), void 0 !== options2.onUncaughtError && (onUncaughtError = options2.onUncaughtError), void 0 !== options2.onCaughtError && (onCaughtError = options2.onCaughtError), void 0 !== options2.onRecoverableError && (onRecoverableError = options2.onRecoverableError), void 0 !== options2.formState && (formState = options2.formState));
+    null !== options3 && void 0 !== options3 && (true === options3.unstable_strictMode && (isStrictMode = true), void 0 !== options3.identifierPrefix && (identifierPrefix = options3.identifierPrefix), void 0 !== options3.onUncaughtError && (onUncaughtError = options3.onUncaughtError), void 0 !== options3.onCaughtError && (onCaughtError = options3.onCaughtError), void 0 !== options3.onRecoverableError && (onRecoverableError = options3.onRecoverableError), void 0 !== options3.formState && (formState = options3.formState));
     initialChildren = createFiberRoot(
       container,
       1,
       true,
       initialChildren,
-      null != options2 ? options2 : null,
+      null != options3 ? options3 : null,
       isStrictMode,
       identifierPrefix,
       formState,
@@ -12415,15 +12438,15 @@ function requireReactDomClient_production() {
       defaultOnDefaultTransitionIndicator
     );
     initialChildren.context = getContextForSubtree(null);
-    options2 = initialChildren.current;
+    options3 = initialChildren.current;
     isStrictMode = requestUpdateLane();
     isStrictMode = getBumpedLaneForHydrationByLane(isStrictMode);
     identifierPrefix = createUpdate(isStrictMode);
     identifierPrefix.callback = null;
-    enqueueUpdate(options2, identifierPrefix, isStrictMode);
-    options2 = isStrictMode;
-    initialChildren.current.lanes = options2;
-    markRootUpdated$1(initialChildren, options2);
+    enqueueUpdate(options3, identifierPrefix, isStrictMode);
+    options3 = isStrictMode;
+    initialChildren.current.lanes = options3;
+    markRootUpdated$1(initialChildren, options3);
     ensureRootIsScheduled(initialChildren);
     container[internalContainerInstanceKey] = initialChildren.current;
     listenToAllSupportedEvents(container);
@@ -13042,7 +13065,7 @@ function ok$1() {
 }
 function unreachable() {
 }
-function stringify$1(values, options) {
+function stringify$1(values, options2) {
   const settings = {};
   const input = values[values.length - 1] === "" ? [...values, ""] : values;
   return input.join(
@@ -13052,7 +13075,7 @@ function stringify$1(values, options) {
 const nameRe = /^[$_\p{ID_Start}][$_\u{200C}\u{200D}\p{ID_Continue}]*$/u;
 const nameReJsx = /^[$_\p{ID_Start}][-$_\u{200C}\u{200D}\p{ID_Continue}]*$/u;
 const emptyOptions$3 = {};
-function name(name2, options) {
+function name(name2, options2) {
   const settings = emptyOptions$3;
   const re2 = settings.jsx ? nameReJsx : nameRe;
   return re2.test(name2);
@@ -14290,12 +14313,12 @@ function requireCjs$2() {
   var EMPTY_STRING = "";
   var TYPE_COMMENT = "comment";
   var TYPE_DECLARATION = "declaration";
-  function index2(style, options) {
+  function index2(style, options2) {
     if (typeof style !== "string") {
       throw new TypeError("First argument must be a string");
     }
     if (!style) return [];
-    options = options || {};
+    options2 = options2 || {};
     var lineno = 1;
     var column = 1;
     function updatePosition(str) {
@@ -14315,19 +14338,19 @@ function requireCjs$2() {
     function Position(start) {
       this.start = start;
       this.end = { line: lineno, column };
-      this.source = options.source;
+      this.source = options2.source;
     }
     Position.prototype.content = style;
     function error(msg) {
       var err = new Error(
-        options.source + ":" + lineno + ":" + column + ": " + msg
+        options2.source + ":" + lineno + ":" + column + ": " + msg
       );
       err.reason = msg;
-      err.filename = options.source;
+      err.filename = options2.source;
       err.line = lineno;
       err.column = column;
       err.source = style;
-      if (options.silent) ;
+      if (options2.silent) ;
       else {
         throw err;
       }
@@ -14464,15 +14487,15 @@ function requireUtilities() {
   var trimHyphen = function(match, prefix) {
     return "".concat(prefix, "-");
   };
-  var camelCase = function(property, options) {
-    if (options === void 0) {
-      options = {};
+  var camelCase = function(property, options2) {
+    if (options2 === void 0) {
+      options2 = {};
     }
     if (skipCamelCase(property)) {
       return property;
     }
     property = property.toLowerCase();
-    if (options.reactCompat) {
+    if (options2.reactCompat) {
       property = property.replace(MS_VENDOR_PREFIX_REGEX, trimHyphen);
     } else {
       property = property.replace(VENDOR_PREFIX_REGEX, trimHyphen);
@@ -14492,14 +14515,14 @@ function requireCjs() {
   };
   var style_to_object_1 = __importDefault(requireCjs$1());
   var utilities_1 = requireUtilities();
-  function StyleToJS(style, options) {
+  function StyleToJS(style, options2) {
     var output = {};
     if (!style || typeof style !== "string") {
       return output;
     }
     (0, style_to_object_1.default)(style, function(property, value) {
       if (property && value) {
-        output[(0, utilities_1.camelCase)(property, options)] = value;
+        output[(0, utilities_1.camelCase)(property, options2)] = value;
       }
     });
     return output;
@@ -14619,58 +14642,58 @@ class VFileMessage extends Error {
       optionsOrParentOrPlace = void 0;
     }
     let reason = "";
-    let options = {};
+    let options2 = {};
     let legacyCause = false;
     if (optionsOrParentOrPlace) {
       if ("line" in optionsOrParentOrPlace && "column" in optionsOrParentOrPlace) {
-        options = { place: optionsOrParentOrPlace };
+        options2 = { place: optionsOrParentOrPlace };
       } else if ("start" in optionsOrParentOrPlace && "end" in optionsOrParentOrPlace) {
-        options = { place: optionsOrParentOrPlace };
+        options2 = { place: optionsOrParentOrPlace };
       } else if ("type" in optionsOrParentOrPlace) {
-        options = {
+        options2 = {
           ancestors: [optionsOrParentOrPlace],
           place: optionsOrParentOrPlace.position
         };
       } else {
-        options = { ...optionsOrParentOrPlace };
+        options2 = { ...optionsOrParentOrPlace };
       }
     }
     if (typeof causeOrReason === "string") {
       reason = causeOrReason;
-    } else if (!options.cause && causeOrReason) {
+    } else if (!options2.cause && causeOrReason) {
       legacyCause = true;
       reason = causeOrReason.message;
-      options.cause = causeOrReason;
+      options2.cause = causeOrReason;
     }
-    if (!options.ruleId && !options.source && typeof origin === "string") {
+    if (!options2.ruleId && !options2.source && typeof origin === "string") {
       const index2 = origin.indexOf(":");
       if (index2 === -1) {
-        options.ruleId = origin;
+        options2.ruleId = origin;
       } else {
-        options.source = origin.slice(0, index2);
-        options.ruleId = origin.slice(index2 + 1);
+        options2.source = origin.slice(0, index2);
+        options2.ruleId = origin.slice(index2 + 1);
       }
     }
-    if (!options.place && options.ancestors && options.ancestors) {
-      const parent = options.ancestors[options.ancestors.length - 1];
+    if (!options2.place && options2.ancestors && options2.ancestors) {
+      const parent = options2.ancestors[options2.ancestors.length - 1];
       if (parent) {
-        options.place = parent.position;
+        options2.place = parent.position;
       }
     }
-    const start = options.place && "start" in options.place ? options.place.start : options.place;
-    this.ancestors = options.ancestors || void 0;
-    this.cause = options.cause || void 0;
+    const start = options2.place && "start" in options2.place ? options2.place.start : options2.place;
+    this.ancestors = options2.ancestors || void 0;
+    this.cause = options2.cause || void 0;
     this.column = start ? start.column : void 0;
     this.fatal = void 0;
     this.file = "";
     this.message = reason;
     this.line = start ? start.line : void 0;
-    this.name = stringifyPosition(options.place) || "1:1";
-    this.place = options.place || void 0;
+    this.name = stringifyPosition(options2.place) || "1:1";
+    this.place = options2.place || void 0;
     this.reason = this.message;
-    this.ruleId = options.ruleId || void 0;
-    this.source = options.source || void 0;
-    this.stack = legacyCause && options.cause && typeof options.cause.stack === "string" ? options.cause.stack : "";
+    this.ruleId = options2.ruleId || void 0;
+    this.source = options2.source || void 0;
+    this.stack = legacyCause && options2.cause && typeof options2.cause.stack === "string" ? options2.cause.stack : "";
     this.actual = void 0;
     this.expected = void 0;
     this.note = void 0;
@@ -14696,42 +14719,42 @@ const cap = /[A-Z]/g;
 const tableElements = /* @__PURE__ */ new Set(["table", "tbody", "thead", "tfoot", "tr"]);
 const tableCellElement = /* @__PURE__ */ new Set(["td", "th"]);
 const docs = "https://github.com/syntax-tree/hast-util-to-jsx-runtime";
-function toJsxRuntime(tree, options) {
-  if (!options || options.Fragment === void 0) {
+function toJsxRuntime(tree, options2) {
+  if (!options2 || options2.Fragment === void 0) {
     throw new TypeError("Expected `Fragment` in options");
   }
-  const filePath = options.filePath || void 0;
+  const filePath = options2.filePath || void 0;
   let create2;
-  if (options.development) {
-    if (typeof options.jsxDEV !== "function") {
+  if (options2.development) {
+    if (typeof options2.jsxDEV !== "function") {
       throw new TypeError(
         "Expected `jsxDEV` in options when `development: true`"
       );
     }
-    create2 = developmentCreate(filePath, options.jsxDEV);
+    create2 = developmentCreate(filePath, options2.jsxDEV);
   } else {
-    if (typeof options.jsx !== "function") {
+    if (typeof options2.jsx !== "function") {
       throw new TypeError("Expected `jsx` in production options");
     }
-    if (typeof options.jsxs !== "function") {
+    if (typeof options2.jsxs !== "function") {
       throw new TypeError("Expected `jsxs` in production options");
     }
-    create2 = productionCreate(filePath, options.jsx, options.jsxs);
+    create2 = productionCreate(filePath, options2.jsx, options2.jsxs);
   }
   const state = {
-    Fragment: options.Fragment,
+    Fragment: options2.Fragment,
     ancestors: [],
-    components: options.components || {},
+    components: options2.components || {},
     create: create2,
-    elementAttributeNameCase: options.elementAttributeNameCase || "react",
-    evaluater: options.createEvaluater ? options.createEvaluater() : void 0,
+    elementAttributeNameCase: options2.elementAttributeNameCase || "react",
+    evaluater: options2.createEvaluater ? options2.createEvaluater() : void 0,
     filePath,
-    ignoreInvalidStyle: options.ignoreInvalidStyle || false,
-    passKeys: options.passKeys !== false,
-    passNode: options.passNode || false,
-    schema: options.space === "svg" ? svg : html$2,
-    stylePropertyNameCase: options.stylePropertyNameCase || "dom",
-    tableCellAlignToStyle: options.tableCellAlignToStyle !== false
+    ignoreInvalidStyle: options2.ignoreInvalidStyle || false,
+    passKeys: options2.passKeys !== false,
+    passNode: options2.passNode || false,
+    schema: options2.space === "svg" ? svg : html$2,
+    stylePropertyNameCase: options2.stylePropertyNameCase || "dom",
+    tableCellAlignToStyle: options2.tableCellAlignToStyle !== false
   };
   const result = one$1(state, tree, void 0);
   if (result && typeof result !== "string") {
@@ -14758,7 +14781,7 @@ function one$1(state, node2, key) {
     return mdxEsm(state, node2);
   }
   if (node2.type === "root") {
-    return root$2(state, node2, key);
+    return root$3(state, node2, key);
   }
   if (node2.type === "text") {
     return text$5(state, node2);
@@ -14824,7 +14847,7 @@ function mdxJsxElement(state, node2, key) {
   state.schema = parentSchema;
   return state.create(node2, type, props, key);
 }
-function root$2(state, node2, key) {
+function root$3(state, node2, key) {
   const props = {};
   addChildren(props, createChildren(state, node2));
   return state.create(node2, state.Fragment, props, key);
@@ -15090,7 +15113,7 @@ const urlAttributes = {
   ]
 };
 const emptyOptions$2 = {};
-function toString$1(value, options) {
+function toString$1(value, options2) {
   const settings = emptyOptions$2;
   const includeImageAlt = typeof settings.includeImageAlt === "boolean" ? settings.includeImageAlt : true;
   const includeHtml = typeof settings.includeHtml === "boolean" ? settings.includeHtml : true;
@@ -15134,7 +15157,7 @@ function decodeNamedCharacterReference(value) {
   }
   return character === characterReference2 ? false : character;
 }
-function splice(list2, start, remove, items) {
+function splice(list2, start, remove2, items) {
   const end = list2.length;
   let chunkStart = 0;
   let parameters;
@@ -15143,13 +15166,13 @@ function splice(list2, start, remove, items) {
   } else {
     start = start > end ? end : start;
   }
-  remove = remove > 0 ? remove : 0;
+  remove2 = remove2 > 0 ? remove2 : 0;
   if (items.length < 1e4) {
     parameters = Array.from(items);
-    parameters.unshift(start, remove);
+    parameters.unshift(start, remove2);
     list2.splice(...parameters);
   } else {
-    if (remove) list2.splice(start, remove);
+    if (remove2) list2.splice(start, remove2);
     while (chunkStart < items.length) {
       parameters = items.slice(chunkStart, chunkStart + 1e4);
       parameters.unshift(start, 0);
@@ -16729,7 +16752,7 @@ function factoryDestination(effects, ok2, nok, type, literalType, literalMarkerT
     effects.enter("chunkString", {
       contentType: "string"
     });
-    return raw(code2);
+    return raw2(code2);
   }
   function enclosedBefore(code2) {
     if (code2 === 62) {
@@ -16765,7 +16788,7 @@ function factoryDestination(effects, ok2, nok, type, literalType, literalMarkerT
     }
     return enclosed(code2);
   }
-  function raw(code2) {
+  function raw2(code2) {
     if (!balance && (code2 === null || code2 === 41 || markdownLineEndingOrSpace(code2))) {
       effects.exit("chunkString");
       effects.exit(stringType);
@@ -16776,25 +16799,25 @@ function factoryDestination(effects, ok2, nok, type, literalType, literalMarkerT
     if (balance < limit && code2 === 40) {
       effects.consume(code2);
       balance++;
-      return raw;
+      return raw2;
     }
     if (code2 === 41) {
       effects.consume(code2);
       balance--;
-      return raw;
+      return raw2;
     }
     if (code2 === null || code2 === 32 || code2 === 40 || asciiControl(code2)) {
       return nok(code2);
     }
     effects.consume(code2);
-    return code2 === 92 ? rawEscape : raw;
+    return code2 === 92 ? rawEscape : raw2;
   }
   function rawEscape(code2) {
     if (code2 === 40 || code2 === 41 || code2 === 92) {
       effects.consume(code2);
-      return raw;
+      return raw2;
     }
-    return raw(code2);
+    return raw2(code2);
   }
 }
 function factoryLabel(effects, ok2, nok, type, markerType, stringType) {
@@ -18972,8 +18995,8 @@ function serializeChunks(chunks, expandTabs) {
   }
   return result.join("");
 }
-function parse(options) {
-  const settings = options || {};
+function parse(options2) {
+  const settings = options2 || {};
   const constructs2 = (
     /** @type {FullNormalizedExtension} */
     combineExtensions([defaultConstructs, ...settings.extensions || []])
@@ -19095,14 +19118,14 @@ function decode($0, $1, $2) {
   return decodeNamedCharacterReference($2) || $0;
 }
 const own$2 = {}.hasOwnProperty;
-function fromMarkdown(value, encoding, options) {
+function fromMarkdown(value, encoding, options2) {
   if (encoding && typeof encoding === "object") {
-    options = encoding;
+    options2 = encoding;
     encoding = void 0;
   }
-  return compiler(options)(postprocess(parse(options).document().write(preprocess()(value, encoding, true))));
+  return compiler(options2)(postprocess(parse(options2).document().write(preprocess()(value, encoding, true))));
 }
-function compiler(options) {
+function compiler(options2) {
   const config = {
     transforms: [],
     canContainEols: ["emphasis", "fragment", "heading", "paragraph", "strong"],
@@ -19201,7 +19224,7 @@ function compiler(options) {
       thematicBreak: closer()
     }
   };
-  configure(config, (options || {}).mdastExtensions || []);
+  configure(config, (options2 || {}).mdastExtensions || []);
   const data = {};
   return compile;
   function compile(events) {
@@ -19367,8 +19390,8 @@ function compiler(options) {
   }
   function enter(node2, token, errorHandler) {
     const parent = this.stack[this.stack.length - 1];
-    const siblings = parent.children;
-    siblings.push(node2);
+    const siblings2 = parent.children;
+    siblings2.push(node2);
     this.stack.push(node2);
     this.tokenStack.push([token, errorHandler || void 0]);
     node2.position = {
@@ -19476,8 +19499,8 @@ function compiler(options) {
   }
   function onenterdata(token) {
     const node2 = this.stack[this.stack.length - 1];
-    const siblings = node2.children;
-    let tail = siblings[siblings.length - 1];
+    const siblings2 = node2.children;
+    let tail = siblings2[siblings2.length - 1];
     if (!tail || tail.type !== "text") {
       tail = text2();
       tail.position = {
@@ -19485,7 +19508,7 @@ function compiler(options) {
         // @ts-expect-error: we’ll add `end` later.
         end: void 0
       };
-      siblings.push(tail);
+      siblings2.push(tail);
     }
     this.stack.push(tail);
   }
@@ -19801,13 +19824,13 @@ function defaultOnError(left, right) {
     }) + ") is still open");
   }
 }
-function remarkParse(options) {
+function remarkParse(options2) {
   const self2 = this;
   self2.parser = parser;
   function parser(doc) {
     return fromMarkdown(doc, {
       ...self2.data("settings"),
-      ...options,
+      ...options2,
       // Note: these options are not in the readme.
       // The goal is for them to be set by plugins on `data` instead of being
       // passed by users.
@@ -20119,7 +20142,7 @@ function paragraph$1(state, node2) {
   state.patch(node2, result);
   return state.applyData(node2, result);
 }
-function root$1(state, node2) {
+function root$2(state, node2) {
   const result = { type: "root", children: state.wrap(state.all(node2)) };
   state.patch(node2, result);
   return state.applyData(node2, result);
@@ -20170,8 +20193,8 @@ function table(state, node2) {
   return state.applyData(node2, result);
 }
 function tableRow(state, node2, parent) {
-  const siblings = parent ? parent.children : void 0;
-  const rowIndex = siblings ? siblings.indexOf(node2) : 1;
+  const siblings2 = parent ? parent.children : void 0;
+  const rowIndex = siblings2 ? siblings2.indexOf(node2) : 1;
   const tagName = rowIndex === 0 ? "th" : "td";
   const align = parent && parent.type === "table" ? parent.align : void 0;
   const length = align ? align.length : node2.children.length;
@@ -20283,7 +20306,7 @@ const handlers = {
   list: list$1,
   paragraph: paragraph$1,
   // @ts-expect-error: root is different, but hard to type.
-  root: root$1,
+  root: root$2,
   strong: strong$1,
   table,
   tableCell,
@@ -20372,7 +20395,7 @@ const deserializer = ($, _) => {
   return unpair;
 };
 const deserialize = (serialized) => deserializer(/* @__PURE__ */ new Map(), serialized)(0);
-const EMPTY = "";
+const EMPTY$2 = "";
 const { toString } = {};
 const { keys } = Object;
 const typeOf = (value) => {
@@ -20382,17 +20405,17 @@ const typeOf = (value) => {
   const asString = toString.call(value).slice(8, -1);
   switch (asString) {
     case "Array":
-      return [ARRAY, EMPTY];
+      return [ARRAY, EMPTY$2];
     case "Object":
-      return [OBJECT, EMPTY];
+      return [OBJECT, EMPTY$2];
     case "Date":
-      return [DATE, EMPTY];
+      return [DATE, EMPTY$2];
     case "RegExp":
-      return [REGEXP, EMPTY];
+      return [REGEXP, EMPTY$2];
     case "Map":
-      return [MAP, EMPTY];
+      return [MAP, EMPTY$2];
     case "Set":
-      return [SET, EMPTY];
+      return [SET, EMPTY$2];
     case "DataView":
       return [ARRAY, asString];
   }
@@ -20505,8 +20528,8 @@ const serialize$1 = (value, { json, lossy } = {}) => {
 };
 const structuredClone$1 = typeof structuredClone === "function" ? (
   /* c8 ignore start */
-  (any, options) => options && ("json" in options || "lossy" in options) ? deserialize(serialize$1(any, options)) : structuredClone(any)
-) : (any, options) => deserialize(serialize$1(any, options));
+  (any, options2) => options2 && ("json" in options2 || "lossy" in options2) ? deserialize(serialize$1(any, options2)) : structuredClone(any)
+) : (any, options2) => deserialize(serialize$1(any, options2));
 function defaultFootnoteBackContent(_, rereferenceIndex) {
   const result = [{ type: "text", value: "↩" }];
   if (rereferenceIndex > 1) {
@@ -20730,7 +20753,7 @@ function visitParents(tree, test, visitor, reverse) {
   const is = convert(check);
   const step = reverse ? -1 : 1;
   factory(tree, void 0, [])();
-  function factory(node2, index2, parents) {
+  function factory(node2, index2, parents2) {
     const value = (
       /** @type {Record<string, unknown>} */
       node2 && typeof node2 === "object" ? node2 : {}
@@ -20753,8 +20776,8 @@ function visitParents(tree, test, visitor, reverse) {
       let subresult;
       let offset;
       let grandparents;
-      if (!test || is(node2, index2, parents[parents.length - 1] || void 0)) {
-        result = toResult(visitor(node2, parents));
+      if (!test || is(node2, index2, parents2[parents2.length - 1] || void 0)) {
+        result = toResult(visitor(node2, parents2));
         if (result[0] === EXIT) {
           return result;
         }
@@ -20766,7 +20789,7 @@ function visitParents(tree, test, visitor, reverse) {
         );
         if (nodeAsParent.children && result[0] !== SKIP) {
           offset = (reverse ? nodeAsParent.children.length : -1) + step;
-          grandparents = parents.concat(nodeAsParent);
+          grandparents = parents2.concat(nodeAsParent);
           while (offset > -1 && offset < nodeAsParent.children.length) {
             const child = nodeAsParent.children[offset];
             subresult = factory(child, offset, grandparents)();
@@ -20804,16 +20827,16 @@ function visit(tree, testOrVisitor, visitorOrReverse, maybeReverse) {
     reverse = maybeReverse;
   }
   visitParents(tree, test, overload, reverse);
-  function overload(node2, parents) {
-    const parent = parents[parents.length - 1];
+  function overload(node2, parents2) {
+    const parent = parents2[parents2.length - 1];
     const index2 = parent ? parent.children.indexOf(node2) : void 0;
     return visitor(node2, index2, parent);
   }
 }
 const own$1 = {}.hasOwnProperty;
 const emptyOptions$1 = {};
-function createState(tree, options) {
-  const settings = options || emptyOptions$1;
+function createState(tree, options2) {
+  const settings = options2 || emptyOptions$1;
   const definitionById = /* @__PURE__ */ new Map();
   const footnoteById = /* @__PURE__ */ new Map();
   const footnoteCounts = /* @__PURE__ */ new Map();
@@ -20950,8 +20973,8 @@ function trimMarkdownSpaceStart(value) {
   }
   return value.slice(index2);
 }
-function toHast(tree, options) {
-  const state = createState(tree, options);
+function toHast(tree, options2) {
+  const state = createState(tree, options2);
   const node2 = state.one(tree, void 0);
   const foot = footer(state);
   const result = Array.isArray(node2) ? { type: "root", children: node2 } : node2 || { type: "root", children: [] };
@@ -20960,12 +20983,12 @@ function toHast(tree, options) {
   }
   return result;
 }
-function remarkRehype(destination, options) {
+function remarkRehype(destination, options2) {
   if (destination && "run" in destination) {
     return async function(tree, file) {
       const hastTree = (
         /** @type {HastRoot} */
-        toHast(tree, { file, ...options })
+        toHast(tree, { file, ...options2 })
       );
       await destination.run(hastTree, file);
     };
@@ -20973,7 +20996,7 @@ function remarkRehype(destination, options) {
   return function(tree, file) {
     return (
       /** @type {HastRoot} */
-      toHast(tree, { file, ...destination || options })
+      toHast(tree, { file, ...destination || options2 })
     );
   };
 }
@@ -21011,16 +21034,16 @@ function requireExtend() {
     }
     return typeof key === "undefined" || hasOwn.call(obj, key);
   };
-  var setProperty = function setProperty2(target, options) {
-    if (defineProperty && options.name === "__proto__") {
-      defineProperty(target, options.name, {
+  var setProperty = function setProperty2(target2, options2) {
+    if (defineProperty && options2.name === "__proto__") {
+      defineProperty(target2, options2.name, {
         enumerable: true,
         configurable: true,
-        value: options.newValue,
+        value: options2.newValue,
         writable: true
       });
     } else {
-      target[options.name] = options.newValue;
+      target2[options2.name] = options2.newValue;
     }
   };
   var getProperty = function getProperty2(obj, name2) {
@@ -21034,26 +21057,26 @@ function requireExtend() {
     return obj[name2];
   };
   extend$1 = function extend2() {
-    var options, name2, src, copy, copyIsArray, clone;
-    var target = arguments[0];
+    var options2, name2, src, copy, copyIsArray, clone;
+    var target2 = arguments[0];
     var i = 1;
     var length = arguments.length;
     var deep = false;
-    if (typeof target === "boolean") {
-      deep = target;
-      target = arguments[1] || {};
+    if (typeof target2 === "boolean") {
+      deep = target2;
+      target2 = arguments[1] || {};
       i = 2;
     }
-    if (target == null || typeof target !== "object" && typeof target !== "function") {
-      target = {};
+    if (target2 == null || typeof target2 !== "object" && typeof target2 !== "function") {
+      target2 = {};
     }
     for (; i < length; ++i) {
-      options = arguments[i];
-      if (options != null) {
-        for (name2 in options) {
-          src = getProperty(target, name2);
-          copy = getProperty(options, name2);
-          if (target !== copy) {
+      options2 = arguments[i];
+      if (options2 != null) {
+        for (name2 in options2) {
+          src = getProperty(target2, name2);
+          copy = getProperty(options2, name2);
+          if (target2 !== copy) {
             if (deep && copy && (isPlainObject2(copy) || (copyIsArray = isArray(copy)))) {
               if (copyIsArray) {
                 copyIsArray = false;
@@ -21061,15 +21084,15 @@ function requireExtend() {
               } else {
                 clone = src && isPlainObject2(src) ? src : {};
               }
-              setProperty(target, { name: name2, newValue: extend2(deep, clone, copy) });
+              setProperty(target2, { name: name2, newValue: extend2(deep, clone, copy) });
             } else if (typeof copy !== "undefined") {
-              setProperty(target, { name: name2, newValue: copy });
+              setProperty(target2, { name: name2, newValue: copy });
             }
           }
         }
       }
     }
-    return target;
+    return target2;
   };
   return extend$1;
 }
@@ -21461,17 +21484,17 @@ class VFile {
    *   New instance.
    */
   constructor(value) {
-    let options;
+    let options2;
     if (!value) {
-      options = {};
+      options2 = {};
     } else if (isUrl(value)) {
-      options = { path: value };
+      options2 = { path: value };
     } else if (typeof value === "string" || isUint8Array$1(value)) {
-      options = { value };
+      options2 = { value };
     } else {
-      options = value;
+      options2 = value;
     }
-    this.cwd = "cwd" in options ? "" : minproc.cwd();
+    this.cwd = "cwd" in options2 ? "" : minproc.cwd();
     this.data = {};
     this.history = [];
     this.messages = [];
@@ -21482,14 +21505,14 @@ class VFile {
     let index2 = -1;
     while (++index2 < order.length) {
       const field2 = order[index2];
-      if (field2 in options && options[field2] !== void 0 && options[field2] !== null) {
-        this[field2] = field2 === "history" ? [...options[field2]] : options[field2];
+      if (field2 in options2 && options2[field2] !== void 0 && options2[field2] !== null) {
+        this[field2] = field2 === "history" ? [...options2[field2]] : options2[field2];
       }
     }
     let field;
-    for (field in options) {
+    for (field in options2) {
       if (!order.includes(field)) {
-        this[field] = options[field];
+        this[field] = options2[field];
       }
     }
   }
@@ -22050,14 +22073,14 @@ class Processor extends CallableInstance {
       this
     );
     while (++this.freezeIndex < this.attachers.length) {
-      const [attacher, ...options] = this.attachers[this.freezeIndex];
-      if (options[0] === false) {
+      const [attacher, ...options2] = this.attachers[this.freezeIndex];
+      if (options2[0] === false) {
         continue;
       }
-      if (options[0] === true) {
-        options[0] = void 0;
+      if (options2[0] === true) {
+        options2[0] = void 0;
       }
-      const transformer = attacher.call(self2, ...options);
+      const transformer = attacher.call(self2, ...options2);
       if (typeof transformer === "function") {
         this.transformers.use(transformer);
       }
@@ -22425,7 +22448,7 @@ class Processor extends CallableInstance {
       throw new TypeError("Expected usable value, not `" + value + "`");
     }
     return this;
-    function add(value2) {
+    function add2(value2) {
       if (typeof value2 === "function") {
         addPlugin(value2, []);
       } else if (typeof value2 === "object") {
@@ -22459,7 +22482,7 @@ class Processor extends CallableInstance {
       else if (Array.isArray(plugins)) {
         while (++index2 < plugins.length) {
           const thing = plugins[index2];
-          add(thing);
+          add2(thing);
         }
       } else {
         throw new TypeError("Expected a list of plugins, not `" + plugins + "`");
@@ -22571,36 +22594,36 @@ const deprecations = [
   { from: "transformImageUri", id: "#add-urltransform", to: "urlTransform" },
   { from: "transformLinkUri", id: "#add-urltransform", to: "urlTransform" }
 ];
-function Markdown(options) {
-  const processor = createProcessor(options);
-  const file = createFile(options);
-  return post(processor.runSync(processor.parse(file), file), options);
+function Markdown(options2) {
+  const processor = createProcessor(options2);
+  const file = createFile(options2);
+  return post(processor.runSync(processor.parse(file), file), options2);
 }
-function createProcessor(options) {
-  const rehypePlugins = options.rehypePlugins || emptyPlugins;
-  const remarkPlugins = options.remarkPlugins || emptyPlugins;
-  const remarkRehypeOptions = options.remarkRehypeOptions ? { ...options.remarkRehypeOptions, ...emptyRemarkRehypeOptions } : emptyRemarkRehypeOptions;
+function createProcessor(options2) {
+  const rehypePlugins = options2.rehypePlugins || emptyPlugins;
+  const remarkPlugins = options2.remarkPlugins || emptyPlugins;
+  const remarkRehypeOptions = options2.remarkRehypeOptions ? { ...options2.remarkRehypeOptions, ...emptyRemarkRehypeOptions } : emptyRemarkRehypeOptions;
   const processor = unified().use(remarkParse).use(remarkPlugins).use(remarkRehype, remarkRehypeOptions).use(rehypePlugins);
   return processor;
 }
-function createFile(options) {
-  const children = options.children || "";
+function createFile(options2) {
+  const children = options2.children || "";
   const file = new VFile();
   if (typeof children === "string") {
     file.value = children;
   }
   return file;
 }
-function post(tree, options) {
-  const allowedElements = options.allowedElements;
-  const allowElement = options.allowElement;
-  const components = options.components;
-  const disallowedElements = options.disallowedElements;
-  const skipHtml = options.skipHtml;
-  const unwrapDisallowed = options.unwrapDisallowed;
-  const urlTransform = options.urlTransform || defaultUrlTransform;
+function post(tree, options2) {
+  const allowedElements = options2.allowedElements;
+  const allowElement = options2.allowElement;
+  const components = options2.components;
+  const disallowedElements = options2.disallowedElements;
+  const skipHtml = options2.skipHtml;
+  const unwrapDisallowed = options2.unwrapDisallowed;
+  const urlTransform = options2.urlTransform || defaultUrlTransform;
   for (const deprecation of deprecations) {
-    if (Object.hasOwn(options, deprecation.from)) {
+    if (Object.hasOwn(options2, deprecation.from)) {
       unreachable(
         "Unexpected `" + deprecation.from + "` prop, " + (deprecation.to ? "use `" + deprecation.to + "` instead" : "remove it") + " (see <" + changelog + "#" + deprecation.id + "> for more info)"
       );
@@ -22638,11 +22661,11 @@ function post(tree, options) {
       }
     }
     if (node2.type === "element") {
-      let remove = allowedElements ? !allowedElements.includes(node2.tagName) : disallowedElements ? disallowedElements.includes(node2.tagName) : false;
-      if (!remove && allowElement && typeof index2 === "number") {
-        remove = !allowElement(node2, index2, parent);
+      let remove2 = allowedElements ? !allowedElements.includes(node2.tagName) : disallowedElements ? disallowedElements.includes(node2.tagName) : false;
+      if (!remove2 && allowElement && typeof index2 === "number") {
+        remove2 = !allowElement(node2, index2, parent);
       }
-      if (remove && parent && typeof index2 === "number") {
+      if (remove2 && parent && typeof index2 === "number") {
         if (unwrapDisallowed && node2.children) {
           parent.children.splice(index2, 1, ...node2.children);
         } else {
@@ -22687,23 +22710,23 @@ function escapeStringRegexp(string2) {
   }
   return string2.replace(/[|\\{}()[\]^$+*?.]/g, "\\$&").replace(/-/g, "\\x2d");
 }
-function findAndReplace(tree, list2, options) {
-  const settings = options || {};
+function findAndReplace(tree, list2, options2) {
+  const settings = options2 || {};
   const ignored = convert(settings.ignore || []);
   const pairs = toPairs(list2);
   let pairIndex = -1;
   while (++pairIndex < pairs.length) {
     visitParents(tree, "text", visitor);
   }
-  function visitor(node2, parents) {
+  function visitor(node2, parents2) {
     let index2 = -1;
     let grandparent;
-    while (++index2 < parents.length) {
-      const parent = parents[index2];
-      const siblings = grandparent ? grandparent.children : void 0;
+    while (++index2 < parents2.length) {
+      const parent = parents2[index2];
+      const siblings2 = grandparent ? grandparent.children : void 0;
       if (ignored(
         parent,
-        siblings ? siblings.indexOf(parent) : void 0,
+        siblings2 ? siblings2.indexOf(parent) : void 0,
         grandparent
       )) {
         return;
@@ -22711,16 +22734,16 @@ function findAndReplace(tree, list2, options) {
       grandparent = parent;
     }
     if (grandparent) {
-      return handler(node2, parents);
+      return handler(node2, parents2);
     }
   }
-  function handler(node2, parents) {
-    const parent = parents[parents.length - 1];
+  function handler(node2, parents2) {
+    const parent = parents2[parents2.length - 1];
     const find2 = pairs[pairIndex][0];
     const replace2 = pairs[pairIndex][1];
     let start = 0;
-    const siblings = parent.children;
-    const index2 = siblings.indexOf(node2);
+    const siblings2 = parent.children;
+    const index2 = siblings2.indexOf(node2);
     let change = false;
     let nodes = [];
     find2.lastIndex = 0;
@@ -22730,7 +22753,7 @@ function findAndReplace(tree, list2, options) {
       const matchObject = {
         index: match.index,
         input: match.input,
-        stack: [...parents, node2]
+        stack: [...parents2, node2]
       };
       let value = replace2(...match, matchObject);
       if (typeof value === "string") {
@@ -23010,9 +23033,9 @@ function gfmFootnoteFromMarkdown() {
     }
   };
 }
-function gfmFootnoteToMarkdown(options) {
+function gfmFootnoteToMarkdown(options2) {
   let firstLineBlank = false;
-  if (options && options.firstLineBlank) {
+  if (options2 && options2.firstLineBlank) {
     firstLineBlank = true;
   }
   return {
@@ -23102,8 +23125,8 @@ function peekDelete() {
 function defaultStringLength(value) {
   return value.length;
 }
-function markdownTable(table2, options) {
-  const settings = options || {};
+function markdownTable(table2, options2) {
+  const settings = options2 || {};
   const align = (settings.align || []).concat();
   const stringLength = settings.stringLength || defaultStringLength;
   const alignments = [];
@@ -23256,12 +23279,12 @@ function map$1(line, _, blank) {
 function patternInScope(stack, pattern) {
   return listInScope(stack, pattern.inConstruct, true) && !listInScope(stack, pattern.notInConstruct, false);
 }
-function listInScope(stack, list2, none) {
+function listInScope(stack, list2, none2) {
   if (typeof list2 === "string") {
     list2 = [list2];
   }
   if (!list2 || list2.length === 0) {
-    return none;
+    return none2;
   }
   let index2 = -1;
   while (++index2 < list2.length) {
@@ -23321,16 +23344,16 @@ function checkFence(state) {
 }
 function code$1(node2, _, state, info) {
   const marker = checkFence(state);
-  const raw = node2.value || "";
+  const raw2 = node2.value || "";
   const suffix = marker === "`" ? "GraveAccent" : "Tilde";
   if (formatCodeAsIndented(node2, state)) {
     const exit3 = state.enter("codeIndented");
-    const value2 = state.indentLines(raw, map);
+    const value2 = state.indentLines(raw2, map);
     exit3();
     return value2;
   }
   const tracker = state.createTracker(info);
-  const sequence = marker.repeat(Math.max(longestStreak(raw, marker) + 1, 3));
+  const sequence = marker.repeat(Math.max(longestStreak(raw2, marker) + 1, 3));
   const exit2 = state.enter("codeFenced");
   let value = tracker.move(sequence);
   if (node2.lang) {
@@ -23359,8 +23382,8 @@ function code$1(node2, _, state, info) {
     subexit();
   }
   value += tracker.move("\n");
-  if (raw) {
-    value += tracker.move(raw + "\n");
+  if (raw2) {
+    value += tracker.move(raw2 + "\n");
   }
   value += tracker.move(sequence);
   exit2();
@@ -23703,13 +23726,13 @@ function inlineCodePeek() {
   return "`";
 }
 function formatLinkAsAutolink(node2, state) {
-  const raw = toString$1(node2);
+  const raw2 = toString$1(node2);
   return Boolean(
     !state.options.resourceLink && // If there’s a url…
     node2.url && // And there’s a no title…
     !node2.title && // And the content of `node` is a single text node…
     node2.children && node2.children.length === 1 && node2.children[0].type === "text" && // And if the url is the same as the content…
-    (raw === node2.url || "mailto:" + raw === node2.url) && // And that starts w/ a protocol…
+    (raw2 === node2.url || "mailto:" + raw2 === node2.url) && // And that starts w/ a protocol…
     /^[a-z][a-z+.-]+:/i.test(node2.url) && // And that doesn’t contain ASCII control codes (character escapes and
     // references don’t work), space, or angle brackets…
     !/[\0- <>\u007F]/.test(node2.url)
@@ -23983,7 +24006,7 @@ const phrasing = (
     "textDirective"
   ])
 );
-function root(node2, _, state, info) {
+function root$1(node2, _, state, info) {
   const hasPhrasing = node2.children.some(function(d) {
     return phrasing(d);
   });
@@ -24070,7 +24093,7 @@ const handle = {
   list,
   listItem,
   paragraph,
-  root,
+  root: root$1,
   strong,
   text: text$1,
   thematicBreak
@@ -24132,8 +24155,8 @@ function exitCodeText(token) {
 function replace($0, $1) {
   return $1 === "|" ? $1 : $0;
 }
-function gfmTableToMarkdown(options) {
-  const settings = options || {};
+function gfmTableToMarkdown(options2) {
+  const settings = options2 || {};
   const padding = settings.tableCellPadding;
   const alignDelimiters = settings.tablePipeAlign;
   const stringLength = settings.stringLength;
@@ -24252,11 +24275,11 @@ function exitParagraphWithTaskListItem(token) {
     ok$1(node2.type === "paragraph");
     const head = node2.children[0];
     if (head && head.type === "text") {
-      const siblings = parent.children;
+      const siblings2 = parent.children;
       let index2 = -1;
       let firstParaghraph;
-      while (++index2 < siblings.length) {
-        const sibling = siblings[index2];
+      while (++index2 < siblings2.length) {
+        const sibling = siblings2[index2];
         if (sibling.type === "paragraph") {
           firstParaghraph = sibling;
           break;
@@ -24305,13 +24328,13 @@ function gfmFromMarkdown() {
     gfmTaskListItemFromMarkdown()
   ];
 }
-function gfmToMarkdown(options) {
+function gfmToMarkdown(options2) {
   return {
     extensions: [
       gfmAutolinkLiteralToMarkdown(),
-      gfmFootnoteToMarkdown(options),
+      gfmFootnoteToMarkdown(options2),
       gfmStrikethroughToMarkdown(),
-      gfmTableToMarkdown(options),
+      gfmTableToMarkdown(options2),
       gfmTaskListItemToMarkdown()
     ]
   };
@@ -24928,8 +24951,8 @@ function tokenizeIndent(effects, ok2, nok) {
     return tail && tail[1].type === "gfmFootnoteDefinitionIndent" && tail[2].sliceSerialize(tail[1], true).length === 4 ? ok2(code2) : nok(code2);
   }
 }
-function gfmStrikethrough(options) {
-  const options_ = options || {};
+function gfmStrikethrough(options2) {
+  const options_ = options2 || {};
   let single = options_.singleTilde;
   const tokenizer = {
     name: "strikethrough",
@@ -25035,8 +25058,8 @@ class EditMap {
    * @param {Array<Event>} add
    * @returns {undefined}
    */
-  add(index2, remove, add) {
-    addImplementation(this, index2, remove, add);
+  add(index2, remove2, add2) {
+    addImplementation(this, index2, remove2, add2);
   }
   // To do: add this when moving to `micromark`.
   // /**
@@ -25082,20 +25105,20 @@ class EditMap {
     this.map.length = 0;
   }
 }
-function addImplementation(editMap, at, remove, add) {
+function addImplementation(editMap, at, remove2, add2) {
   let index2 = 0;
-  if (remove === 0 && add.length === 0) {
+  if (remove2 === 0 && add2.length === 0) {
     return;
   }
   while (index2 < editMap.map.length) {
     if (editMap.map[index2][0] === at) {
-      editMap.map[index2][1] += remove;
-      editMap.map[index2][2].push(...add);
+      editMap.map[index2][1] += remove2;
+      editMap.map[index2][2].push(...add2);
       return;
     }
     index2 += 1;
   }
-  editMap.map.push([at, remove, add]);
+  editMap.map.push([at, remove2, add2]);
 }
 function gfmTableAlign(events, index2) {
   let inDelimiterRow = false;
@@ -25578,22 +25601,22 @@ function spaceThenNonSpace(effects, ok2, nok) {
     return code2 === null ? nok(code2) : ok2(code2);
   }
 }
-function gfm(options) {
+function gfm(options2) {
   return combineExtensions([
     gfmAutolinkLiteral(),
     gfmFootnote(),
-    gfmStrikethrough(options),
+    gfmStrikethrough(options2),
     gfmTable(),
     gfmTaskListItem()
   ]);
 }
 const emptyOptions = {};
-function remarkGfm(options) {
+function remarkGfm(options2) {
   const self2 = (
     /** @type {Processor<Root>} */
     this
   );
-  const settings = options || emptyOptions;
+  const settings = options2 || emptyOptions;
   const data = self2.data();
   const micromarkExtensions = data.micromarkExtensions || (data.micromarkExtensions = []);
   const fromMarkdownExtensions = data.fromMarkdownExtensions || (data.fromMarkdownExtensions = []);
@@ -25654,11 +25677,12 @@ function deriveTimelineActivities(events) {
         }
         continue;
       }
-      const summary = summarizeToolResult(readMetadata(event, "toolName") ?? "tool", event.content);
+      const toolName = inferToolResultName(event, event.content);
+      const summary = summarizeToolResult(toolName, event.content);
       activities.push({
         id: event.id,
-        tone: readMetadata(event, "toolName") === "finish_build" ? "info" : "tool",
-        kind: readMetadata(event, "toolName") === "finish_build" ? "completion" : "tool",
+        tone: toolName === "finish_build" ? "info" : "tool",
+        kind: toolName === "finish_build" ? "completion" : "tool",
         agent: event.agent,
         createdAt: event.createdAt,
         title: summary.title,
@@ -25666,7 +25690,7 @@ function deriveTimelineActivities(events) {
         body: summary.body,
         tag: "output",
         rawOutput: event.content,
-        toolName: readMetadata(event, "toolName"),
+        toolName,
         resolved: true
       });
       continue;
@@ -25781,9 +25805,6 @@ function isToolCallEvent(event) {
   if (event.type !== "tool") {
     return false;
   }
-  if ((readMetadata(event, "toolName") ?? event.title) === "finish_build") {
-    return false;
-  }
   return (readMetadata(event, "toolPhase") ?? "call") === "call";
 }
 function isToolResultEvent(event) {
@@ -25795,6 +25816,17 @@ function isToolResultEvent(event) {
 function readMetadata(event, key) {
   const value = event.metadata?.[key];
   return typeof value === "string" ? value : void 0;
+}
+function inferToolResultName(event, rawOutput) {
+  const explicitToolName = readMetadata(event, "toolName");
+  if (explicitToolName) {
+    return explicitToolName;
+  }
+  const output = parseRecord(rawOutput);
+  if (typeof output?.summary === "string") {
+    return "finish_build";
+  }
+  return "tool";
 }
 function summarizeToolCall(toolName, rawInput) {
   const input = parseRecord(rawInput);
@@ -26042,9 +26074,9 @@ function ProposedPlanCard({ planMarkdown }) {
     canCollapse ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "plan-card-actions", children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "toolbar-chip", onClick: () => setExpanded((value) => !value), children: expanded ? "Collapse plan" : "Expand plan" }) }) : null
   ] });
 }
-function parseJson(raw) {
+function parseJson(raw2) {
   try {
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(raw2);
     return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
   } catch {
     return null;
@@ -26164,22 +26196,34 @@ function getToolDetail(activity) {
   }
   return activity.note ?? null;
 }
-function SummaryCard({ activity }) {
-  const body = activity.body;
-  const note = activity.note;
-  let summaryJson = null;
-  if (body) {
-    summaryJson = parseJson(body);
+function extractCompletionSummary(activity) {
+  const bodyJson = activity.body ? parseJson(activity.body) : null;
+  if (typeof bodyJson?.summary === "string" && bodyJson.summary.trim()) {
+    return bodyJson.summary.trim();
   }
-  const summaryText = summaryJson ? typeof summaryJson.summary === "string" ? summaryJson.summary : null : null;
-  const displayBody = summaryText ?? body;
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "summary-card", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "summary-card-header", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "summary-card-badge", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { size: 12 }),
-      "Summary"
-    ] }) }),
-    displayBody ? /* @__PURE__ */ jsxRuntimeExports.jsx(ChatMarkdown, { content: displayBody }) : null,
-    !displayBody && note ? /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "summary-card-note", children: note }) : null
+  if (activity.body?.trim()) {
+    return activity.body.trim();
+  }
+  const outputJson = activity.rawOutput ? parseJson(activity.rawOutput) : null;
+  if (typeof outputJson?.summary === "string" && outputJson.summary.trim()) {
+    return outputJson.summary.trim();
+  }
+  if (activity.note?.trim()) {
+    return activity.note.trim();
+  }
+  return null;
+}
+function CompletionNotice({ activity }) {
+  const summary = extractCompletionSummary(activity);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chat-completion", role: "status", "aria-live": "polite", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chat-completion-header", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "chat-completion-badge", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { size: 12 }),
+        "Complete"
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: activity.title })
+    ] }),
+    summary ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "chat-completion-copy", children: summary }) : null
   ] });
 }
 function UserInputResultCard({ activity }) {
@@ -26219,7 +26263,7 @@ function RunMessages({ run }) {
         activity.kind === "assistant" && activity.body ? /* @__PURE__ */ jsxRuntimeExports.jsx(ChatMarkdown, { content: activity.body }) : null,
         activity.kind === "tool" ? /* @__PURE__ */ jsxRuntimeExports.jsx(LiveToolRow, { activity }) : null,
         activity.kind === "plan" && activity.body ? /* @__PURE__ */ jsxRuntimeExports.jsx(ProposedPlanCard, { planMarkdown: activity.body }) : null,
-        activity.kind === "completion" ? /* @__PURE__ */ jsxRuntimeExports.jsx(SummaryCard, { activity }) : null,
+        activity.kind === "completion" ? /* @__PURE__ */ jsxRuntimeExports.jsx(CompletionNotice, { activity }) : null,
         activity.kind === "user_input" ? /* @__PURE__ */ jsxRuntimeExports.jsx(UserInputResultCard, { activity }) : null,
         activity.kind === "status" ? /* @__PURE__ */ jsxRuntimeExports.jsx(StatusLine, { activity }) : null,
         activity.kind === "error" ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "chat-error", children: [
@@ -26267,6 +26311,1813 @@ function ChatThread({ runs }) {
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { ref: endRef })
   ] });
 }
+const parents = /* @__PURE__ */ new Set();
+const coords = /* @__PURE__ */ new WeakMap();
+const siblings = /* @__PURE__ */ new WeakMap();
+const animations = /* @__PURE__ */ new WeakMap();
+const intersections = /* @__PURE__ */ new WeakMap();
+const mutationObservers = /* @__PURE__ */ new WeakMap();
+const intervals = /* @__PURE__ */ new WeakMap();
+const options = /* @__PURE__ */ new WeakMap();
+const debounces = /* @__PURE__ */ new WeakMap();
+const enabled = /* @__PURE__ */ new WeakSet();
+let root;
+let scrollX = 0;
+let scrollY = 0;
+const TGT = "__aa_tgt";
+const DEL = "__aa_del";
+const NEW = "__aa_new";
+const handleMutations = (mutations) => {
+  const elements = getElements(mutations);
+  if (elements) {
+    elements.forEach((el) => animate(el));
+  }
+};
+const handleResizes = (entries) => {
+  entries.forEach((entry) => {
+    if (entry.target === root)
+      updateAllPos();
+    if (coords.has(entry.target))
+      updatePos(entry.target);
+  });
+};
+function isOffscreen(el) {
+  const rect = el.getBoundingClientRect();
+  const vw = (root === null || root === void 0 ? void 0 : root.clientWidth) || 0;
+  const vh = (root === null || root === void 0 ? void 0 : root.clientHeight) || 0;
+  return rect.bottom < 0 || rect.top > vh || rect.right < 0 || rect.left > vw;
+}
+function observePosition(el) {
+  const oldObserver = intersections.get(el);
+  oldObserver === null || oldObserver === void 0 ? void 0 : oldObserver.disconnect();
+  let rect = coords.get(el);
+  let invocations = 0;
+  const buffer = 5;
+  if (!rect) {
+    rect = getCoords(el);
+    coords.set(el, rect);
+  }
+  const { offsetWidth, offsetHeight } = root;
+  const rootMargins = [
+    rect.top - buffer,
+    offsetWidth - (rect.left + buffer + rect.width),
+    offsetHeight - (rect.top + buffer + rect.height),
+    rect.left - buffer
+  ];
+  const rootMargin = rootMargins.map((px) => `${-1 * Math.floor(px)}px`).join(" ");
+  const observer = new IntersectionObserver(() => {
+    ++invocations > 1 && updatePos(el);
+  }, {
+    root,
+    threshold: 1,
+    rootMargin
+  });
+  observer.observe(el);
+  intersections.set(el, observer);
+}
+function updatePos(el, debounce = true) {
+  clearTimeout(debounces.get(el));
+  const optionsOrPlugin = getOptions(el);
+  const delay = debounce ? isPlugin(optionsOrPlugin) ? 500 : optionsOrPlugin.duration : 0;
+  debounces.set(el, setTimeout(async () => {
+    const currentAnimation = animations.get(el);
+    try {
+      await (currentAnimation === null || currentAnimation === void 0 ? void 0 : currentAnimation.finished);
+      coords.set(el, getCoords(el));
+      observePosition(el);
+    } catch {
+    }
+  }, delay));
+}
+function updateAllPos() {
+  clearTimeout(debounces.get(root));
+  debounces.set(root, setTimeout(() => {
+    parents.forEach((parent) => forEach(parent, (el) => lowPriority(() => updatePos(el))));
+  }, 100));
+}
+function poll(el) {
+  setTimeout(() => {
+    intervals.set(el, setInterval(() => lowPriority(updatePos.bind(null, el)), 2e3));
+  }, Math.round(2e3 * Math.random()));
+}
+function lowPriority(callback) {
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(() => callback());
+  } else {
+    requestAnimationFrame(() => callback());
+  }
+}
+let resize;
+const supportedBrowser = typeof window !== "undefined" && "ResizeObserver" in window;
+if (supportedBrowser) {
+  root = document.documentElement;
+  new MutationObserver(handleMutations);
+  resize = new ResizeObserver(handleResizes);
+  window.addEventListener("scroll", () => {
+    scrollY = window.scrollY;
+    scrollX = window.scrollX;
+  });
+  resize.observe(root);
+}
+function getElements(mutations) {
+  const observedNodes = mutations.reduce((nodes, mutation) => {
+    return [
+      ...nodes,
+      ...Array.from(mutation.addedNodes),
+      ...Array.from(mutation.removedNodes)
+    ];
+  }, []);
+  const onlyCommentNodesObserved = observedNodes.every((node2) => node2.nodeName === "#comment");
+  if (onlyCommentNodesObserved)
+    return false;
+  return mutations.reduce((elements, mutation) => {
+    if (elements === false)
+      return false;
+    if (mutation.target instanceof Element) {
+      target(mutation.target);
+      if (!elements.has(mutation.target)) {
+        elements.add(mutation.target);
+        for (let i = 0; i < mutation.target.children.length; i++) {
+          const child = mutation.target.children.item(i);
+          if (!child)
+            continue;
+          if (DEL in child) {
+            return false;
+          }
+          target(mutation.target, child);
+          elements.add(child);
+        }
+      }
+      if (mutation.removedNodes.length) {
+        for (let i = 0; i < mutation.removedNodes.length; i++) {
+          const child = mutation.removedNodes[i];
+          if (DEL in child) {
+            return false;
+          }
+          if (child instanceof Element) {
+            elements.add(child);
+            target(mutation.target, child);
+            siblings.set(child, [
+              mutation.previousSibling,
+              mutation.nextSibling
+            ]);
+          }
+        }
+      }
+    }
+    return elements;
+  }, /* @__PURE__ */ new Set());
+}
+function target(el, child) {
+  if (!child && !(TGT in el))
+    Object.defineProperty(el, TGT, { value: el });
+  else if (child && !(TGT in child))
+    Object.defineProperty(child, TGT, { value: el });
+}
+function animate(el) {
+  var _a, _b;
+  const isMounted = el.isConnected;
+  const preExisting = coords.has(el);
+  if (isMounted && siblings.has(el))
+    siblings.delete(el);
+  if (((_a = animations.get(el)) === null || _a === void 0 ? void 0 : _a.playState) !== "finished") {
+    (_b = animations.get(el)) === null || _b === void 0 ? void 0 : _b.cancel();
+  }
+  if (NEW in el) {
+    add(el);
+  } else if (preExisting && isMounted) {
+    remain(el);
+  } else if (preExisting && !isMounted) {
+    remove(el);
+  } else {
+    add(el);
+  }
+}
+function raw(str) {
+  return Number(str.replace(/[^0-9.\-]/g, ""));
+}
+function getScrollOffset(el) {
+  let p = el.parentElement;
+  while (p) {
+    if (p.scrollLeft || p.scrollTop) {
+      return { x: p.scrollLeft, y: p.scrollTop };
+    }
+    p = p.parentElement;
+  }
+  return { x: 0, y: 0 };
+}
+function getCoords(el) {
+  const rect = el.getBoundingClientRect();
+  const { x, y } = getScrollOffset(el);
+  return {
+    top: rect.top + y,
+    left: rect.left + x,
+    width: rect.width,
+    height: rect.height
+  };
+}
+function getTransitionSizes(el, oldCoords, newCoords) {
+  let widthFrom = oldCoords.width;
+  let heightFrom = oldCoords.height;
+  let widthTo = newCoords.width;
+  let heightTo = newCoords.height;
+  const styles = getComputedStyle(el);
+  const sizing = styles.getPropertyValue("box-sizing");
+  if (sizing === "content-box") {
+    const paddingY = raw(styles.paddingTop) + raw(styles.paddingBottom) + raw(styles.borderTopWidth) + raw(styles.borderBottomWidth);
+    const paddingX = raw(styles.paddingLeft) + raw(styles.paddingRight) + raw(styles.borderRightWidth) + raw(styles.borderLeftWidth);
+    widthFrom -= paddingX;
+    widthTo -= paddingX;
+    heightFrom -= paddingY;
+    heightTo -= paddingY;
+  }
+  return [widthFrom, widthTo, heightFrom, heightTo].map(Math.round);
+}
+function getOptions(el) {
+  return TGT in el && options.has(el[TGT]) ? options.get(el[TGT]) : { duration: 250, easing: "ease-in-out" };
+}
+function getTarget(el) {
+  if (TGT in el)
+    return el[TGT];
+  return void 0;
+}
+function isEnabled(el) {
+  const target2 = getTarget(el);
+  return target2 ? enabled.has(target2) : false;
+}
+function forEach(parent, ...callbacks) {
+  callbacks.forEach((callback) => callback(parent, options.has(parent)));
+  for (let i = 0; i < parent.children.length; i++) {
+    const child = parent.children.item(i);
+    if (child) {
+      callbacks.forEach((callback) => callback(child, options.has(child)));
+    }
+  }
+}
+function getPluginTuple(pluginReturn) {
+  if (Array.isArray(pluginReturn))
+    return pluginReturn;
+  return [pluginReturn];
+}
+function isPlugin(config) {
+  return typeof config === "function";
+}
+function remain(el) {
+  const oldCoords = coords.get(el);
+  const newCoords = getCoords(el);
+  if (!isEnabled(el))
+    return coords.set(el, newCoords);
+  if (isOffscreen(el)) {
+    coords.set(el, newCoords);
+    observePosition(el);
+    return;
+  }
+  let animation;
+  if (!oldCoords)
+    return;
+  const pluginOrOptions = getOptions(el);
+  if (typeof pluginOrOptions !== "function") {
+    let deltaLeft = oldCoords.left - newCoords.left;
+    let deltaTop = oldCoords.top - newCoords.top;
+    const deltaRight = oldCoords.left + oldCoords.width - (newCoords.left + newCoords.width);
+    const deltaBottom = oldCoords.top + oldCoords.height - (newCoords.top + newCoords.height);
+    if (deltaBottom == 0)
+      deltaTop = 0;
+    if (deltaRight == 0)
+      deltaLeft = 0;
+    const [widthFrom, widthTo, heightFrom, heightTo] = getTransitionSizes(el, oldCoords, newCoords);
+    const start = {
+      transform: `translate(${deltaLeft}px, ${deltaTop}px)`
+    };
+    const end = {
+      transform: `translate(0, 0)`
+    };
+    if (widthFrom !== widthTo) {
+      start.width = `${widthFrom}px`;
+      end.width = `${widthTo}px`;
+    }
+    if (heightFrom !== heightTo) {
+      start.height = `${heightFrom}px`;
+      end.height = `${heightTo}px`;
+    }
+    animation = el.animate([start, end], {
+      duration: pluginOrOptions.duration,
+      easing: pluginOrOptions.easing
+    });
+  } else {
+    const [keyframes] = getPluginTuple(pluginOrOptions(el, "remain", oldCoords, newCoords));
+    animation = new Animation(keyframes);
+    animation.play();
+  }
+  animations.set(el, animation);
+  coords.set(el, newCoords);
+  animation.addEventListener("finish", updatePos.bind(null, el, false), {
+    once: true
+  });
+}
+function add(el) {
+  if (NEW in el)
+    delete el[NEW];
+  const newCoords = getCoords(el);
+  coords.set(el, newCoords);
+  const pluginOrOptions = getOptions(el);
+  if (!isEnabled(el))
+    return;
+  if (isOffscreen(el)) {
+    observePosition(el);
+    return;
+  }
+  let animation;
+  if (typeof pluginOrOptions !== "function") {
+    animation = el.animate([
+      { transform: "scale(.98)", opacity: 0 },
+      { transform: "scale(0.98)", opacity: 0, offset: 0.5 },
+      { transform: "scale(1)", opacity: 1 }
+    ], {
+      duration: pluginOrOptions.duration * 1.5,
+      easing: "ease-in"
+    });
+  } else {
+    const [keyframes] = getPluginTuple(pluginOrOptions(el, "add", newCoords));
+    animation = new Animation(keyframes);
+    animation.play();
+  }
+  animations.set(el, animation);
+  animation.addEventListener("finish", updatePos.bind(null, el, false), {
+    once: true
+  });
+}
+function cleanUp(el, styles) {
+  var _a;
+  el.remove();
+  coords.delete(el);
+  siblings.delete(el);
+  animations.delete(el);
+  (_a = intersections.get(el)) === null || _a === void 0 ? void 0 : _a.disconnect();
+  setTimeout(() => {
+    if (DEL in el)
+      delete el[DEL];
+    Object.defineProperty(el, NEW, { value: true, configurable: true });
+    if (styles && el instanceof HTMLElement) {
+      for (const style in styles) {
+        el.style[style] = "";
+      }
+    }
+  }, 0);
+}
+function remove(el) {
+  var _a;
+  if (!siblings.has(el) || !coords.has(el))
+    return;
+  const [prev, next] = siblings.get(el);
+  Object.defineProperty(el, DEL, { value: true, configurable: true });
+  const finalX = window.scrollX;
+  const finalY = window.scrollY;
+  if (next && next.parentNode && next.parentNode instanceof Element) {
+    next.parentNode.insertBefore(el, next);
+  } else if (prev && prev.parentNode) {
+    prev.parentNode.appendChild(el);
+  } else {
+    (_a = getTarget(el)) === null || _a === void 0 ? void 0 : _a.appendChild(el);
+  }
+  if (!isEnabled(el))
+    return cleanUp(el);
+  const [top, left, width, height] = deletePosition(el);
+  const optionsOrPlugin = getOptions(el);
+  const oldCoords = coords.get(el);
+  if (finalX !== scrollX || finalY !== scrollY) {
+    adjustScroll(el, finalX, finalY, optionsOrPlugin);
+  }
+  let animation;
+  let styleReset = {
+    position: "absolute",
+    top: `${top}px`,
+    left: `${left}px`,
+    width: `${width}px`,
+    height: `${height}px`,
+    margin: "0",
+    pointerEvents: "none",
+    transformOrigin: "center",
+    zIndex: "100"
+  };
+  if (!isPlugin(optionsOrPlugin)) {
+    Object.assign(el.style, styleReset);
+    animation = el.animate([
+      {
+        transform: "scale(1)",
+        opacity: 1
+      },
+      {
+        transform: "scale(.98)",
+        opacity: 0
+      }
+    ], {
+      duration: optionsOrPlugin.duration,
+      easing: "ease-out"
+    });
+  } else {
+    const [keyframes, options2] = getPluginTuple(optionsOrPlugin(el, "remove", oldCoords));
+    if ((options2 === null || options2 === void 0 ? void 0 : options2.styleReset) !== false) {
+      styleReset = (options2 === null || options2 === void 0 ? void 0 : options2.styleReset) || styleReset;
+      Object.assign(el.style, styleReset);
+    }
+    animation = new Animation(keyframes);
+    animation.play();
+  }
+  animations.set(el, animation);
+  animation.addEventListener("finish", () => cleanUp(el, styleReset), {
+    once: true
+  });
+}
+function adjustScroll(el, finalX, finalY, optionsOrPlugin) {
+  const scrollDeltaX = scrollX - finalX;
+  const scrollDeltaY = scrollY - finalY;
+  const scrollBefore = document.documentElement.style.scrollBehavior;
+  const scrollBehavior = getComputedStyle(root).scrollBehavior;
+  if (scrollBehavior === "smooth") {
+    document.documentElement.style.scrollBehavior = "auto";
+  }
+  window.scrollTo(window.scrollX + scrollDeltaX, window.scrollY + scrollDeltaY);
+  if (!el.parentElement)
+    return;
+  const parent = el.parentElement;
+  let lastHeight = parent.clientHeight;
+  let lastWidth = parent.clientWidth;
+  const startScroll = performance.now();
+  function smoothScroll() {
+    requestAnimationFrame(() => {
+      if (!isPlugin(optionsOrPlugin)) {
+        const deltaY = lastHeight - parent.clientHeight;
+        const deltaX = lastWidth - parent.clientWidth;
+        if (startScroll + optionsOrPlugin.duration > performance.now()) {
+          window.scrollTo({
+            left: window.scrollX - deltaX,
+            top: window.scrollY - deltaY
+          });
+          lastHeight = parent.clientHeight;
+          lastWidth = parent.clientWidth;
+          smoothScroll();
+        } else {
+          document.documentElement.style.scrollBehavior = scrollBefore;
+        }
+      }
+    });
+  }
+  smoothScroll();
+}
+function deletePosition(el) {
+  var _a;
+  const oldCoords = coords.get(el);
+  const [width, , height] = getTransitionSizes(el, oldCoords, getCoords(el));
+  let offsetParent = el.parentElement;
+  while (offsetParent && (getComputedStyle(offsetParent).position === "static" || offsetParent instanceof HTMLBodyElement)) {
+    offsetParent = offsetParent.parentElement;
+  }
+  if (!offsetParent)
+    offsetParent = document.body;
+  const parentStyles = getComputedStyle(offsetParent);
+  const parentCoords = !animations.has(el) || ((_a = animations.get(el)) === null || _a === void 0 ? void 0 : _a.playState) === "finished" ? getCoords(offsetParent) : coords.get(offsetParent);
+  const top = Math.round(oldCoords.top - parentCoords.top) - raw(parentStyles.borderTopWidth);
+  const left = Math.round(oldCoords.left - parentCoords.left) - raw(parentStyles.borderLeftWidth);
+  return [top, left, width, height];
+}
+function autoAnimate(el, config = {}) {
+  if (supportedBrowser && resize) {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const isDisabledDueToReduceMotion = mediaQuery.matches && !isPlugin(config) && !config.disrespectUserMotionPreference;
+    if (!isDisabledDueToReduceMotion) {
+      enabled.add(el);
+      if (getComputedStyle(el).position === "static") {
+        Object.assign(el.style, { position: "relative" });
+      }
+      forEach(el, updatePos, poll, (element2) => resize === null || resize === void 0 ? void 0 : resize.observe(element2));
+      if (isPlugin(config)) {
+        options.set(el, config);
+      } else {
+        options.set(el, {
+          duration: 250,
+          easing: "ease-in-out",
+          ...config
+        });
+      }
+      const mo = new MutationObserver(handleMutations);
+      mo.observe(el, { childList: true });
+      mutationObservers.set(el, mo);
+      parents.add(el);
+    }
+  }
+  const controller = Object.freeze({
+    parent: el,
+    enable: () => {
+      enabled.add(el);
+    },
+    disable: () => {
+      enabled.delete(el);
+      forEach(el, (node2) => {
+        const a = animations.get(node2);
+        try {
+          a === null || a === void 0 ? void 0 : a.cancel();
+        } catch {
+        }
+        animations.delete(node2);
+        const d = debounces.get(node2);
+        if (d)
+          clearTimeout(d);
+        debounces.delete(node2);
+        const i = intervals.get(node2);
+        if (i)
+          clearInterval(i);
+        intervals.delete(node2);
+      });
+    },
+    isEnabled: () => enabled.has(el),
+    destroy: () => {
+      enabled.delete(el);
+      parents.delete(el);
+      options.delete(el);
+      const mo = mutationObservers.get(el);
+      mo === null || mo === void 0 ? void 0 : mo.disconnect();
+      mutationObservers.delete(el);
+      forEach(el, (node2) => {
+        resize === null || resize === void 0 ? void 0 : resize.unobserve(node2);
+        const a = animations.get(node2);
+        try {
+          a === null || a === void 0 ? void 0 : a.cancel();
+        } catch {
+        }
+        animations.delete(node2);
+        const io = intersections.get(node2);
+        io === null || io === void 0 ? void 0 : io.disconnect();
+        intersections.delete(node2);
+        const i = intervals.get(node2);
+        if (i)
+          clearInterval(i);
+        intervals.delete(node2);
+        const d = debounces.get(node2);
+        if (d)
+          clearTimeout(d);
+        debounces.delete(node2);
+        coords.delete(node2);
+        siblings.delete(node2);
+      });
+    }
+  });
+  return controller;
+}
+const UNINITIALIZED = {};
+function useRefWithInit(init, initArg) {
+  const ref = reactExports.useRef(UNINITIALIZED);
+  if (ref.current === UNINITIALIZED) {
+    ref.current = init(initArg);
+  }
+  return ref;
+}
+const useInsertionEffect = React$1[`useInsertionEffect${Math.random().toFixed(1)}`.slice(0, -3)];
+const useSafeInsertionEffect = (
+  // React 17 doesn't have useInsertionEffect.
+  useInsertionEffect && // Preact replaces useInsertionEffect with useLayoutEffect and fires too late.
+  useInsertionEffect !== reactExports.useLayoutEffect ? useInsertionEffect : (fn) => fn()
+);
+function useStableCallback(callback) {
+  const stable = useRefWithInit(createStableCallback).current;
+  stable.next = callback;
+  useSafeInsertionEffect(stable.effect);
+  return stable.trampoline;
+}
+function createStableCallback() {
+  const stable = {
+    next: void 0,
+    callback: assertNotCalled,
+    trampoline: (...args) => stable.callback?.(...args),
+    effect: () => {
+      stable.callback = stable.next;
+    }
+  };
+  return stable;
+}
+function assertNotCalled() {
+}
+function createFormatErrorMessage(baseUrl, prefix) {
+  return function formatErrorMessage2(code2, ...args) {
+    const url = new URL(baseUrl);
+    url.searchParams.set("code", code2.toString());
+    args.forEach((arg) => url.searchParams.append("args[]", arg));
+    return `${prefix} error #${code2}; visit ${url} for the full message.`;
+  };
+}
+const formatErrorMessage = createFormatErrorMessage("https://base-ui.com/production-error", "Base UI");
+function useMergedRefs(a, b, c, d) {
+  const forkRef = useRefWithInit(createForkRef).current;
+  if (didChange(forkRef, a, b, c, d)) {
+    update(forkRef, [a, b, c, d]);
+  }
+  return forkRef.callback;
+}
+function useMergedRefsN(refs) {
+  const forkRef = useRefWithInit(createForkRef).current;
+  if (didChangeN(forkRef, refs)) {
+    update(forkRef, refs);
+  }
+  return forkRef.callback;
+}
+function createForkRef() {
+  return {
+    callback: null,
+    cleanup: null,
+    refs: []
+  };
+}
+function didChange(forkRef, a, b, c, d) {
+  return forkRef.refs[0] !== a || forkRef.refs[1] !== b || forkRef.refs[2] !== c || forkRef.refs[3] !== d;
+}
+function didChangeN(forkRef, newRefs) {
+  return forkRef.refs.length !== newRefs.length || forkRef.refs.some((ref, index2) => ref !== newRefs[index2]);
+}
+function update(forkRef, refs) {
+  forkRef.refs = refs;
+  if (refs.every((ref) => ref == null)) {
+    forkRef.callback = null;
+    return;
+  }
+  forkRef.callback = (instance) => {
+    if (forkRef.cleanup) {
+      forkRef.cleanup();
+      forkRef.cleanup = null;
+    }
+    if (instance != null) {
+      const cleanupCallbacks = Array(refs.length).fill(null);
+      for (let i = 0; i < refs.length; i += 1) {
+        const ref = refs[i];
+        if (ref == null) {
+          continue;
+        }
+        switch (typeof ref) {
+          case "function": {
+            const refCleanup = ref(instance);
+            if (typeof refCleanup === "function") {
+              cleanupCallbacks[i] = refCleanup;
+            }
+            break;
+          }
+          case "object": {
+            ref.current = instance;
+            break;
+          }
+        }
+      }
+      forkRef.cleanup = () => {
+        for (let i = 0; i < refs.length; i += 1) {
+          const ref = refs[i];
+          if (ref == null) {
+            continue;
+          }
+          switch (typeof ref) {
+            case "function": {
+              const cleanupCallback = cleanupCallbacks[i];
+              if (typeof cleanupCallback === "function") {
+                cleanupCallback();
+              } else {
+                ref(null);
+              }
+              break;
+            }
+            case "object": {
+              ref.current = null;
+              break;
+            }
+          }
+        }
+      };
+    }
+  };
+}
+const majorVersion = parseInt(reactExports.version, 10);
+function isReactVersionAtLeast(reactVersionToCheck) {
+  return majorVersion >= reactVersionToCheck;
+}
+function getReactElementRef(element2) {
+  if (!/* @__PURE__ */ reactExports.isValidElement(element2)) {
+    return null;
+  }
+  const reactElement = element2;
+  const propsWithRef = reactElement.props;
+  return (isReactVersionAtLeast(19) ? propsWithRef?.ref : reactElement.ref) ?? null;
+}
+function mergeObjects(a, b) {
+  if (a && !b) {
+    return a;
+  }
+  if (!a && b) {
+    return b;
+  }
+  if (a || b) {
+    return {
+      ...a,
+      ...b
+    };
+  }
+  return void 0;
+}
+function getStateAttributesProps(state, customMapping) {
+  const props = {};
+  for (const key in state) {
+    const value = state[key];
+    if (customMapping?.hasOwnProperty(key)) {
+      const customProps = customMapping[key](value);
+      if (customProps != null) {
+        Object.assign(props, customProps);
+      }
+      continue;
+    }
+    if (value === true) {
+      props[`data-${key.toLowerCase()}`] = "";
+    } else if (value) {
+      props[`data-${key.toLowerCase()}`] = value.toString();
+    }
+  }
+  return props;
+}
+function resolveClassName(className, state) {
+  return typeof className === "function" ? className(state) : className;
+}
+function resolveStyle(style, state) {
+  return typeof style === "function" ? style(state) : style;
+}
+const EMPTY_PROPS = {};
+function mergeProps(a, b, c, d, e) {
+  let merged = {
+    ...resolvePropsGetter(a, EMPTY_PROPS)
+  };
+  if (b) {
+    merged = mergeOne(merged, b);
+  }
+  return merged;
+}
+function mergePropsN(props) {
+  if (props.length === 0) {
+    return EMPTY_PROPS;
+  }
+  if (props.length === 1) {
+    return resolvePropsGetter(props[0], EMPTY_PROPS);
+  }
+  let merged = {
+    ...resolvePropsGetter(props[0], EMPTY_PROPS)
+  };
+  for (let i = 1; i < props.length; i += 1) {
+    merged = mergeOne(merged, props[i]);
+  }
+  return merged;
+}
+function mergeOne(merged, inputProps) {
+  if (isPropsGetter(inputProps)) {
+    return inputProps(merged);
+  }
+  return mutablyMergeInto(merged, inputProps);
+}
+function mutablyMergeInto(mergedProps, externalProps) {
+  if (!externalProps) {
+    return mergedProps;
+  }
+  for (const propName in externalProps) {
+    const externalPropValue = externalProps[propName];
+    switch (propName) {
+      case "style": {
+        mergedProps[propName] = mergeObjects(mergedProps.style, externalPropValue);
+        break;
+      }
+      case "className": {
+        mergedProps[propName] = mergeClassNames(mergedProps.className, externalPropValue);
+        break;
+      }
+      default: {
+        if (isEventHandler(propName, externalPropValue)) {
+          mergedProps[propName] = mergeEventHandlers(mergedProps[propName], externalPropValue);
+        } else {
+          mergedProps[propName] = externalPropValue;
+        }
+      }
+    }
+  }
+  return mergedProps;
+}
+function isEventHandler(key, value) {
+  const code0 = key.charCodeAt(0);
+  const code1 = key.charCodeAt(1);
+  const code2 = key.charCodeAt(2);
+  return code0 === 111 && code1 === 110 && code2 >= 65 && code2 <= 90 && (typeof value === "function" || typeof value === "undefined");
+}
+function isPropsGetter(inputProps) {
+  return typeof inputProps === "function";
+}
+function resolvePropsGetter(inputProps, previousProps) {
+  if (isPropsGetter(inputProps)) {
+    return inputProps(previousProps);
+  }
+  return inputProps ?? EMPTY_PROPS;
+}
+function mergeEventHandlers(ourHandler, theirHandler) {
+  if (!theirHandler) {
+    return ourHandler;
+  }
+  if (!ourHandler) {
+    return theirHandler;
+  }
+  return (event) => {
+    if (isSyntheticEvent(event)) {
+      const baseUIEvent = event;
+      makeEventPreventable(baseUIEvent);
+      const result2 = theirHandler(baseUIEvent);
+      if (!baseUIEvent.baseUIHandlerPrevented) {
+        ourHandler?.(baseUIEvent);
+      }
+      return result2;
+    }
+    const result = theirHandler(event);
+    ourHandler?.(event);
+    return result;
+  };
+}
+function makeEventPreventable(event) {
+  event.preventBaseUIHandler = () => {
+    event.baseUIHandlerPrevented = true;
+  };
+  return event;
+}
+function mergeClassNames(ourClassName, theirClassName) {
+  if (theirClassName) {
+    if (ourClassName) {
+      return theirClassName + " " + ourClassName;
+    }
+    return theirClassName;
+  }
+  return ourClassName;
+}
+function isSyntheticEvent(event) {
+  return event != null && typeof event === "object" && "nativeEvent" in event;
+}
+const EMPTY_OBJECT = Object.freeze({});
+function useRenderElement(element2, componentProps, params = {}) {
+  const renderProp = componentProps.render;
+  const outProps = useRenderElementProps(componentProps, params);
+  if (params.enabled === false) {
+    return null;
+  }
+  const state = params.state ?? EMPTY_OBJECT;
+  return evaluateRenderProp(element2, renderProp, outProps, state);
+}
+function useRenderElementProps(componentProps, params = {}) {
+  const {
+    className: classNameProp,
+    style: styleProp,
+    render: renderProp
+  } = componentProps;
+  const {
+    state = EMPTY_OBJECT,
+    ref,
+    props,
+    stateAttributesMapping,
+    enabled: enabled2 = true
+  } = params;
+  const className = enabled2 ? resolveClassName(classNameProp, state) : void 0;
+  const style = enabled2 ? resolveStyle(styleProp, state) : void 0;
+  const stateProps = enabled2 ? getStateAttributesProps(state, stateAttributesMapping) : EMPTY_OBJECT;
+  const outProps = enabled2 ? mergeObjects(stateProps, Array.isArray(props) ? mergePropsN(props) : props) ?? EMPTY_OBJECT : EMPTY_OBJECT;
+  if (typeof document !== "undefined") {
+    if (!enabled2) {
+      useMergedRefs(null, null);
+    } else if (Array.isArray(ref)) {
+      outProps.ref = useMergedRefsN([outProps.ref, getReactElementRef(renderProp), ...ref]);
+    } else {
+      outProps.ref = useMergedRefs(outProps.ref, getReactElementRef(renderProp), ref);
+    }
+  }
+  if (!enabled2) {
+    return EMPTY_OBJECT;
+  }
+  if (className !== void 0) {
+    outProps.className = mergeClassNames(outProps.className, className);
+  }
+  if (style !== void 0) {
+    outProps.style = mergeObjects(outProps.style, style);
+  }
+  return outProps;
+}
+const REACT_LAZY_TYPE = /* @__PURE__ */ Symbol.for("react.lazy");
+function evaluateRenderProp(element2, render, props, state) {
+  if (render) {
+    if (typeof render === "function") {
+      return render(props, state);
+    }
+    const mergedProps = mergeProps(props, render.props);
+    mergedProps.ref = props.ref;
+    let newElement = render;
+    if (newElement?.$$typeof === REACT_LAZY_TYPE) {
+      const children = reactExports.Children.toArray(render);
+      newElement = children[0];
+    }
+    return /* @__PURE__ */ reactExports.cloneElement(newElement, mergedProps);
+  }
+  {
+    {
+      return renderTag(element2, props);
+    }
+  }
+}
+function renderTag(Tag, props) {
+  return /* @__PURE__ */ reactExports.createElement(Tag, props);
+}
+function useControlled({
+  controlled,
+  default: defaultProp,
+  name: name2,
+  state = "value"
+}) {
+  const {
+    current: isControlled
+  } = reactExports.useRef(controlled !== void 0);
+  const [valueState, setValue] = reactExports.useState(defaultProp);
+  const value = isControlled ? controlled : valueState;
+  const setValueIfUncontrolled = reactExports.useCallback((newValue) => {
+    if (!isControlled) {
+      setValue(newValue);
+    }
+  }, []);
+  return [value, setValueIfUncontrolled];
+}
+const noop = () => {
+};
+const useIsoLayoutEffect = typeof document !== "undefined" ? reactExports.useLayoutEffect : noop;
+const SafeReact = {
+  ...React$1
+};
+let globalId = 0;
+function useGlobalId(idOverride, prefix = "mui") {
+  const [defaultId, setDefaultId] = reactExports.useState(idOverride);
+  const id = idOverride || defaultId;
+  reactExports.useEffect(() => {
+    if (defaultId == null) {
+      globalId += 1;
+      setDefaultId(`${prefix}-${globalId}`);
+    }
+  }, [defaultId, prefix]);
+  return id;
+}
+const maybeReactUseId = SafeReact.useId;
+function useId(idOverride, prefix) {
+  if (maybeReactUseId !== void 0) {
+    const reactId = maybeReactUseId();
+    return `${prefix}-${reactId}`;
+  }
+  return useGlobalId(idOverride, prefix);
+}
+function useBaseUiId(idOverride) {
+  return useId(idOverride, "base-ui");
+}
+const none = "none";
+const triggerPress = "trigger-press";
+function createChangeEventDetails(reason, event, trigger, customProperties) {
+  let canceled = false;
+  let allowPropagation = false;
+  const custom = EMPTY_OBJECT;
+  const details = {
+    reason,
+    event: event ?? new Event("base-ui"),
+    cancel() {
+      canceled = true;
+    },
+    allowPropagation() {
+      allowPropagation = true;
+    },
+    get isCanceled() {
+      return canceled;
+    },
+    get isPropagationAllowed() {
+      return allowPropagation;
+    },
+    trigger,
+    ...custom
+  };
+  return details;
+}
+var reactDomExports = requireReactDom();
+const EMPTY$1 = [];
+function useOnMount(fn) {
+  reactExports.useEffect(fn, EMPTY$1);
+}
+const EMPTY = null;
+class Scheduler {
+  /* This implementation uses an array as a backing data-structure for frame callbacks.
+   * It allows `O(1)` callback cancelling by inserting a `null` in the array, though it
+   * never calls the native `cancelAnimationFrame` if there are no frames left. This can
+   * be much more efficient if there is a call pattern that alterns as
+   * "request-cancel-request-cancel-…".
+   * But in the case of "request-request-…-cancel-cancel-…", it leaves the final animation
+   * frame to run anyway. We turn that frame into a `O(1)` no-op via `callbacksCount`. */
+  callbacks = [];
+  callbacksCount = 0;
+  nextId = 1;
+  startId = 1;
+  isScheduled = false;
+  tick = (timestamp) => {
+    this.isScheduled = false;
+    const currentCallbacks = this.callbacks;
+    const currentCallbacksCount = this.callbacksCount;
+    this.callbacks = [];
+    this.callbacksCount = 0;
+    this.startId = this.nextId;
+    if (currentCallbacksCount > 0) {
+      for (let i = 0; i < currentCallbacks.length; i += 1) {
+        currentCallbacks[i]?.(timestamp);
+      }
+    }
+  };
+  request(fn) {
+    const id = this.nextId;
+    this.nextId += 1;
+    this.callbacks.push(fn);
+    this.callbacksCount += 1;
+    const didRAFChange = false;
+    if (!this.isScheduled || didRAFChange) {
+      requestAnimationFrame(this.tick);
+      this.isScheduled = true;
+    }
+    return id;
+  }
+  cancel(id) {
+    const index2 = id - this.startId;
+    if (index2 < 0 || index2 >= this.callbacks.length) {
+      return;
+    }
+    this.callbacks[index2] = null;
+    this.callbacksCount -= 1;
+  }
+}
+const scheduler = new Scheduler();
+class AnimationFrame {
+  static create() {
+    return new AnimationFrame();
+  }
+  static request(fn) {
+    return scheduler.request(fn);
+  }
+  static cancel(id) {
+    return scheduler.cancel(id);
+  }
+  currentId = EMPTY;
+  /**
+   * Executes `fn` after `delay`, clearing any previously scheduled call.
+   */
+  request(fn) {
+    this.cancel();
+    this.currentId = scheduler.request(() => {
+      this.currentId = EMPTY;
+      fn();
+    });
+  }
+  cancel = () => {
+    if (this.currentId !== EMPTY) {
+      scheduler.cancel(this.currentId);
+      this.currentId = EMPTY;
+    }
+  };
+  disposeEffect = () => {
+    return this.cancel;
+  };
+}
+function useAnimationFrame() {
+  const timeout = useRefWithInit(AnimationFrame.create).current;
+  useOnMount(timeout.disposeEffect);
+  return timeout;
+}
+function resolveRef(maybeRef) {
+  if (maybeRef == null) {
+    return maybeRef;
+  }
+  return "current" in maybeRef ? maybeRef.current : maybeRef;
+}
+let TransitionStatusDataAttributes = /* @__PURE__ */ (function(TransitionStatusDataAttributes2) {
+  TransitionStatusDataAttributes2["startingStyle"] = "data-starting-style";
+  TransitionStatusDataAttributes2["endingStyle"] = "data-ending-style";
+  return TransitionStatusDataAttributes2;
+})({});
+const STARTING_HOOK = {
+  [TransitionStatusDataAttributes.startingStyle]: ""
+};
+const ENDING_HOOK = {
+  [TransitionStatusDataAttributes.endingStyle]: ""
+};
+const transitionStatusMapping = {
+  transitionStatus(value) {
+    if (value === "starting") {
+      return STARTING_HOOK;
+    }
+    if (value === "ending") {
+      return ENDING_HOOK;
+    }
+    return null;
+  }
+};
+function useAnimationsFinished(elementOrRef, waitForStartingStyleRemoved = false, treatAbortedAsFinished = true) {
+  const frame = useAnimationFrame();
+  return useStableCallback((fnToExecute, signal = null) => {
+    frame.cancel();
+    function done() {
+      reactDomExports.flushSync(fnToExecute);
+    }
+    const element2 = resolveRef(elementOrRef);
+    if (element2 == null) {
+      return;
+    }
+    const resolvedElement = element2;
+    if (typeof resolvedElement.getAnimations !== "function" || globalThis.BASE_UI_ANIMATIONS_DISABLED) {
+      fnToExecute();
+    } else {
+      let execWaitForStartingStyleRemoved2 = function() {
+        const startingStyleAttribute = TransitionStatusDataAttributes.startingStyle;
+        if (!resolvedElement.hasAttribute(startingStyleAttribute)) {
+          frame.request(exec2);
+          return;
+        }
+        const attributeObserver = new MutationObserver(() => {
+          if (!resolvedElement.hasAttribute(startingStyleAttribute)) {
+            attributeObserver.disconnect();
+            exec2();
+          }
+        });
+        attributeObserver.observe(resolvedElement, {
+          attributes: true,
+          attributeFilter: [startingStyleAttribute]
+        });
+        signal?.addEventListener("abort", () => attributeObserver.disconnect(), {
+          once: true
+        });
+      }, exec2 = function() {
+        Promise.all(resolvedElement.getAnimations().map((anim) => anim.finished)).then(() => {
+          if (signal?.aborted) {
+            return;
+          }
+          done();
+        }).catch(() => {
+          const currentAnimations = resolvedElement.getAnimations();
+          if (treatAbortedAsFinished) {
+            if (signal?.aborted) {
+              return;
+            }
+            done();
+          } else if (currentAnimations.length > 0 && currentAnimations.some((anim) => anim.pending || anim.playState !== "finished")) {
+            exec2();
+          }
+        });
+      };
+      var execWaitForStartingStyleRemoved = execWaitForStartingStyleRemoved2, exec = exec2;
+      if (waitForStartingStyleRemoved) {
+        execWaitForStartingStyleRemoved2();
+        return;
+      }
+      frame.request(exec2);
+    }
+  });
+}
+function useTransitionStatus(open, enableIdleState = false, deferEndingState = false) {
+  const [transitionStatus, setTransitionStatus] = reactExports.useState(open && enableIdleState ? "idle" : void 0);
+  const [mounted, setMounted] = reactExports.useState(open);
+  if (open && !mounted) {
+    setMounted(true);
+    setTransitionStatus("starting");
+  }
+  if (!open && mounted && transitionStatus !== "ending" && !deferEndingState) {
+    setTransitionStatus("ending");
+  }
+  if (!open && !mounted && transitionStatus === "ending") {
+    setTransitionStatus(void 0);
+  }
+  useIsoLayoutEffect(() => {
+    if (!open && mounted && transitionStatus !== "ending" && deferEndingState) {
+      const frame = AnimationFrame.request(() => {
+        setTransitionStatus("ending");
+      });
+      return () => {
+        AnimationFrame.cancel(frame);
+      };
+    }
+    return void 0;
+  }, [open, mounted, transitionStatus, deferEndingState]);
+  useIsoLayoutEffect(() => {
+    if (!open || enableIdleState) {
+      return void 0;
+    }
+    const frame = AnimationFrame.request(() => {
+      setTransitionStatus(void 0);
+    });
+    return () => {
+      AnimationFrame.cancel(frame);
+    };
+  }, [enableIdleState, open]);
+  useIsoLayoutEffect(() => {
+    if (!open || !enableIdleState) {
+      return void 0;
+    }
+    if (open && mounted && transitionStatus !== "idle") {
+      setTransitionStatus("starting");
+    }
+    const frame = AnimationFrame.request(() => {
+      setTransitionStatus("idle");
+    });
+    return () => {
+      AnimationFrame.cancel(frame);
+    };
+  }, [enableIdleState, open, mounted, setTransitionStatus, transitionStatus]);
+  return reactExports.useMemo(() => ({
+    mounted,
+    setMounted,
+    transitionStatus
+  }), [mounted, transitionStatus]);
+}
+function useCollapsibleRoot(parameters) {
+  const {
+    open: openParam,
+    defaultOpen,
+    onOpenChange,
+    disabled
+  } = parameters;
+  const isControlled = openParam !== void 0;
+  const [open, setOpen] = useControlled({
+    controlled: openParam,
+    default: defaultOpen,
+    name: "Collapsible",
+    state: "open"
+  });
+  const {
+    mounted,
+    setMounted,
+    transitionStatus
+  } = useTransitionStatus(open, true, true);
+  const [visible, setVisible] = reactExports.useState(open);
+  const [{
+    height,
+    width
+  }, setDimensions] = reactExports.useState({
+    height: void 0,
+    width: void 0
+  });
+  const defaultPanelId = useBaseUiId();
+  const [panelIdState, setPanelIdState] = reactExports.useState();
+  const panelId = panelIdState ?? defaultPanelId;
+  const [hiddenUntilFound, setHiddenUntilFound] = reactExports.useState(false);
+  const [keepMounted, setKeepMounted] = reactExports.useState(false);
+  const abortControllerRef = reactExports.useRef(null);
+  const animationTypeRef = reactExports.useRef(null);
+  const transitionDimensionRef = reactExports.useRef(null);
+  const panelRef = reactExports.useRef(null);
+  const runOnceAnimationsFinish = useAnimationsFinished(panelRef, false);
+  const handleTrigger = useStableCallback((event) => {
+    const nextOpen = !open;
+    const eventDetails = createChangeEventDetails(triggerPress, event.nativeEvent);
+    onOpenChange(nextOpen, eventDetails);
+    if (eventDetails.isCanceled) {
+      return;
+    }
+    const panel = panelRef.current;
+    if (animationTypeRef.current === "css-animation" && panel != null) {
+      panel.style.removeProperty("animation-name");
+    }
+    if (!hiddenUntilFound && !keepMounted) {
+      if (animationTypeRef.current != null && animationTypeRef.current !== "css-animation") {
+        if (!mounted && nextOpen) {
+          setMounted(true);
+        }
+      }
+      if (animationTypeRef.current === "css-animation") {
+        if (!visible && nextOpen) {
+          setVisible(true);
+        }
+        if (!mounted && nextOpen) {
+          setMounted(true);
+        }
+      }
+    }
+    setOpen(nextOpen);
+    if (animationTypeRef.current === "none" && mounted && !nextOpen) {
+      setMounted(false);
+    }
+  });
+  useIsoLayoutEffect(() => {
+    if (isControlled && animationTypeRef.current === "none" && !keepMounted && !open) {
+      setMounted(false);
+    }
+  }, [isControlled, keepMounted, open, openParam, setMounted]);
+  return reactExports.useMemo(() => ({
+    abortControllerRef,
+    animationTypeRef,
+    disabled,
+    handleTrigger,
+    height,
+    mounted,
+    open,
+    panelId,
+    panelRef,
+    runOnceAnimationsFinish,
+    setDimensions,
+    setHiddenUntilFound,
+    setKeepMounted,
+    setMounted,
+    setOpen,
+    setPanelIdState,
+    setVisible,
+    transitionDimensionRef,
+    transitionStatus,
+    visible,
+    width
+  }), [abortControllerRef, animationTypeRef, disabled, handleTrigger, height, mounted, open, panelId, panelRef, runOnceAnimationsFinish, setDimensions, setHiddenUntilFound, setKeepMounted, setMounted, setOpen, setVisible, transitionDimensionRef, transitionStatus, visible, width]);
+}
+const CollapsibleRootContext = /* @__PURE__ */ reactExports.createContext(void 0);
+function useCollapsibleRootContext() {
+  const context = reactExports.useContext(CollapsibleRootContext);
+  if (context === void 0) {
+    throw new Error(formatErrorMessage(15));
+  }
+  return context;
+}
+let CollapsiblePanelDataAttributes = (function(CollapsiblePanelDataAttributes2) {
+  CollapsiblePanelDataAttributes2["open"] = "data-open";
+  CollapsiblePanelDataAttributes2["closed"] = "data-closed";
+  CollapsiblePanelDataAttributes2[CollapsiblePanelDataAttributes2["startingStyle"] = TransitionStatusDataAttributes.startingStyle] = "startingStyle";
+  CollapsiblePanelDataAttributes2[CollapsiblePanelDataAttributes2["endingStyle"] = TransitionStatusDataAttributes.endingStyle] = "endingStyle";
+  return CollapsiblePanelDataAttributes2;
+})({});
+const PANEL_OPEN_HOOK = {
+  [CollapsiblePanelDataAttributes.open]: ""
+};
+const PANEL_CLOSED_HOOK = {
+  [CollapsiblePanelDataAttributes.closed]: ""
+};
+const collapsibleOpenStateMapping = {
+  open(value) {
+    if (value) {
+      return PANEL_OPEN_HOOK;
+    }
+    return PANEL_CLOSED_HOOK;
+  }
+};
+const collapsibleStateAttributesMapping = {
+  ...collapsibleOpenStateMapping,
+  ...transitionStatusMapping
+};
+const CollapsibleRoot = /* @__PURE__ */ reactExports.forwardRef(function CollapsibleRoot2(componentProps, forwardedRef) {
+  const {
+    render,
+    className,
+    defaultOpen = false,
+    disabled = false,
+    onOpenChange: onOpenChangeProp,
+    open,
+    ...elementProps
+  } = componentProps;
+  const onOpenChange = useStableCallback(onOpenChangeProp);
+  const collapsible = useCollapsibleRoot({
+    open,
+    defaultOpen,
+    onOpenChange,
+    disabled
+  });
+  const state = reactExports.useMemo(() => ({
+    open: collapsible.open,
+    disabled: collapsible.disabled,
+    transitionStatus: collapsible.transitionStatus
+  }), [collapsible.open, collapsible.disabled, collapsible.transitionStatus]);
+  const contextValue = reactExports.useMemo(() => ({
+    ...collapsible,
+    onOpenChange,
+    state
+  }), [collapsible, onOpenChange, state]);
+  const element2 = useRenderElement("div", componentProps, {
+    state,
+    ref: forwardedRef,
+    props: elementProps,
+    stateAttributesMapping: collapsibleStateAttributesMapping
+  });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(CollapsibleRootContext.Provider, {
+    value: contextValue,
+    children: element2
+  });
+});
+let AccordionRootDataAttributes = /* @__PURE__ */ (function(AccordionRootDataAttributes2) {
+  AccordionRootDataAttributes2["disabled"] = "data-disabled";
+  AccordionRootDataAttributes2["orientation"] = "data-orientation";
+  return AccordionRootDataAttributes2;
+})({});
+function useCollapsiblePanel(parameters) {
+  const {
+    abortControllerRef,
+    animationTypeRef,
+    externalRef,
+    height,
+    hiddenUntilFound,
+    keepMounted,
+    id: idParam,
+    mounted,
+    onOpenChange,
+    open,
+    panelRef,
+    runOnceAnimationsFinish,
+    setDimensions,
+    setMounted,
+    setOpen,
+    setVisible,
+    transitionDimensionRef,
+    visible,
+    width
+  } = parameters;
+  const isBeforeMatchRef = reactExports.useRef(false);
+  const latestAnimationNameRef = reactExports.useRef(null);
+  const shouldCancelInitialOpenAnimationRef = reactExports.useRef(open);
+  const shouldCancelInitialOpenTransitionRef = reactExports.useRef(open);
+  const endingStyleFrame = useAnimationFrame();
+  const hidden = reactExports.useMemo(() => {
+    if (animationTypeRef.current === "css-animation") {
+      return !visible;
+    }
+    return !open && !mounted;
+  }, [open, mounted, visible, animationTypeRef]);
+  const handlePanelRef = useStableCallback((element2) => {
+    if (!element2) {
+      return void 0;
+    }
+    if (animationTypeRef.current == null || transitionDimensionRef.current == null) {
+      const panelStyles = getComputedStyle(element2);
+      const hasAnimation = panelStyles.animationName !== "none" && panelStyles.animationName !== "";
+      const hasTransition = panelStyles.transitionDuration !== "0s" && panelStyles.transitionDuration !== "";
+      if (hasAnimation && hasTransition) ;
+      else if (panelStyles.animationName === "none" && panelStyles.transitionDuration !== "0s") {
+        animationTypeRef.current = "css-transition";
+      } else if (panelStyles.animationName !== "none" && panelStyles.transitionDuration === "0s") {
+        animationTypeRef.current = "css-animation";
+      } else {
+        animationTypeRef.current = "none";
+      }
+      if (element2.getAttribute(AccordionRootDataAttributes.orientation) === "horizontal" || panelStyles.transitionProperty.indexOf("width") > -1) {
+        transitionDimensionRef.current = "width";
+      } else {
+        transitionDimensionRef.current = "height";
+      }
+    }
+    if (animationTypeRef.current !== "css-transition") {
+      return void 0;
+    }
+    if (height === void 0 || width === void 0) {
+      setDimensions({
+        height: element2.scrollHeight,
+        width: element2.scrollWidth
+      });
+      if (shouldCancelInitialOpenTransitionRef.current) {
+        element2.style.setProperty("transition-duration", "0s");
+      }
+    }
+    let frame = -1;
+    let nextFrame = -1;
+    frame = AnimationFrame.request(() => {
+      shouldCancelInitialOpenTransitionRef.current = false;
+      nextFrame = AnimationFrame.request(() => {
+        setTimeout(() => {
+          element2.style.removeProperty("transition-duration");
+        });
+      });
+    });
+    return () => {
+      AnimationFrame.cancel(frame);
+      AnimationFrame.cancel(nextFrame);
+    };
+  });
+  const mergedPanelRef = useMergedRefs(externalRef, panelRef, handlePanelRef);
+  useIsoLayoutEffect(() => {
+    if (animationTypeRef.current !== "css-transition") {
+      return void 0;
+    }
+    const panel = panelRef.current;
+    if (!panel) {
+      return void 0;
+    }
+    let resizeFrame = -1;
+    if (abortControllerRef.current != null) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    if (open) {
+      const originalLayoutStyles = {
+        "justify-content": panel.style.justifyContent,
+        "align-items": panel.style.alignItems,
+        "align-content": panel.style.alignContent,
+        "justify-items": panel.style.justifyItems
+      };
+      Object.keys(originalLayoutStyles).forEach((key) => {
+        panel.style.setProperty(key, "initial", "important");
+      });
+      if (!shouldCancelInitialOpenTransitionRef.current && !keepMounted) {
+        panel.setAttribute(CollapsiblePanelDataAttributes.startingStyle, "");
+      }
+      setDimensions({
+        height: panel.scrollHeight,
+        width: panel.scrollWidth
+      });
+      resizeFrame = AnimationFrame.request(() => {
+        Object.entries(originalLayoutStyles).forEach(([key, value]) => {
+          if (value === "") {
+            panel.style.removeProperty(key);
+          } else {
+            panel.style.setProperty(key, value);
+          }
+        });
+      });
+    } else {
+      if (panel.scrollHeight === 0 && panel.scrollWidth === 0) {
+        return void 0;
+      }
+      setDimensions({
+        height: panel.scrollHeight,
+        width: panel.scrollWidth
+      });
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
+      const signal = abortController.signal;
+      let attributeObserver = null;
+      const endingStyleAttribute = CollapsiblePanelDataAttributes.endingStyle;
+      attributeObserver = new MutationObserver((mutationList) => {
+        const hasEndingStyle = mutationList.some((mutation) => mutation.type === "attributes" && mutation.attributeName === endingStyleAttribute);
+        if (hasEndingStyle) {
+          attributeObserver?.disconnect();
+          attributeObserver = null;
+          runOnceAnimationsFinish(() => {
+            setDimensions({
+              height: 0,
+              width: 0
+            });
+            panel.style.removeProperty("content-visibility");
+            setMounted(false);
+            if (abortControllerRef.current === abortController) {
+              abortControllerRef.current = null;
+            }
+          }, signal);
+        }
+      });
+      attributeObserver.observe(panel, {
+        attributes: true,
+        attributeFilter: [endingStyleAttribute]
+      });
+      return () => {
+        attributeObserver?.disconnect();
+        endingStyleFrame.cancel();
+        if (abortControllerRef.current === abortController) {
+          abortController.abort();
+          abortControllerRef.current = null;
+        }
+      };
+    }
+    return () => {
+      AnimationFrame.cancel(resizeFrame);
+    };
+  }, [abortControllerRef, animationTypeRef, endingStyleFrame, hiddenUntilFound, keepMounted, mounted, open, panelRef, runOnceAnimationsFinish, setDimensions, setMounted]);
+  useIsoLayoutEffect(() => {
+    if (animationTypeRef.current !== "css-animation") {
+      return;
+    }
+    const panel = panelRef.current;
+    if (!panel) {
+      return;
+    }
+    latestAnimationNameRef.current = panel.style.animationName || latestAnimationNameRef.current;
+    panel.style.setProperty("animation-name", "none");
+    setDimensions({
+      height: panel.scrollHeight,
+      width: panel.scrollWidth
+    });
+    if (!shouldCancelInitialOpenAnimationRef.current && !isBeforeMatchRef.current) {
+      panel.style.removeProperty("animation-name");
+    }
+    if (open) {
+      if (abortControllerRef.current != null) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      setMounted(true);
+      setVisible(true);
+    } else {
+      abortControllerRef.current = new AbortController();
+      runOnceAnimationsFinish(() => {
+        setMounted(false);
+        setVisible(false);
+        abortControllerRef.current = null;
+      }, abortControllerRef.current.signal);
+    }
+  }, [abortControllerRef, animationTypeRef, open, panelRef, runOnceAnimationsFinish, setDimensions, setMounted, setVisible, visible]);
+  useOnMount(() => {
+    const frame = AnimationFrame.request(() => {
+      shouldCancelInitialOpenAnimationRef.current = false;
+    });
+    return () => AnimationFrame.cancel(frame);
+  });
+  useIsoLayoutEffect(() => {
+    if (!hiddenUntilFound) {
+      return void 0;
+    }
+    const panel = panelRef.current;
+    if (!panel) {
+      return void 0;
+    }
+    let frame = -1;
+    let nextFrame = -1;
+    if (open && isBeforeMatchRef.current) {
+      panel.style.transitionDuration = "0s";
+      setDimensions({
+        height: panel.scrollHeight,
+        width: panel.scrollWidth
+      });
+      frame = AnimationFrame.request(() => {
+        isBeforeMatchRef.current = false;
+        nextFrame = AnimationFrame.request(() => {
+          setTimeout(() => {
+            panel.style.removeProperty("transition-duration");
+          });
+        });
+      });
+    }
+    return () => {
+      AnimationFrame.cancel(frame);
+      AnimationFrame.cancel(nextFrame);
+    };
+  }, [hiddenUntilFound, open, panelRef, setDimensions]);
+  useIsoLayoutEffect(() => {
+    const panel = panelRef.current;
+    if (panel && hiddenUntilFound && hidden) {
+      panel.setAttribute("hidden", "until-found");
+      if (animationTypeRef.current === "css-transition") {
+        panel.setAttribute(CollapsiblePanelDataAttributes.startingStyle, "");
+      }
+    }
+  }, [hiddenUntilFound, hidden, animationTypeRef, panelRef]);
+  reactExports.useEffect(function registerBeforeMatchListener() {
+    const panel = panelRef.current;
+    if (!panel) {
+      return void 0;
+    }
+    function handleBeforeMatch(event) {
+      isBeforeMatchRef.current = true;
+      setOpen(true);
+      onOpenChange(true, createChangeEventDetails(none, event));
+    }
+    panel.addEventListener("beforematch", handleBeforeMatch);
+    return () => {
+      panel.removeEventListener("beforematch", handleBeforeMatch);
+    };
+  }, [onOpenChange, panelRef, setOpen]);
+  return reactExports.useMemo(() => ({
+    props: {
+      hidden,
+      id: idParam,
+      ref: mergedPanelRef
+    }
+  }), [hidden, idParam, mergedPanelRef]);
+}
+let CollapsiblePanelCssVars = /* @__PURE__ */ (function(CollapsiblePanelCssVars2) {
+  CollapsiblePanelCssVars2["collapsiblePanelHeight"] = "--collapsible-panel-height";
+  CollapsiblePanelCssVars2["collapsiblePanelWidth"] = "--collapsible-panel-width";
+  return CollapsiblePanelCssVars2;
+})({});
+function useOpenChangeComplete(parameters) {
+  const {
+    enabled: enabled2 = true,
+    open,
+    ref,
+    onComplete: onCompleteParam
+  } = parameters;
+  const onComplete = useStableCallback(onCompleteParam);
+  const runOnceAnimationsFinish = useAnimationsFinished(ref, open, false);
+  reactExports.useEffect(() => {
+    if (!enabled2) {
+      return void 0;
+    }
+    const abortController = new AbortController();
+    runOnceAnimationsFinish(onComplete, abortController.signal);
+    return () => {
+      abortController.abort();
+    };
+  }, [enabled2, open, onComplete, runOnceAnimationsFinish]);
+}
+const CollapsiblePanel = /* @__PURE__ */ reactExports.forwardRef(function CollapsiblePanel2(componentProps, forwardedRef) {
+  const {
+    className,
+    hiddenUntilFound: hiddenUntilFoundProp,
+    keepMounted: keepMountedProp,
+    render,
+    id: idProp,
+    ...elementProps
+  } = componentProps;
+  const {
+    abortControllerRef,
+    animationTypeRef,
+    height,
+    mounted,
+    onOpenChange,
+    open,
+    panelId,
+    panelRef,
+    runOnceAnimationsFinish,
+    setDimensions,
+    setHiddenUntilFound,
+    setKeepMounted,
+    setMounted,
+    setPanelIdState,
+    setOpen,
+    setVisible,
+    state,
+    transitionDimensionRef,
+    visible,
+    width,
+    transitionStatus
+  } = useCollapsibleRootContext();
+  const hiddenUntilFound = hiddenUntilFoundProp ?? false;
+  const keepMounted = keepMountedProp ?? false;
+  useIsoLayoutEffect(() => {
+    if (idProp) {
+      setPanelIdState(idProp);
+      return () => {
+        setPanelIdState(void 0);
+      };
+    }
+    return void 0;
+  }, [idProp, setPanelIdState]);
+  useIsoLayoutEffect(() => {
+    setHiddenUntilFound(hiddenUntilFound);
+  }, [setHiddenUntilFound, hiddenUntilFound]);
+  useIsoLayoutEffect(() => {
+    setKeepMounted(keepMounted);
+  }, [setKeepMounted, keepMounted]);
+  const {
+    props
+  } = useCollapsiblePanel({
+    abortControllerRef,
+    animationTypeRef,
+    externalRef: forwardedRef,
+    height,
+    hiddenUntilFound,
+    id: panelId,
+    keepMounted,
+    mounted,
+    onOpenChange,
+    open,
+    panelRef,
+    runOnceAnimationsFinish,
+    setDimensions,
+    setMounted,
+    setOpen,
+    setVisible,
+    transitionDimensionRef,
+    visible,
+    width
+  });
+  useOpenChangeComplete({
+    open: open && transitionStatus === "idle",
+    ref: panelRef,
+    onComplete() {
+      if (!open) {
+        return;
+      }
+      setDimensions({
+        height: void 0,
+        width: void 0
+      });
+    }
+  });
+  const panelState = reactExports.useMemo(() => ({
+    ...state,
+    transitionStatus
+  }), [state, transitionStatus]);
+  const element2 = useRenderElement("div", componentProps, {
+    state: panelState,
+    ref: [forwardedRef, panelRef],
+    props: [props, {
+      style: {
+        [CollapsiblePanelCssVars.collapsiblePanelHeight]: height === void 0 ? "auto" : `${height}px`,
+        [CollapsiblePanelCssVars.collapsiblePanelWidth]: width === void 0 ? "auto" : `${width}px`
+      }
+    }, elementProps],
+    stateAttributesMapping: collapsibleStateAttributesMapping
+  });
+  const shouldRender = keepMounted || hiddenUntilFound || !keepMounted && mounted;
+  if (!shouldRender) {
+    return null;
+  }
+  return element2;
+});
+function Collapsible(props) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(CollapsibleRoot, { "data-slot": "collapsible", ...props });
+}
+function CollapsibleContent({ className, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(CollapsiblePanel, { className, "data-slot": "collapsible-panel", ...props });
+}
+const SIDEBAR_LIST_ANIMATION_OPTIONS = {
+  duration: 180,
+  easing: "ease-out"
+};
 function describeSortMode(value) {
   switch (value) {
     case "name":
@@ -26305,22 +28156,28 @@ function candidateProjectIconUrls(workspacePath) {
 function ProjectIcon({ website }) {
   const sources = reactExports.useMemo(() => candidateProjectIconUrls(website.workspacePath), [website.workspacePath]);
   const [sourceIndex, setSourceIndex] = reactExports.useState(0);
+  const [loaded, setLoaded] = reactExports.useState(false);
   reactExports.useEffect(() => {
     setSourceIndex(0);
+    setLoaded(false);
   }, [sources]);
   const source = sources[sourceIndex] ?? null;
-  if (!source) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Folder, { size: 14, className: "website-folder-icon" });
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "img",
-    {
-      src: source,
-      alt: "",
-      className: "website-project-icon",
-      onError: () => setSourceIndex((current) => current + 1)
-    }
-  );
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "website-project-icon-slot", "aria-hidden": "true", children: [
+    !loaded ? /* @__PURE__ */ jsxRuntimeExports.jsx(Folder, { size: 14, className: "website-folder-icon" }) : null,
+    source ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "img",
+      {
+        src: source,
+        alt: "",
+        className: `website-project-icon ${loaded ? "loaded" : ""}`,
+        onLoad: () => setLoaded(true),
+        onError: () => {
+          setLoaded(false);
+          setSourceIndex((current) => current + 1);
+        }
+      }
+    ) : null
+  ] });
 }
 function SortMenu({ label, value, onChange }) {
   const [open, setOpen] = reactExports.useState(false);
@@ -26335,7 +28192,7 @@ function SortMenu({ label, value, onChange }) {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
-  const options = [
+  const options2 = [
     { mode: "recent", label: "Last user message" },
     { mode: "name", label: "A-Z" },
     { mode: "manual", label: "Manual" }
@@ -26353,7 +28210,7 @@ function SortMenu({ label, value, onChange }) {
     ),
     open ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "sort-dropdown", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "sort-dropdown-label", children: label }),
-      options.map((option) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      options2.map((option) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "button",
         {
           type: "button",
@@ -26375,18 +28232,39 @@ function SortMenu({ label, value, onChange }) {
 function WebsiteSidebar(props) {
   const [dragItem, setDragItem] = reactExports.useState(null);
   const dragRef = reactExports.useRef(null);
-  const [expandedWebsiteId, setExpandedWebsiteId] = reactExports.useState(props.selectedWebsiteId);
-  const [collapsingWebsiteId, setCollapsingWebsiteId] = reactExports.useState(null);
+  const animatedProjectListsRef = reactExports.useRef(/* @__PURE__ */ new WeakSet());
+  const animatedThreadListsRef = reactExports.useRef(/* @__PURE__ */ new WeakSet());
+  const [expandedWebsiteIds, setExpandedWebsiteIds] = reactExports.useState(
+    () => new Set(props.selectedWebsiteId ? [props.selectedWebsiteId] : [])
+  );
+  const attachProjectListAutoAnimateRef = reactExports.useCallback((node2) => {
+    if (!node2 || animatedProjectListsRef.current.has(node2)) {
+      return;
+    }
+    autoAnimate(node2, SIDEBAR_LIST_ANIMATION_OPTIONS);
+    animatedProjectListsRef.current.add(node2);
+  }, []);
+  const attachThreadListAutoAnimateRef = reactExports.useCallback((node2) => {
+    if (!node2 || animatedThreadListsRef.current.has(node2)) {
+      return;
+    }
+    autoAnimate(node2, SIDEBAR_LIST_ANIMATION_OPTIONS);
+    animatedThreadListsRef.current.add(node2);
+  }, []);
   reactExports.useEffect(() => {
-    setExpandedWebsiteId(props.selectedWebsiteId);
+    const selectedWebsiteId = props.selectedWebsiteId;
+    if (!selectedWebsiteId) {
+      return;
+    }
+    setExpandedWebsiteIds((current) => {
+      if (current.has(selectedWebsiteId)) {
+        return current;
+      }
+      const next = new Set(current);
+      next.add(selectedWebsiteId);
+      return next;
+    });
   }, [props.selectedWebsiteId]);
-  reactExports.useEffect(() => {
-    if (!collapsingWebsiteId) return;
-    const timeout = window.setTimeout(() => {
-      setCollapsingWebsiteId(null);
-    }, 180);
-    return () => window.clearTimeout(timeout);
-  }, [collapsingWebsiteId]);
   const runsByConversationId = reactExports.useMemo(() => {
     const map2 = /* @__PURE__ */ new Map();
     for (const run of props.runs) {
@@ -26432,15 +28310,17 @@ function WebsiteSidebar(props) {
     }
   }, [conversationsByWebsiteId, props.projectSortMode]);
   const handlePointerDown = reactExports.useCallback((event, type, id, websiteId) => {
-    const target = event.currentTarget;
-    const container = target.parentElement;
+    const target2 = event.currentTarget;
+    const container = target2.closest(type === "website" ? ".website-list" : ".website-runs");
     if (!container) return;
     const items = Array.from(container.querySelectorAll(
-      type === "website" ? ".website-row" : ".conversation-row"
+      type === "website" ? ".website-row-shell" : ".conversation-item"
     ));
-    const startIndex = items.indexOf(target);
+    const itemEl = target2.closest(type === "website" ? ".website-row-shell" : ".conversation-item");
+    if (!itemEl) return;
+    const startIndex = items.indexOf(itemEl);
     if (startIndex < 0) return;
-    const rect = target.getBoundingClientRect();
+    const rect = itemEl.getBoundingClientRect();
     const item = {
       type,
       id,
@@ -26456,7 +28336,7 @@ function WebsiteSidebar(props) {
     };
     dragRef.current = item;
     setDragItem(item);
-    target.setPointerCapture(event.pointerId);
+    target2.setPointerCapture(event.pointerId);
     document.body.style.cursor = "grabbing";
     document.body.style.userSelect = "none";
   }, []);
@@ -26548,97 +28428,97 @@ function WebsiteSidebar(props) {
           /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "text-button", onClick: props.onCreateWebsite, children: "Create your first project" })
         ] }) : null
       ] }) : null,
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "website-list", children: orderedWebsites.map((website, index2) => {
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "website-list", ref: attachProjectListAutoAnimateRef, children: orderedWebsites.map((website, index2) => {
         const selected = website.id === props.selectedWebsiteId;
         const conversations = getOrderedConversations(website);
-        const expanded = expandedWebsiteId === website.id;
-        const collapsing = collapsingWebsiteId === website.id;
-        const pinnedCollapsedConversation = !expanded && selected ? conversations.find((conversation) => conversation.id === props.selectedConversationId) ?? conversations[0] ?? null : null;
-        const renderedConversations = expanded || collapsing ? conversations : [];
-        const shouldShowConversationPanel = expanded || collapsing;
+        const expanded = expandedWebsiteIds.has(website.id);
+        const pinnedCollapsedConversation = !expanded && props.selectedConversationId ? conversations.find((conversation) => conversation.id === props.selectedConversationId) ?? null : null;
+        const shouldShowConversationPanel = expanded || pinnedCollapsedConversation !== null;
+        const renderedConversations = pinnedCollapsedConversation ? [pinnedCollapsedConversation] : conversations;
         return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `website-group ${selected ? "selected" : ""}`, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "button",
-            {
-              type: "button",
-              className: "website-row",
-              style: isManualProjects && !props.collapsed ? getDragStyle("website", index2) : {},
-              onClick: () => {
-                setExpandedWebsiteId((current) => {
-                  if (current === website.id) {
-                    setCollapsingWebsiteId(website.id);
-                    return null;
-                  }
-                  setCollapsingWebsiteId(null);
-                  return website.id;
-                });
-                props.onSelectWebsite(website.id);
-              },
-              onPointerDown: isManualProjects && !props.collapsed ? (event) => handlePointerDown(event, "website", website.id) : void 0,
-              children: [
-                !props.collapsed ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "website-expander", "aria-hidden": "true", children: shouldShowConversationPanel ? /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronDown, { size: 14 }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronRight, { size: 14 }) }) : null,
-                !props.collapsed ? /* @__PURE__ */ jsxRuntimeExports.jsx(ProjectIcon, { website }) : null,
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "website-copy", children: /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: props.collapsed ? website.name.slice(0, 1).toUpperCase() : website.name }) }),
-                !props.collapsed && selected ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "button",
-                  {
-                    type: "button",
-                    className: "project-compose-button",
-                    title: "New chat",
-                    onClick: (event) => {
-                      event.stopPropagation();
-                      props.onCreateConversation(website.id);
-                    },
-                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(SquarePen, { size: 14 })
-                  }
-                ) : null
-              ]
-            }
-          ),
-          !props.collapsed ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: `conversation-panel ${shouldShowConversationPanel ? "open" : ""}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "conversation-list-shell", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "website-runs", children: [
-            renderedConversations.length === 0 && expanded ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "run-placeholder", children: "No chats yet" }) : null,
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "website-row-shell", style: isManualProjects && !props.collapsed ? getDragStyle("website", index2) : {}, children: [
+            !props.collapsed ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                type: "button",
+                className: "website-expander-button",
+                "aria-label": expanded ? `Collapse ${website.name}` : `Expand ${website.name}`,
+                "aria-expanded": expanded,
+                onClick: (event) => {
+                  event.stopPropagation();
+                  setExpandedWebsiteIds((current) => {
+                    const next = new Set(current);
+                    if (next.has(website.id)) {
+                      next.delete(website.id);
+                    } else {
+                      next.add(website.id);
+                    }
+                    return next;
+                  });
+                },
+                children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "website-expander", "aria-hidden": "true", children: expanded ? /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronDown, { size: 14 }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronRight, { size: 14 }) })
+              }
+            ) : null,
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "button",
+              {
+                type: "button",
+                className: "website-row",
+                onClick: () => props.onSelectWebsite(website.id),
+                onPointerDown: isManualProjects && !props.collapsed ? (event) => handlePointerDown(event, "website", website.id) : void 0,
+                children: [
+                  !props.collapsed ? /* @__PURE__ */ jsxRuntimeExports.jsx(ProjectIcon, { website }) : null,
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "website-copy", children: /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: props.collapsed ? website.name.slice(0, 1).toUpperCase() : website.name }) }),
+                  !props.collapsed && selected ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "button",
+                    {
+                      type: "button",
+                      className: "project-compose-button",
+                      title: "New chat",
+                      onClick: (event) => {
+                        event.stopPropagation();
+                        props.onCreateConversation(website.id);
+                      },
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsx(SquarePen, { size: 14 })
+                    }
+                  ) : null
+                ]
+              }
+            )
+          ] }),
+          !props.collapsed ? /* @__PURE__ */ jsxRuntimeExports.jsx(Collapsible, { open: shouldShowConversationPanel, children: /* @__PURE__ */ jsxRuntimeExports.jsx(CollapsibleContent, { className: "conversation-panel", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "conversation-list-shell", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "website-runs", ref: attachThreadListAutoAnimateRef, children: [
+            expanded && conversations.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "run-placeholder", children: "No chats yet" }) : null,
             renderedConversations.map((conversation, convIndex) => {
               const isSelectedConversation = conversation.id === props.selectedConversationId;
               const hasActiveRun = (runsByConversationId.get(conversation.id) ?? []).some(
                 (run) => run.status === "queued" || run.status === "running"
               );
-              return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "button",
+              return /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "div",
                 {
-                  type: "button",
-                  className: `conversation-row ${isSelectedConversation ? "selected" : ""}`,
                   style: isManualConversations ? getDragStyle("conversation", convIndex) : {},
-                  onPointerDown: isManualConversations ? (event) => handlePointerDown(event, "conversation", conversation.id, website.id) : void 0,
-                  onClick: () => props.onSelectConversation(conversation.id, website.id),
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "conversation-copy", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "conversation-line", children: [
-                      hasActiveRun ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "conversation-active-dot", "aria-hidden": "true" }) : null,
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: conversation.title })
-                    ] }) }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("time", { children: formatRelativeTime(conversation.updatedAt) })
-                  ]
+                  className: "conversation-item",
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                    "button",
+                    {
+                      type: "button",
+                      className: `conversation-row ${isSelectedConversation ? "selected" : ""}`,
+                      onPointerDown: isManualConversations ? (event) => handlePointerDown(event, "conversation", conversation.id, website.id) : void 0,
+                      onClick: () => props.onSelectConversation(conversation.id, website.id),
+                      children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "conversation-copy", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "conversation-line", children: [
+                          hasActiveRun ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "conversation-active-dot", "aria-hidden": "true" }) : null,
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: conversation.title })
+                        ] }) }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("time", { children: formatRelativeTime(conversation.updatedAt) })
+                      ]
+                    }
+                  )
                 },
                 conversation.id
               );
             })
-          ] }) }) }) : null,
-          !props.collapsed && !expanded && !collapsing && pinnedCollapsedConversation ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "conversation-pinned-shell", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "conversation-list-shell", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "website-runs", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "button",
-            {
-              type: "button",
-              className: `conversation-row ${pinnedCollapsedConversation.id === props.selectedConversationId ? "selected" : ""}`,
-              onClick: () => props.onSelectConversation(pinnedCollapsedConversation.id, website.id),
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "conversation-copy", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "conversation-line", children: [
-                  (runsByConversationId.get(pinnedCollapsedConversation.id) ?? []).some(
-                    (run) => run.status === "queued" || run.status === "running"
-                  ) ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "conversation-active-dot", "aria-hidden": "true" }) : null,
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: pinnedCollapsedConversation.title })
-                ] }) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("time", { children: formatRelativeTime(pinnedCollapsedConversation.updatedAt) })
-              ]
-            }
-          ) }) }) }) : null
+          ] }) }) }) }) : null
         ] }, website.id);
       }) })
     ] })
@@ -26804,17 +28684,17 @@ const MIN_WORKBENCH_LEFT_WIDTH = 360;
 const MIN_PREVIEW_WIDTH = 320;
 const MIN_WORKSPACE_WIDTH = 720;
 function readStoredNumber(key, fallback) {
-  const raw = window.localStorage.getItem(key);
-  const value = Number(raw);
+  const raw2 = window.localStorage.getItem(key);
+  const value = Number(raw2);
   return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 function writeStoredNumber(key, value) {
   window.localStorage.setItem(key, String(Math.round(value)));
 }
 function readStoredBoolean(key, fallback) {
-  const raw = window.localStorage.getItem(key);
-  if (raw === "true") return true;
-  if (raw === "false") return false;
+  const raw2 = window.localStorage.getItem(key);
+  if (raw2 === "true") return true;
+  if (raw2 === "false") return false;
   return fallback;
 }
 function sanitizeSegment(value) {
@@ -26924,8 +28804,8 @@ function App() {
       if (!resizeRef.current) {
         return;
       }
-      const { target, currentWidth } = resizeRef.current;
-      if (target === "sidebar") {
+      const { target: target2, currentWidth } = resizeRef.current;
+      if (target2 === "sidebar") {
         writeStoredNumber(SIDEBAR_WIDTH_KEY, currentWidth);
       } else {
         writeStoredNumber(WORKBENCH_WIDTH_KEY, currentWidth);
@@ -27292,16 +29172,16 @@ ${activePlan.planMarkdown}`,
     }
     setPendingUserInputQuestionIndex((prev) => Math.min(prev + 1, activePendingUserInput.questions.length - 1));
   };
-  const beginResize = (target) => (event) => {
+  const beginResize = (target2) => (event) => {
     event.preventDefault();
-    if (target === "sidebar" && sidebarCollapsed) {
+    if (target2 === "sidebar" && sidebarCollapsed) {
       return;
     }
     resizeRef.current = {
-      target,
+      target: target2,
       startX: event.clientX,
-      startWidth: target === "sidebar" ? sidebarWidth : workbenchLeftWidth,
-      currentWidth: target === "sidebar" ? sidebarWidth : workbenchLeftWidth
+      startWidth: target2 === "sidebar" ? sidebarWidth : workbenchLeftWidth,
+      currentWidth: target2 === "sidebar" ? sidebarWidth : workbenchLeftWidth
     };
     event.currentTarget.setPointerCapture(event.pointerId);
     document.body.classList.add("is-resizing");

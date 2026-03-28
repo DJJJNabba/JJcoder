@@ -80,11 +80,12 @@ export function deriveTimelineActivities(events: RunEvent[]): TimelineActivity[]
         continue;
       }
 
-      const summary = summarizeToolResult(readMetadata(event, "toolName") ?? "tool", event.content);
+      const toolName = inferToolResultName(event, event.content);
+      const summary = summarizeToolResult(toolName, event.content);
       activities.push({
         id: event.id,
-        tone: readMetadata(event, "toolName") === "finish_build" ? "info" : "tool",
-        kind: readMetadata(event, "toolName") === "finish_build" ? "completion" : "tool",
+        tone: toolName === "finish_build" ? "info" : "tool",
+        kind: toolName === "finish_build" ? "completion" : "tool",
         agent: event.agent,
         createdAt: event.createdAt,
         title: summary.title,
@@ -92,7 +93,7 @@ export function deriveTimelineActivities(events: RunEvent[]): TimelineActivity[]
         body: summary.body,
         tag: "output",
         rawOutput: event.content,
-        toolName: readMetadata(event, "toolName"),
+        toolName,
         resolved: true
       });
       continue;
@@ -226,10 +227,6 @@ function isToolCallEvent(event: RunEvent): boolean {
     return false;
   }
 
-  if ((readMetadata(event, "toolName") ?? event.title) === "finish_build") {
-    return false;
-  }
-
   return (readMetadata(event, "toolPhase") ?? "call") === "call";
 }
 
@@ -244,6 +241,20 @@ function isToolResultEvent(event: RunEvent): boolean {
 function readMetadata(event: RunEvent, key: string): string | undefined {
   const value = event.metadata?.[key];
   return typeof value === "string" ? value : undefined;
+}
+
+function inferToolResultName(event: RunEvent, rawOutput: string): string {
+  const explicitToolName = readMetadata(event, "toolName");
+  if (explicitToolName) {
+    return explicitToolName;
+  }
+
+  const output = parseRecord(rawOutput);
+  if (typeof output?.summary === "string") {
+    return "finish_build";
+  }
+
+  return "tool";
 }
 
 function summarizeToolCall(toolName: string, rawInput: string): ToolSummary {

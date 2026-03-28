@@ -163,29 +163,41 @@ function getToolDetail(activity: TimelineActivity): string | null {
   return activity.note ?? null;
 }
 
-function SummaryCard({ activity }: { activity: TimelineActivity }) {
-  const body = activity.body;
-  const note = activity.note;
-  let summaryJson: Record<string, unknown> | null = null;
-  if (body) {
-    summaryJson = parseJson(body);
+function extractCompletionSummary(activity: TimelineActivity): string | null {
+  const bodyJson = activity.body ? parseJson(activity.body) : null;
+  if (typeof bodyJson?.summary === "string" && bodyJson.summary.trim()) {
+    return bodyJson.summary.trim();
   }
 
-  const summaryText = summaryJson
-    ? (typeof summaryJson.summary === "string" ? summaryJson.summary : null)
-    : null;
-  const displayBody = summaryText ?? body;
+  if (activity.body?.trim()) {
+    return activity.body.trim();
+  }
+
+  const outputJson = activity.rawOutput ? parseJson(activity.rawOutput) : null;
+  if (typeof outputJson?.summary === "string" && outputJson.summary.trim()) {
+    return outputJson.summary.trim();
+  }
+
+  if (activity.note?.trim()) {
+    return activity.note.trim();
+  }
+
+  return null;
+}
+
+function CompletionNotice({ activity }: { activity: TimelineActivity }) {
+  const summary = extractCompletionSummary(activity);
 
   return (
-    <div className="summary-card">
-      <div className="summary-card-header">
-        <span className="summary-card-badge">
+    <div className="chat-completion" role="status" aria-live="polite">
+      <div className="chat-completion-header">
+        <span className="chat-completion-badge">
           <CheckIcon size={12} />
-          Summary
+          Complete
         </span>
+        <strong>{activity.title}</strong>
       </div>
-      {displayBody ? <ChatMarkdown content={displayBody} /> : null}
-      {!displayBody && note ? <p className="summary-card-note">{note}</p> : null}
+      {summary ? <div className="chat-completion-copy">{summary}</div> : null}
     </div>
   );
 }
@@ -256,7 +268,7 @@ function RunMessages({ run }: { run: AgentRun }) {
                 {activity.kind === "assistant" && activity.body ? <ChatMarkdown content={activity.body} /> : null}
                 {activity.kind === "tool" ? <LiveToolRow activity={activity} /> : null}
                 {activity.kind === "plan" && activity.body ? <ProposedPlanCard planMarkdown={activity.body} /> : null}
-                {activity.kind === "completion" ? <SummaryCard activity={activity} /> : null}
+                {activity.kind === "completion" ? <CompletionNotice activity={activity} /> : null}
                 {activity.kind === "user_input" ? <UserInputResultCard activity={activity} /> : null}
                 {activity.kind === "status" ? <StatusLine activity={activity} /> : null}
                 {activity.kind === "error" ? (

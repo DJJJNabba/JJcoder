@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { AgentRun, Conversation, SortMode, Website } from "@shared/types";
 import { formatRelativeTime } from "@renderer/lib/format";
+import { Collapsible, CollapsibleContent } from "./ui/collapsible";
 
 const SIDEBAR_LIST_ANIMATION_OPTIONS = {
   duration: 180,
@@ -182,10 +183,19 @@ interface DragItem {
 export function WebsiteSidebar(props: WebsiteSidebarProps) {
   const [dragItem, setDragItem] = useState<DragItem | null>(null);
   const dragRef = useRef<DragItem | null>(null);
+  const animatedProjectListsRef = useRef(new WeakSet<HTMLElement>());
   const animatedThreadListsRef = useRef(new WeakSet<HTMLElement>());
   const [expandedWebsiteIds, setExpandedWebsiteIds] = useState<Set<string>>(
     () => new Set(props.selectedWebsiteId ? [props.selectedWebsiteId] : [])
   );
+
+  const attachProjectListAutoAnimateRef = useCallback((node: HTMLElement | null) => {
+    if (!node || animatedProjectListsRef.current.has(node)) {
+      return;
+    }
+    autoAnimate(node, SIDEBAR_LIST_ANIMATION_OPTIONS);
+    animatedProjectListsRef.current.add(node);
+  }, []);
 
   const attachThreadListAutoAnimateRef = useCallback((node: HTMLElement | null) => {
     if (!node || animatedThreadListsRef.current.has(node)) {
@@ -196,15 +206,16 @@ export function WebsiteSidebar(props: WebsiteSidebarProps) {
   }, []);
 
   useEffect(() => {
-    if (!props.selectedWebsiteId) {
+    const selectedWebsiteId = props.selectedWebsiteId;
+    if (!selectedWebsiteId) {
       return;
     }
     setExpandedWebsiteIds((current) => {
-      if (current.has(props.selectedWebsiteId!)) {
+      if (current.has(selectedWebsiteId)) {
         return current;
       }
       const next = new Set(current);
-      next.add(props.selectedWebsiteId);
+      next.add(selectedWebsiteId);
       return next;
     });
   }, [props.selectedWebsiteId]);
@@ -265,15 +276,17 @@ export function WebsiteSidebar(props: WebsiteSidebarProps) {
     websiteId?: string
   ) => {
     const target = event.currentTarget;
-    const container = target.parentElement;
+    const container = target.closest<HTMLElement>(type === "website" ? ".website-list" : ".website-runs");
     if (!container) return;
     const items = Array.from(container.querySelectorAll<HTMLElement>(
-      type === "website" ? ".website-row" : ".conversation-row"
+      type === "website" ? ".website-row-shell" : ".conversation-item"
     ));
-    const startIndex = items.indexOf(target);
+    const itemEl = target.closest<HTMLElement>(type === "website" ? ".website-row-shell" : ".conversation-item");
+    if (!itemEl) return;
+    const startIndex = items.indexOf(itemEl);
     if (startIndex < 0) return;
 
-    const rect = target.getBoundingClientRect();
+    const rect = itemEl.getBoundingClientRect();
     const item: DragItem = {
       type,
       id,
@@ -408,11 +421,17 @@ export function WebsiteSidebar(props: WebsiteSidebarProps) {
           </div>
         ) : null}
 
-        <div className="website-list">
+        <div className="website-list" ref={attachProjectListAutoAnimateRef}>
           {orderedWebsites.map((website, index) => {
             const selected = website.id === props.selectedWebsiteId;
             const conversations = getOrderedConversations(website);
             const expanded = expandedWebsiteIds.has(website.id);
+            const pinnedCollapsedConversation =
+              !expanded && props.selectedConversationId
+                ? conversations.find((conversation) => conversation.id === props.selectedConversationId) ?? null
+                : null;
+            const shouldShowConversationPanel = expanded || pinnedCollapsedConversation !== null;
+            const renderedConversations = pinnedCollapsedConversation ? [pinnedCollapsedConversation] : conversations;
 
             return (
               <div key={website.id} className={`website-group ${selected ? "selected" : ""}`}>
@@ -471,43 +490,49 @@ export function WebsiteSidebar(props: WebsiteSidebarProps) {
                   </button>
                 </div>
 
-                {!props.collapsed && expanded ? (
-                  <div className="conversation-panel open">
-                    <div className="conversation-list-shell">
-                      <div className="website-runs" ref={attachThreadListAutoAnimateRef}>
-                        {conversations.length === 0 ? <span className="run-placeholder">No chats yet</span> : null}
-                        {conversations.map((conversation, convIndex) => {
+                {!props.collapsed ? (
+                  <Collapsible open={shouldShowConversationPanel}>
+                    <CollapsibleContent className="conversation-panel">
+                      <div className="conversation-list-shell">
+                        <div className="website-runs" ref={attachThreadListAutoAnimateRef}>
+                          {expanded && conversations.length === 0 ? <span className="run-placeholder">No chats yet</span> : null}
+                          {renderedConversations.map((conversation, convIndex) => {
                           const isSelectedConversation = conversation.id === props.selectedConversationId;
                           const hasActiveRun = (runsByConversationId.get(conversation.id) ?? []).some(
                             (run) => run.status === "queued" || run.status === "running"
                           );
 
                           return (
-                            <button
-                              type="button"
+                            <div
                               key={conversation.id}
-                              className={`conversation-row ${isSelectedConversation ? "selected" : ""}`}
                               style={isManualConversations ? getDragStyle("conversation", convIndex) : {}}
-                              onPointerDown={
-                                isManualConversations
-                                  ? (event) => handlePointerDown(event, "conversation", conversation.id, website.id)
-                                  : undefined
-                              }
-                              onClick={() => props.onSelectConversation(conversation.id, website.id)}
+                              className="conversation-item"
                             >
-                              <div className="conversation-copy">
-                                <div className="conversation-line">
-                                  {hasActiveRun ? <span className="conversation-active-dot" aria-hidden="true" /> : null}
-                                  <strong>{conversation.title}</strong>
+                              <button
+                                type="button"
+                                className={`conversation-row ${isSelectedConversation ? "selected" : ""}`}
+                                onPointerDown={
+                                  isManualConversations
+                                    ? (event) => handlePointerDown(event, "conversation", conversation.id, website.id)
+                                    : undefined
+                                }
+                                onClick={() => props.onSelectConversation(conversation.id, website.id)}
+                              >
+                                <div className="conversation-copy">
+                                  <div className="conversation-line">
+                                    {hasActiveRun ? <span className="conversation-active-dot" aria-hidden="true" /> : null}
+                                    <strong>{conversation.title}</strong>
+                                  </div>
                                 </div>
-                              </div>
-                              <time>{formatRelativeTime(conversation.updatedAt)}</time>
-                            </button>
+                                <time>{formatRelativeTime(conversation.updatedAt)}</time>
+                              </button>
+                            </div>
                           );
                         })}
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 ) : null}
               </div>
             );
