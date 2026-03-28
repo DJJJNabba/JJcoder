@@ -10,7 +10,7 @@
     "build": "tsc --noEmit && electron-vite build",
     "preview": "electron-vite preview",
     "dist": "npm run build && electron-builder",
-    "dist:win": "npm run build && electron-builder --win nsis",
+    "dist:win": "npm run build && electron-builder --win nsis portable",
     "dist:mac": "npm run build && electron-builder --mac dmg",
     "dist:linux": "npm run build && electron-builder --linux AppImage"
   },
@@ -32,6 +32,7 @@
     "@openrouter/sdk": "^0.10.2",
     "@vercel/sdk": "^1.19.11",
     "clsx": "^2.1.1",
+    "electron-updater": "^6.6.2",
     "lucide-react": "^1.7.0",
     "nanoid": "^5.1.7",
     "react": "^19.2.4",
@@ -69,7 +70,8 @@
     "win": {
       "icon": "build/icon.ico",
       "target": [
-        "nsis"
+        "nsis",
+        "portable"
       ]
     },
     "mac": {
@@ -87,8 +89,14 @@
       "category": "Development"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "DJJJNabba",
+      "repo": "JJcoder",
+      "releaseType": "release"
     }
   }
 }

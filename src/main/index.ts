@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, shell } from "electron";
 import { AppController } from "./appController";
+import { initializeAutoUpdater } from "./services/updater";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -157,11 +158,63 @@ async function registerIpcHandlers() {
   });
 }
 
+function installProcessErrorHandlers() {
+  const handleFatalError = async (title: string, error: unknown) => {
+    const detail = error instanceof Error ? error.stack || error.message : String(error);
+    console.error(title, detail);
+
+    const owner = BrowserWindow.getFocusedWindow() ?? mainWindow;
+    try {
+      const options = {
+        type: "error" as const,
+        title: "JJcoder Startup Error",
+        message: title,
+        detail
+      };
+      if (owner) {
+        await dialog.showMessageBox(owner, options);
+      } else {
+        await dialog.showMessageBox(options);
+      }
+    } catch {
+      // Ignore UI failures while handling a fatal startup issue.
+    }
+  };
+
+  process.on("uncaughtException", (error) => {
+    void handleFatalError("An unexpected main-process error occurred.", error);
+  });
+
+  process.on("unhandledRejection", (reason) => {
+    void handleFatalError("An unexpected startup task failed.", reason);
+  });
+}
+
 app.whenReady().then(async () => {
+  installProcessErrorHandlers();
   controller = new AppController(app.getPath("userData"), emitToRenderer);
-  await controller.initialize();
   await registerIpcHandlers();
   await createMainWindow();
+  initializeAutoUpdater(() => mainWindow);
+
+  try {
+    await controller.initialize();
+    emitToRenderer("snapshot", await controller.getSnapshot());
+  } catch (error) {
+    const detail = error instanceof Error ? error.stack || error.message : String(error);
+    console.error("Failed to initialize JJcoder", detail);
+    const options = {
+      type: "warning" as const,
+      title: "JJcoder Started With Limited Features",
+      message: "JJcoder opened, but some startup checks failed.",
+      detail
+    };
+    if (mainWindow) {
+      await dialog.showMessageBox(mainWindow, options);
+    } else {
+      await dialog.showMessageBox(options);
+    }
+  }
 
   app.on("activate", async () => {
     if (BrowserWindow.getAllWindows().length === 0) {

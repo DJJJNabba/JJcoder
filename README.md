@@ -48,6 +48,22 @@ Verified in this workspace:
 
 Windows artifacts are emitted into `release/`.
 
+Installed Windows builds now use Electron auto-update against the latest GitHub Release from `DJJJNabba/JJcoder`. The Windows release pipeline publishes both:
+
+- an NSIS installer for normal installs and auto-updates
+- a portable `.exe` for manual standalone use
+
+## GitHub Actions Releases
+
+Push a version tag like `v0.1.1` to trigger cross-platform release builds:
+
+```bash
+git tag v0.1.1
+git push origin v0.1.1
+```
+
+The release workflow publishes Windows, macOS, and Linux artifacts to GitHub Releases. Keep `package.json` version aligned with the tag you publish.
+
 ## Provider Setup
 
 ### OpenRouter
