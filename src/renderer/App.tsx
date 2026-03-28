@@ -1324,9 +1324,9 @@ export function App() {
                     {snapshot.auth.vercelConfigured ? describeSource(snapshot.auth.vercelSource) : "optional"}
                   </span>
                 </div>
-                <p>Use a stored token, `VERCEL_TOKEN`, or an existing Vercel CLI login. If the CLI is not installed, the connect button opens the Vercel token page so the user can paste a token here instead.</p>
+                <p>Use a stored token, `VERCEL_TOKEN`, or an existing Vercel CLI login. If a system CLI is not installed, JJcoder can fall back to its bundled Vercel tooling or open the token page.</p>
                 <div className="setup-meta">
-                  <span>CLI installed: {snapshot.auth.vercelCliInstalled ? "Yes" : "No, login can use npx"}</span>
+                  <span>CLI available: {snapshot.auth.vercelCliInstalled ? "Yes" : "No, token flow available"}</span>
                 </div>
                 <label className="field">
                   <span>Vercel token</span>

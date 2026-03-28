@@ -1,5 +1,5 @@
 import path from "node:path";
-import { spawn, type ChildProcess } from "node:child_process";
+import type { ChildProcess } from "node:child_process";
 import type { PreviewState, Website } from "@shared/types";
 import {
   detectPackageManager,
@@ -7,9 +7,9 @@ import {
   fileExists,
   getFreePort,
   installCommandFor,
-  runCommandOrThrow,
   terminateChildProcess
 } from "./utils";
+import { resolvePackageManagerForWorkspace, runPackageManagerCommand, spawnPackageManagerCommand } from "./runtime";
 
 interface PreviewSession {
   child: ChildProcess;
@@ -52,10 +52,14 @@ export class PreviewManager {
       throw new Error("This website does not have a package.json yet.");
     }
 
-    const packageManager = detectPackageManager(website.workspacePath);
+    const detectedPackageManager = detectPackageManager(website.workspacePath);
+    const { packageManager } = await resolvePackageManagerForWorkspace(detectedPackageManager);
     const nodeModulesPath = path.join(website.workspacePath, "node_modules");
     if (!(await fileExists(nodeModulesPath))) {
-      await runCommandOrThrow(installCommandFor(packageManager), website.workspacePath);
+      const installResult = await runPackageManagerCommand(installCommandFor(packageManager), website.workspacePath);
+      if (installResult.exitCode !== 0) {
+        throw new Error(installResult.stderr.trim() || installResult.stdout.trim() || "Failed to install dependencies.");
+      }
     }
 
     const port = await getFreePort();
@@ -71,16 +75,8 @@ export class PreviewManager {
 
     await this.onPreviewChange(website.id, preview);
 
-    const child = spawn(command, {
-      cwd: website.workspacePath,
-      env: {
-        ...process.env,
-        BROWSER: "none",
-        CI: "1"
-      },
-      shell: true,
-      windowsHide: true
-    });
+    const spawned = await spawnPackageManagerCommand(command, website.workspacePath);
+    const child = spawned.child;
 
     const updatePreview = async (next: Partial<PreviewState>) => {
       const session = this.sessions.get(website.id);
@@ -108,10 +104,10 @@ export class PreviewManager {
       });
     };
 
-    child.stdout.on("data", (chunk) => {
+    child.stdout?.on("data", (chunk) => {
       void handleChunk(chunk);
     });
-    child.stderr.on("data", (chunk) => {
+    child.stderr?.on("data", (chunk) => {
       void handleChunk(chunk);
     });
 
@@ -142,12 +138,18 @@ export class PreviewManager {
 
     this.sessions.set(website.id, {
       child,
-      preview,
+      preview: {
+        ...preview,
+        command: spawned.displayCommand
+      },
       stopping: false,
       stopPromise: null
     });
 
-    return preview;
+    return {
+      ...preview,
+      command: spawned.displayCommand
+    };
   }
 
   async stopPreview(websiteId: string): Promise<PreviewState> {

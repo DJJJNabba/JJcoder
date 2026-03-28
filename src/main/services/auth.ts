@@ -2,6 +2,7 @@ import { shell } from "electron";
 import type { AuthSource, AuthState, ProviderLoginKind } from "@shared/types";
 import type { CredentialVault } from "./credentials";
 import { launchCommandInTerminal, runCommand } from "./utils";
+import { commandExists, createVercelLoginTerminalCommand, hasBundledVercelCli, runVercelCliCommand } from "./runtime";
 
 function readEnvValue(keys: string[]): string | null {
   for (const key of keys) {
@@ -18,30 +19,26 @@ async function commandSucceeds(command: string): Promise<boolean> {
   return result.exitCode === 0;
 }
 
-async function isCommandAvailable(command: string): Promise<boolean> {
-  return await commandSucceeds(command);
-}
-
 async function resolveGitHubSource(vault: CredentialVault): Promise<{
   source: AuthSource;
   cliInstalled: boolean;
 }> {
   const stored = await vault.getSecret("github");
+  const cliInstalled = await commandExists("gh");
   if (stored) {
     return {
       source: "vault",
-      cliInstalled: await commandSucceeds("gh --version")
+      cliInstalled
     };
   }
 
   if (readEnvValue(["GITHUB_TOKEN", "GH_TOKEN"])) {
     return {
       source: "env",
-      cliInstalled: await commandSucceeds("gh --version")
+      cliInstalled
     };
   }
 
-  const cliInstalled = await commandSucceeds("gh --version");
   if (!cliInstalled) {
     return {
       source: null,
@@ -63,22 +60,24 @@ async function resolveVercelSource(
   cliInstalled: boolean;
 }> {
   const stored = await vault.getSecret("vercel");
+  const systemCliInstalled = await commandExists("vercel");
+  const bundledCliInstalled = await hasBundledVercelCli();
+  const cliInstalled = systemCliInstalled || bundledCliInstalled;
   if (stored) {
     return {
       source: "vault",
-      cliInstalled: await commandSucceeds("vercel --version")
+      cliInstalled
     };
   }
 
   if (readEnvValue(["VERCEL_TOKEN"])) {
     return {
       source: "env",
-      cliInstalled: await commandSucceeds("vercel --version")
+      cliInstalled
     };
   }
 
-  const cliInstalled = await commandSucceeds("vercel --version");
-  if (cliInstalled) {
+  if (systemCliInstalled) {
     return {
       source: (await commandSucceeds("vercel whoami")) ? "vercel-cli" : null,
       cliInstalled: true
@@ -92,8 +91,16 @@ async function resolveVercelSource(
     };
   }
 
+  if (bundledCliInstalled) {
+    const result = await runVercelCliCommand(["whoami"], process.cwd());
+    return {
+      source: result.exitCode === 0 ? "vercel-cli" : null,
+      cliInstalled: true
+    };
+  }
+
   return {
-    source: (await commandSucceeds("npx --yes vercel whoami")) ? "vercel-cli" : null,
+    source: null,
     cliInstalled: false
   };
 }
@@ -139,7 +146,7 @@ export async function getVercelToken(vault: CredentialVault): Promise<string | n
 export async function launchProviderLogin(provider: ProviderLoginKind): Promise<void> {
   const cwd = process.cwd();
   if (provider === "github") {
-    if (await isCommandAvailable("gh --version")) {
+    if (await commandExists("gh")) {
       await launchCommandInTerminal("gh auth login --web", cwd);
       return;
     }
@@ -148,8 +155,9 @@ export async function launchProviderLogin(provider: ProviderLoginKind): Promise<
     return;
   }
 
-  if (await isCommandAvailable("vercel --version")) {
-    await launchCommandInTerminal("vercel login", cwd);
+  const loginCommand = await createVercelLoginTerminalCommand();
+  if (loginCommand.source !== "browser") {
+    await launchCommandInTerminal(loginCommand.command, cwd);
     return;
   }
 

@@ -29802,10 +29802,10 @@ ${activePlan.planMarkdown}`,
                 ] }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `status-pill ${snapshot.auth.vercelConfigured ? "status-completed" : "status-queued"}`, children: snapshot.auth.vercelConfigured ? describeSource(snapshot.auth.vercelSource) : "optional" })
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Use a stored token, `VERCEL_TOKEN`, or an existing Vercel CLI login. If the CLI is not installed, the connect button opens the Vercel token page so the user can paste a token here instead." }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Use a stored token, `VERCEL_TOKEN`, or an existing Vercel CLI login. If a system CLI is not installed, JJcoder can fall back to its bundled Vercel tooling or open the token page." }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "setup-meta", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
-                "CLI installed: ",
-                snapshot.auth.vercelCliInstalled ? "Yes" : "No, login can use npx"
+                "CLI available: ",
+                snapshot.auth.vercelCliInstalled ? "Yes" : "No, token flow available"
               ] }) }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "field", children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Vercel token" }),

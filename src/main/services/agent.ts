@@ -10,9 +10,9 @@ import {
   readTextFileSafe,
   relativeToWorkspace,
   resolveWithinWorkspace,
-  runCommandOrThrow,
   writeTextFileSafe
 } from "./utils";
+import { runPackageManagerCommand } from "./runtime";
 
 export interface AgentRuntimeCallbacks {
   appendEvent: (event: Omit<RunEvent, "id" | "createdAt">) => Promise<void>;
@@ -66,6 +66,7 @@ function createSystemPrompt(workspacePath: string, hasExistingFiles: boolean): s
     `Workspace root: ${workspacePath}`,
     "Build polished React websites with strong visual direction, production-ready code, and clean file structure.",
     "Use tools to inspect, edit, install, build, and preview the site.",
+    "Prefer npm commands unless the workspace clearly already uses pnpm, yarn, or bun.",
     "Always verify the app with a build command before finishing.",
     "Keep changes inside the workspace root and prefer full-file rewrites when they are simpler than brittle search/replace edits.",
     "When the task is complete, call finish_build with a concise ship note.",
@@ -292,7 +293,10 @@ async function executeWebsiteChatRun(options: {
       if (!commandAllowed(command)) {
         throw new Error("That command is outside JJcoder's allowed workspace command policy.");
       }
-      const result = await runCommandOrThrow(command, workspacePath);
+      const result = await runPackageManagerCommand(command, workspacePath);
+      if (result.exitCode !== 0) {
+        throw new Error(result.stderr.trim() || result.stdout.trim() || `Command failed: ${command}`);
+      }
       return {
         command,
         stdout: result.stdout.slice(-4000),
