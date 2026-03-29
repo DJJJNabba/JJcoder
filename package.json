@@ -1,6 +1,6 @@
 {
   "name": "jjcoder",
-  "version": "0.0.3-alpha",
+  "version": "0.0.4-alpha",
   "private": true,
   "description": "JJcoder is an open-source Electron workspace for agentically building React websites and deploying them to Vercel.",
   "type": "module",
@@ -71,6 +71,7 @@
     "asar": true,
     "asarUnpack": [
       "node_modules/npm/**/*",
+      "node_modules/graceful-fs/**/*",
       "node_modules/vercel/**/*"
     ],
     "win": {
