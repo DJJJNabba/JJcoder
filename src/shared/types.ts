@@ -172,6 +172,7 @@ export interface AppSettings {
   conversationSortMode: SortMode;
   ideCommand: string;
   websitesRoot: string | null;
+  useBundledRuntime: boolean;
   vercelTeamId: string;
   vercelTeamSlug: string;
   onboardingCompletedAt: string | null;
@@ -210,6 +211,7 @@ export interface UpdateSettingsInput {
   conversationSortMode?: SortMode;
   ideCommand?: string;
   websitesRoot?: string | null;
+  useBundledRuntime?: boolean;
   vercelTeamId?: string;
   vercelTeamSlug?: string;
   onboardingCompletedAt?: string | null;

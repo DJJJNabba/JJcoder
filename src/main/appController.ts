@@ -71,6 +71,7 @@ export class AppController {
       conversationSortMode: "recent",
       ideCommand: "code",
       websitesRoot: null,
+      useBundledRuntime: false,
       vercelTeamId: "",
       vercelTeamSlug: "",
       onboardingCompletedAt: null
@@ -180,7 +181,10 @@ export class AppController {
   }
 
   async refreshConnections(deep = false): Promise<AppSnapshot> {
-    this.authState = await resolveAuthState(this.vault, { deepVercelCheck: deep });
+    this.authState = await resolveAuthState(this.vault, {
+      deepVercelCheck: deep,
+      allowBundledRuntime: this.state.settings.useBundledRuntime
+    });
     const snapshot = await this.getSnapshot();
     this.emit("snapshot", snapshot);
     return snapshot;
@@ -326,7 +330,9 @@ export class AppController {
   }
 
   async launchProviderLogin(provider: "github" | "vercel"): Promise<void> {
-    await launchProviderLogin(provider);
+    await launchProviderLogin(provider, {
+      allowBundledRuntime: this.state.settings.useBundledRuntime
+    });
   }
 
   async updateSettings(input: UpdateSettingsInput): Promise<AppSnapshot> {
@@ -541,7 +547,9 @@ export class AppController {
 
   async startPreview(websiteId: string): Promise<AppSnapshot> {
     const website = this.requireWebsite(websiteId);
-    await this.previewManager.startPreview(website);
+    await this.previewManager.startPreview(website, {
+      allowBundledRuntime: this.state.settings.useBundledRuntime
+    });
     return await this.getSnapshot();
   }
 
@@ -602,11 +610,13 @@ export class AppController {
           website,
           token,
           target: input.target,
+          allowBundledRuntime: this.state.settings.useBundledRuntime,
           teamId: this.state.settings.vercelTeamId || undefined,
           teamSlug: this.state.settings.vercelTeamSlug || undefined
         })
       : await deployWebsiteToVercelWithCli({
           website,
+          allowBundledRuntime: this.state.settings.useBundledRuntime,
           target: input.target
         });
     this.state = {
@@ -769,6 +779,7 @@ export class AppController {
       prompt: run.prompt,
       modelId: run.modelId,
       interactionMode: run.interactionMode,
+      allowBundledRuntime: this.state.settings.useBundledRuntime,
       sourcePlanId: run.sourcePlanId,
       signal,
       callbacks: {
@@ -794,7 +805,9 @@ export class AppController {
         },
         startPreview: async () => {
           signal.throwIfAborted();
-          await this.previewManager.startPreview(website);
+          await this.previewManager.startPreview(website, {
+            allowBundledRuntime: this.state.settings.useBundledRuntime
+          });
         },
         savePlan: async ({ title, planMarkdown }) => {
           signal.throwIfAborted();

@@ -31,6 +31,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   conversationSortMode: "recent",
   ideCommand: "code",
   websitesRoot: null,
+  useBundledRuntime: false,
   vercelTeamId: "",
   vercelTeamSlug: "",
   onboardingCompletedAt: null

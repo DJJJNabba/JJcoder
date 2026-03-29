@@ -54,14 +54,14 @@ async function resolveGitHubSource(vault: CredentialVault): Promise<{
 
 async function resolveVercelSource(
   vault: CredentialVault,
-  options?: { deep?: boolean }
+  options?: { deep?: boolean; allowBundledRuntime?: boolean }
 ): Promise<{
   source: AuthSource;
   cliInstalled: boolean;
 }> {
   const stored = await vault.getSecret("vercel");
   const systemCliInstalled = await commandExists("vercel");
-  const bundledCliInstalled = await hasBundledVercelCli();
+  const bundledCliInstalled = options?.allowBundledRuntime ? await hasBundledVercelCli() : false;
   const cliInstalled = systemCliInstalled || bundledCliInstalled;
   if (stored) {
     return {
@@ -92,7 +92,9 @@ async function resolveVercelSource(
   }
 
   if (bundledCliInstalled) {
-    const result = await runVercelCliCommand(["whoami"], process.cwd());
+    const result = await runVercelCliCommand(["whoami"], process.cwd(), {
+      allowBundledRuntime: options?.allowBundledRuntime
+    });
     return {
       source: result.exitCode === 0 ? "vercel-cli" : null,
       cliInstalled: true
@@ -107,11 +109,14 @@ async function resolveVercelSource(
 
 export async function resolveAuthState(
   vault: CredentialVault,
-  options?: { deepVercelCheck?: boolean }
+  options?: { deepVercelCheck?: boolean; allowBundledRuntime?: boolean }
 ): Promise<AuthState> {
   const presence = await vault.getPresence();
   const github = await resolveGitHubSource(vault);
-  const vercel = await resolveVercelSource(vault, { deep: options?.deepVercelCheck });
+  const vercel = await resolveVercelSource(vault, {
+    deep: options?.deepVercelCheck,
+    allowBundledRuntime: options?.allowBundledRuntime
+  });
   const openRouterSource: AuthSource = presence.openrouter
     ? "vault"
     : readEnvValue(["OPENROUTER_API_KEY"])
@@ -143,7 +148,10 @@ export async function getVercelToken(vault: CredentialVault): Promise<string | n
   return (await vault.getSecret("vercel")) ?? readEnvValue(["VERCEL_TOKEN"]);
 }
 
-export async function launchProviderLogin(provider: ProviderLoginKind): Promise<void> {
+export async function launchProviderLogin(
+  provider: ProviderLoginKind,
+  options?: { allowBundledRuntime?: boolean }
+): Promise<void> {
   const cwd = process.cwd();
   if (provider === "github") {
     if (await commandExists("gh")) {
@@ -155,7 +163,9 @@ export async function launchProviderLogin(provider: ProviderLoginKind): Promise<
     return;
   }
 
-  const loginCommand = await createVercelLoginTerminalCommand();
+  const loginCommand = await createVercelLoginTerminalCommand({
+    allowBundledRuntime: options?.allowBundledRuntime
+  });
   if (loginCommand.source !== "browser") {
     await launchCommandInTerminal(loginCommand.command, cwd);
     return;

@@ -42,20 +42,26 @@ export async function deployWebsiteToVercel(options: {
   teamId?: string;
   teamSlug?: string;
   target: DeploymentTarget;
+  allowBundledRuntime?: boolean;
 }): Promise<VercelState> {
   const detectedPackageManager = detectPackageManager(options.website.workspacePath);
-  const { packageManager } = await resolvePackageManagerForWorkspace(detectedPackageManager);
+  const { packageManager } = await resolvePackageManagerForWorkspace(detectedPackageManager, {
+    allowBundledRuntime: options.allowBundledRuntime
+  });
   const nodeModulesPath = path.join(options.website.workspacePath, "node_modules");
   if (!(await fileExists(nodeModulesPath))) {
     const installResult = await runPackageManagerCommand(
       installCommandFor(packageManager),
-      options.website.workspacePath
+      options.website.workspacePath,
+      { allowBundledRuntime: options.allowBundledRuntime }
     );
     if (installResult.exitCode !== 0) {
       throw new Error(installResult.stderr.trim() || installResult.stdout.trim() || "Failed to install dependencies.");
     }
   }
-  const buildResult = await runPackageManagerCommand(buildCommandFor(packageManager), options.website.workspacePath);
+  const buildResult = await runPackageManagerCommand(buildCommandFor(packageManager), options.website.workspacePath, {
+    allowBundledRuntime: options.allowBundledRuntime
+  });
   if (buildResult.exitCode !== 0) {
     throw new Error(buildResult.stderr.trim() || buildResult.stdout.trim() || "Failed to build the website before deploy.");
   }
@@ -131,14 +137,18 @@ interface VercelProjectMetadata {
 export async function deployWebsiteToVercelWithCli(options: {
   website: Website;
   target: DeploymentTarget;
+  allowBundledRuntime?: boolean;
 }): Promise<VercelState> {
   const detectedPackageManager = detectPackageManager(options.website.workspacePath);
-  const { packageManager } = await resolvePackageManagerForWorkspace(detectedPackageManager);
+  const { packageManager } = await resolvePackageManagerForWorkspace(detectedPackageManager, {
+    allowBundledRuntime: options.allowBundledRuntime
+  });
   const nodeModulesPath = path.join(options.website.workspacePath, "node_modules");
   if (!(await fileExists(nodeModulesPath))) {
     const installResult = await runPackageManagerCommand(
       installCommandFor(packageManager),
-      options.website.workspacePath
+      options.website.workspacePath,
+      { allowBundledRuntime: options.allowBundledRuntime }
     );
     if (installResult.exitCode !== 0) {
       throw new Error(installResult.stderr.trim() || installResult.stdout.trim() || "Failed to install dependencies.");
@@ -147,7 +157,8 @@ export async function deployWebsiteToVercelWithCli(options: {
 
   const result = await runVercelCliCommand(
     ["deploy", ...(options.target === "production" ? ["--prod"] : []), "--yes"],
-    options.website.workspacePath
+    options.website.workspacePath,
+    { allowBundledRuntime: options.allowBundledRuntime }
   );
   if (result.exitCode !== 0) {
     throw new Error(result.stderr.trim() || result.stdout.trim() || "Vercel CLI deploy failed.");

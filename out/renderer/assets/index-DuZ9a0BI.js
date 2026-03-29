@@ -28710,6 +28710,7 @@ const EMPTY_SNAPSHOT = {
     conversationSortMode: "recent",
     ideCommand: "code",
     websitesRoot: null,
+    useBundledRuntime: false,
     vercelTeamId: "",
     vercelTeamSlug: "",
     onboardingCompletedAt: null
@@ -29092,6 +29093,7 @@ function App() {
         vercelTeamId: snapshot.settings.vercelTeamId,
         vercelTeamSlug: snapshot.settings.vercelTeamSlug,
         websitesRoot: snapshot.settings.websitesRoot,
+        useBundledRuntime: snapshot.settings.useBundledRuntime,
         onboardingCompletedAt: snapshot.settings.onboardingCompletedAt
       });
       setOpenrouterKey("");
@@ -29103,6 +29105,7 @@ function App() {
   const completeOnboarding = async () => {
     await mutateSnapshot(async () => {
       return await window.jjcoder.updateSettings({
+        useBundledRuntime: snapshot.settings.useBundledRuntime,
         onboardingCompletedAt: (/* @__PURE__ */ new Date()).toISOString()
       });
     });
@@ -29802,7 +29805,7 @@ ${activePlan.planMarkdown}`,
                 ] }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `status-pill ${snapshot.auth.vercelConfigured ? "status-completed" : "status-queued"}`, children: snapshot.auth.vercelConfigured ? describeSource(snapshot.auth.vercelSource) : "optional" })
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Use a stored token, `VERCEL_TOKEN`, or an existing Vercel CLI login. If a system CLI is not installed, JJcoder can fall back to its bundled Vercel tooling or open the token page." }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { children: "Use a stored token, `VERCEL_TOKEN`, or an existing Vercel CLI login. If a system CLI is not installed, JJcoder can only use its packaged fallback after the runtime option below is enabled, otherwise it opens the token page." }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "setup-meta", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
                 "CLI available: ",
                 snapshot.auth.vercelCliInstalled ? "Yes" : "No, token flow available"
@@ -29873,6 +29876,27 @@ ${activePlan.planMarkdown}`,
                   )
                 ] })
               ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "field", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "JavaScript tooling fallback" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "checkbox-field", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "input",
+                    {
+                      type: "checkbox",
+                      checked: snapshot.settings.useBundledRuntime,
+                      onChange: (event) => setSnapshot((prev) => ({
+                        ...prev,
+                        settings: {
+                          ...prev.settings,
+                          useBundledRuntime: event.target.checked
+                        }
+                      }))
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Use JJcoder's packaged npm/runtime when Node.js is missing" })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("small", { className: "field-note", children: "Off by default. Leave this disabled to rely only on the user's installed Node.js tools." })
+              ] }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "setup-actions", children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx(
                   "button",
@@ -29882,6 +29906,7 @@ ${activePlan.planMarkdown}`,
                     onClick: () => void mutateSnapshot(
                       async () => await window.jjcoder.updateSettings({
                         websitesRoot: snapshot.settings.websitesRoot,
+                        useBundledRuntime: snapshot.settings.useBundledRuntime,
                         onboardingCompletedAt: snapshot.settings.onboardingCompletedAt
                       })
                     ),
@@ -30084,6 +30109,27 @@ ${activePlan.planMarkdown}`,
               )
             ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "field", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "JavaScript tooling fallback" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "checkbox-field", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "input",
+                  {
+                    type: "checkbox",
+                    checked: snapshot.settings.useBundledRuntime,
+                    onChange: (event) => setSnapshot((prev) => ({
+                      ...prev,
+                      settings: {
+                        ...prev.settings,
+                        useBundledRuntime: event.target.checked
+                      }
+                    }))
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Use packaged npm/runtime fallback when Node.js is missing" })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("small", { className: "field-note", children: "Bundled runtime stays disabled unless the user explicitly turns it on here or during setup." })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "field", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Vercel Team ID" }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(
                 "input",
@@ -30134,7 +30180,7 @@ ${activePlan.planMarkdown}`,
               "Encryption: ",
               snapshot.auth.encryptionAvailable ? "Available" : "Unavailable"
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("small", { children: "Secrets stay local. JJcoder reuses existing CLI logins when available, otherwise users can create tokens in the browser and save them here." })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("small", { children: "Secrets stay local. JJcoder reuses existing CLI logins when available, and bundled npm/runtime fallback is only used when the user explicitly enables it." })
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("footer", { className: "dialog-actions", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("button", { type: "button", className: "toolbar-chip", onClick: () => setShowSettings(false), children: "Cancel" }),

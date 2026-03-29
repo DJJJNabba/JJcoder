@@ -39,7 +39,12 @@ export class PreviewManager {
     private readonly onPreviewChange: (websiteId: string, preview: PreviewState) => Promise<void>
   ) {}
 
-  async startPreview(website: Website): Promise<PreviewState> {
+  async startPreview(
+    website: Website,
+    options?: {
+      allowBundledRuntime?: boolean;
+    }
+  ): Promise<PreviewState> {
     const existing = this.sessions.get(website.id);
     if (existing?.stopping) {
       await existing.stopPromise?.catch(() => undefined);
@@ -53,10 +58,14 @@ export class PreviewManager {
     }
 
     const detectedPackageManager = detectPackageManager(website.workspacePath);
-    const { packageManager } = await resolvePackageManagerForWorkspace(detectedPackageManager);
+    const { packageManager } = await resolvePackageManagerForWorkspace(detectedPackageManager, options);
     const nodeModulesPath = path.join(website.workspacePath, "node_modules");
     if (!(await fileExists(nodeModulesPath))) {
-      const installResult = await runPackageManagerCommand(installCommandFor(packageManager), website.workspacePath);
+      const installResult = await runPackageManagerCommand(
+        installCommandFor(packageManager),
+        website.workspacePath,
+        options
+      );
       if (installResult.exitCode !== 0) {
         throw new Error(installResult.stderr.trim() || installResult.stdout.trim() || "Failed to install dependencies.");
       }
@@ -75,7 +84,7 @@ export class PreviewManager {
 
     await this.onPreviewChange(website.id, preview);
 
-    const spawned = await spawnPackageManagerCommand(command, website.workspacePath);
+    const spawned = await spawnPackageManagerCommand(command, website.workspacePath, options);
     const child = spawned.child;
 
     const updatePreview = async (next: Partial<PreviewState>) => {

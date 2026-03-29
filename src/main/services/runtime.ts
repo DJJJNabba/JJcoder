@@ -6,6 +6,9 @@ import { runCommand, type CommandResult } from "./utils";
 
 export type PackageManager = "npm" | "pnpm" | "yarn" | "bun";
 export type JavaScriptRuntimeSource = "system" | "bundled";
+interface RuntimeResolutionOptions {
+  allowBundledRuntime?: boolean;
+}
 
 interface ResolvedInvocation {
   file: string;
@@ -32,7 +35,8 @@ export async function commandExists(command: string, cwd = process.cwd()): Promi
 }
 
 export async function resolvePackageManagerForWorkspace(
-  detectedPackageManager: PackageManager
+  detectedPackageManager: PackageManager,
+  options?: RuntimeResolutionOptions
 ): Promise<{
   packageManager: PackageManager;
   source: JavaScriptRuntimeSource;
@@ -44,7 +48,7 @@ export async function resolvePackageManagerForWorkspace(
     };
   }
 
-  if (detectedPackageManager === "npm" && (await hasBundledNpm())) {
+  if (options?.allowBundledRuntime && detectedPackageManager === "npm" && (await hasBundledNpm())) {
     return {
       packageManager: "npm",
       source: "bundled"
@@ -53,29 +57,33 @@ export async function resolvePackageManagerForWorkspace(
 
   throw new Error(
     detectedPackageManager === "npm"
-      ? "Node.js and npm are not available. Install Node.js or use a JJcoder build that includes the bundled JavaScript runtime."
-      : `The workspace expects ${detectedPackageManager}, but it is not installed on this machine. Install ${detectedPackageManager}, or switch the project back to npm so JJcoder can use its bundled runtime.`
+      ? options?.allowBundledRuntime
+        ? "Node.js and npm are not available. Install Node.js or use a JJcoder build that includes the bundled JavaScript runtime."
+        : "Node.js and npm are not available. Install Node.js, or enable 'Use packaged npm/runtime fallback' in JJcoder setup."
+      : `The workspace expects ${detectedPackageManager}, but it is not installed on this machine. Install ${detectedPackageManager}, or switch the project back to npm${options?.allowBundledRuntime ? " so JJcoder can use its bundled runtime." : "."}`
   );
 }
 
 export async function runPackageManagerCommand(
   command: string,
   cwd: string,
+  options?: RuntimeResolutionOptions,
   onOutput?: (chunk: string) => void
 ): Promise<CommandResult & { source: JavaScriptRuntimeSource }> {
-  const invocation = await resolvePackageManagerInvocation(command);
+  const invocation = await resolvePackageManagerInvocation(command, options);
   return await runResolvedInvocation(invocation, cwd, onOutput);
 }
 
 export async function spawnPackageManagerCommand(
   command: string,
-  cwd: string
+  cwd: string,
+  options?: RuntimeResolutionOptions
 ): Promise<{
   child: ChildProcess;
   displayCommand: string;
   source: JavaScriptRuntimeSource;
 }> {
-  const invocation = await resolvePackageManagerInvocation(command);
+  const invocation = await resolvePackageManagerInvocation(command, options);
   const child = spawn(invocation.file, invocation.args, {
     cwd,
     env: {
@@ -97,9 +105,10 @@ export async function spawnPackageManagerCommand(
 export async function runVercelCliCommand(
   args: string[],
   cwd: string,
+  options?: RuntimeResolutionOptions,
   onOutput?: (chunk: string) => void
 ): Promise<CommandResult & { source: JavaScriptRuntimeSource }> {
-  const invocation = await resolveVercelInvocation(args);
+  const invocation = await resolveVercelInvocation(args, options);
   return await runResolvedInvocation(invocation, cwd, onOutput);
 }
 
@@ -108,7 +117,7 @@ export async function hasBundledVercelCli(): Promise<boolean> {
   return Boolean(paths.vercelCliPath && paths.npmCliPath);
 }
 
-export async function createVercelLoginTerminalCommand(): Promise<{
+export async function createVercelLoginTerminalCommand(options?: RuntimeResolutionOptions): Promise<{
   command: string;
   source: "system" | "bundled" | "browser";
 }> {
@@ -119,7 +128,7 @@ export async function createVercelLoginTerminalCommand(): Promise<{
     };
   }
 
-  const invocation = await resolveBundledNodeInvocation("vercel", ["login"]);
+  const invocation = options?.allowBundledRuntime ? await resolveBundledNodeInvocation("vercel", ["login"]) : null;
   if (invocation) {
     return {
       command: toTerminalCommand(invocation),
@@ -133,7 +142,10 @@ export async function createVercelLoginTerminalCommand(): Promise<{
   };
 }
 
-async function resolvePackageManagerInvocation(command: string): Promise<ResolvedInvocation> {
+async function resolvePackageManagerInvocation(
+  command: string,
+  options?: RuntimeResolutionOptions
+): Promise<ResolvedInvocation> {
   const parts = tokenizeCommand(command);
   const packageManager = normalizePackageManager(parts[0] ?? "");
   if (!packageManager) {
@@ -157,16 +169,21 @@ async function resolvePackageManagerInvocation(command: string): Promise<Resolve
     );
   }
 
-  const bundledInvocation = await resolveBundledNodeInvocation("npm", args);
+  const bundledInvocation = options?.allowBundledRuntime ? await resolveBundledNodeInvocation("npm", args) : null;
   if (!bundledInvocation) {
     throw new Error(
-      "JJcoder could not find a usable npm runtime. Install Node.js, or rebuild the app with bundled npm included."
+      options?.allowBundledRuntime
+        ? "JJcoder could not find a usable npm runtime. Install Node.js, or rebuild the app with bundled npm included."
+        : "JJcoder could not find npm on this machine. Install Node.js, or enable 'Use packaged npm/runtime fallback' in setup."
     );
   }
   return bundledInvocation;
 }
 
-async function resolveVercelInvocation(args: string[]): Promise<ResolvedInvocation> {
+async function resolveVercelInvocation(
+  args: string[],
+  options?: RuntimeResolutionOptions
+): Promise<ResolvedInvocation> {
   if (await commandExists(systemBinaryForCommand("vercel"))) {
     return {
       file: systemBinaryForCommand("vercel"),
@@ -176,10 +193,12 @@ async function resolveVercelInvocation(args: string[]): Promise<ResolvedInvocati
     };
   }
 
-  const bundledInvocation = await resolveBundledNodeInvocation("vercel", args);
+  const bundledInvocation = options?.allowBundledRuntime ? await resolveBundledNodeInvocation("vercel", args) : null;
   if (!bundledInvocation) {
     throw new Error(
-      "JJcoder could not find the Vercel CLI. Install the Vercel CLI, or use the token-based browser flow in Settings."
+      options?.allowBundledRuntime
+        ? "JJcoder could not find the Vercel CLI. Install the Vercel CLI, or use the token-based browser flow in Settings."
+        : "JJcoder could not find the Vercel CLI. Install it, enable 'Use packaged npm/runtime fallback', or use the token-based browser flow in Settings."
     );
   }
   return bundledInvocation;

@@ -55,6 +55,7 @@ const EMPTY_SNAPSHOT: AppSnapshot = {
     conversationSortMode: "recent",
     ideCommand: "code",
     websitesRoot: null,
+    useBundledRuntime: false,
     vercelTeamId: "",
     vercelTeamSlug: "",
     onboardingCompletedAt: null
@@ -529,6 +530,7 @@ export function App() {
         vercelTeamId: snapshot.settings.vercelTeamId,
         vercelTeamSlug: snapshot.settings.vercelTeamSlug,
         websitesRoot: snapshot.settings.websitesRoot,
+        useBundledRuntime: snapshot.settings.useBundledRuntime,
         onboardingCompletedAt: snapshot.settings.onboardingCompletedAt
       });
       setOpenrouterKey("");
@@ -541,6 +543,7 @@ export function App() {
   const completeOnboarding = async () => {
     await mutateSnapshot(async () => {
       return await window.jjcoder.updateSettings({
+        useBundledRuntime: snapshot.settings.useBundledRuntime,
         onboardingCompletedAt: new Date().toISOString()
       });
     });
@@ -1324,7 +1327,7 @@ export function App() {
                     {snapshot.auth.vercelConfigured ? describeSource(snapshot.auth.vercelSource) : "optional"}
                   </span>
                 </div>
-                <p>Use a stored token, `VERCEL_TOKEN`, or an existing Vercel CLI login. If a system CLI is not installed, JJcoder can fall back to its bundled Vercel tooling or open the token page.</p>
+                <p>Use a stored token, `VERCEL_TOKEN`, or an existing Vercel CLI login. If a system CLI is not installed, JJcoder can only use its packaged fallback after the runtime option below is enabled, otherwise it opens the token page.</p>
                 <div className="setup-meta">
                   <span>CLI available: {snapshot.auth.vercelCliInstalled ? "Yes" : "No, token flow available"}</span>
                 </div>
@@ -1402,6 +1405,28 @@ export function App() {
                     </button>
                   </div>
                 </label>
+                <label className="field">
+                  <span>JavaScript tooling fallback</span>
+                  <label className="checkbox-field">
+                    <input
+                      type="checkbox"
+                      checked={snapshot.settings.useBundledRuntime}
+                      onChange={(event) =>
+                        setSnapshot((prev) => ({
+                          ...prev,
+                          settings: {
+                            ...prev.settings,
+                            useBundledRuntime: event.target.checked
+                          }
+                        }))
+                      }
+                    />
+                    <span>Use JJcoder's packaged npm/runtime when Node.js is missing</span>
+                  </label>
+                  <small className="field-note">
+                    Off by default. Leave this disabled to rely only on the user's installed Node.js tools.
+                  </small>
+                </label>
                 <div className="setup-actions">
                   <button
                     type="button"
@@ -1410,6 +1435,7 @@ export function App() {
                       void mutateSnapshot(async () =>
                         await window.jjcoder.updateSettings({
                           websitesRoot: snapshot.settings.websitesRoot,
+                          useBundledRuntime: snapshot.settings.useBundledRuntime,
                           onboardingCompletedAt: snapshot.settings.onboardingCompletedAt
                         })
                       )
@@ -1634,6 +1660,28 @@ export function App() {
                 />
               </label>
               <label className="field">
+                <span>JavaScript tooling fallback</span>
+                <label className="checkbox-field">
+                  <input
+                    type="checkbox"
+                    checked={snapshot.settings.useBundledRuntime}
+                    onChange={(event) =>
+                      setSnapshot((prev) => ({
+                        ...prev,
+                        settings: {
+                          ...prev.settings,
+                          useBundledRuntime: event.target.checked
+                        }
+                      }))
+                    }
+                  />
+                  <span>Use packaged npm/runtime fallback when Node.js is missing</span>
+                </label>
+                <small className="field-note">
+                  Bundled runtime stays disabled unless the user explicitly turns it on here or during setup.
+                </small>
+              </label>
+              <label className="field">
                 <span>Vercel Team ID</span>
                 <input
                   value={snapshot.settings.vercelTeamId}
@@ -1681,7 +1729,7 @@ export function App() {
             </div>
             <div className="settings-note">
               <p>Encryption: {snapshot.auth.encryptionAvailable ? "Available" : "Unavailable"}</p>
-              <small>Secrets stay local. JJcoder reuses existing CLI logins when available, otherwise users can create tokens in the browser and save them here.</small>
+              <small>Secrets stay local. JJcoder reuses existing CLI logins when available, and bundled npm/runtime fallback is only used when the user explicitly enables it.</small>
             </div>
             <footer className="dialog-actions">
               <button type="button" className="toolbar-chip" onClick={() => setShowSettings(false)}>

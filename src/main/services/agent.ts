@@ -187,6 +187,7 @@ export async function executeWebsiteRun(options: {
   prompt: string;
   modelId: string;
   interactionMode: InteractionMode;
+  allowBundledRuntime: boolean;
   sourcePlanId: string | null;
   signal: AbortSignal;
   callbacks: AgentRuntimeCallbacks;
@@ -204,6 +205,7 @@ async function executeWebsiteChatRun(options: {
   prompt: string;
   modelId: string;
   interactionMode: InteractionMode;
+  allowBundledRuntime: boolean;
   sourcePlanId: string | null;
   signal: AbortSignal;
   callbacks: AgentRuntimeCallbacks;
@@ -293,7 +295,9 @@ async function executeWebsiteChatRun(options: {
       if (!commandAllowed(command)) {
         throw new Error("That command is outside JJcoder's allowed workspace command policy.");
       }
-      const result = await runPackageManagerCommand(command, workspacePath);
+      const result = await runPackageManagerCommand(command, workspacePath, {
+        allowBundledRuntime: options.allowBundledRuntime
+      });
       if (result.exitCode !== 0) {
         throw new Error(result.stderr.trim() || result.stdout.trim() || `Command failed: ${command}`);
       }
