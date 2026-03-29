@@ -64,9 +64,13 @@ export async function checkForUpdatesNow(): Promise<{ checked: boolean; message:
     };
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
+    const isNoArtifacts =
+      detail.includes("latest.yml") || detail.includes("latest-mac.yml") || detail.includes("latest-linux.yml");
     return {
       checked: false,
-      message: `Update check failed: ${detail}`
+      message: isNoArtifacts
+        ? "No update information found in the latest release. You may already be on the latest version."
+        : `Update check failed: ${detail.split("\n")[0]}`
     };
   }
 }
