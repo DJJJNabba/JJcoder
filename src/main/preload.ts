@@ -31,6 +31,7 @@ const api: DesktopBridgeApi = {
   publishRepo: async (input) => await ipcRenderer.invoke("jjcoder:publish-repo", input),
   cancelRun: async (runId) => await ipcRenderer.invoke("jjcoder:cancel-run", runId),
   deployWebsite: async (input) => await ipcRenderer.invoke("jjcoder:deploy-website", input),
+  checkForUpdates: async () => await ipcRenderer.invoke("jjcoder:check-for-updates"),
   showSidebarContextMenu: async (input) => await ipcRenderer.invoke("jjcoder:show-sidebar-context-menu", input),
   subscribe: (channel, listener) => {
     const wrapped = (

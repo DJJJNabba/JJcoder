@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, shell } from "electron";
 import { AppController } from "./appController";
-import { initializeAutoUpdater } from "./services/updater";
+import { checkForUpdatesNow, initializeAutoUpdater } from "./services/updater";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -156,6 +156,7 @@ async function registerIpcHandlers() {
       window: owner ?? undefined
     });
   });
+  ipcMain.handle("jjcoder:check-for-updates", async () => await checkForUpdatesNow());
 }
 
 function installProcessErrorHandlers() {
