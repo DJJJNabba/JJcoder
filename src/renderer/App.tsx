@@ -170,6 +170,8 @@ export function App() {
   const [openrouterKey, setOpenrouterKey] = useState("");
   const [githubToken, setGithubToken] = useState("");
   const [vercelToken, setVercelToken] = useState("");
+  const [checkingUpdates, setCheckingUpdates] = useState(false);
+  const [updateMessage, setUpdateMessage] = useState<string | null>(null);
   const [pendingUserInputAnswers, setPendingUserInputAnswers] = useState<Record<string, PendingUserInputDraftAnswer>>({});
   const [pendingUserInputQuestionIndex, setPendingUserInputQuestionIndex] = useState(0);
   const [respondingUserInput, setRespondingUserInput] = useState(false);
@@ -538,6 +540,19 @@ export function App() {
       setVercelToken("");
       return await window.jjcoder.refreshConnections(true).catch(async () => next);
     });
+  };
+
+  const checkForUpdates = async () => {
+    setCheckingUpdates(true);
+    try {
+      const result = await window.jjcoder.checkForUpdates();
+      setUpdateMessage(result.message);
+      setError(null);
+    } catch (reason) {
+      handleError(reason);
+    } finally {
+      setCheckingUpdates(false);
+    }
   };
 
   const completeOnboarding = async () => {
@@ -913,6 +928,9 @@ export function App() {
             </span>
           </div>
           <div className="header-actions">
+            <span className="version-indicator" title={`JJcoder ${snapshot.productVersion}`}>
+              v{snapshot.productVersion}
+            </span>
             <button type="button" className="toolbar-chip" onClick={() => setShowOnboarding(true)}>
               <WandSparklesIcon size={13} />
               Setup
@@ -1405,7 +1423,7 @@ export function App() {
                     </button>
                   </div>
                 </label>
-                <label className="field">
+                <div className="field">
                   <span>JavaScript tooling fallback</span>
                   <label className="checkbox-field">
                     <input
@@ -1426,7 +1444,7 @@ export function App() {
                   <small className="field-note">
                     Off by default. Leave this disabled to rely only on the user's installed Node.js tools.
                   </small>
-                </label>
+                </div>
                 <div className="setup-actions">
                   <button
                     type="button"
@@ -1659,7 +1677,7 @@ export function App() {
                   placeholder="C:\\Sites"
                 />
               </label>
-              <label className="field">
+              <div className="field">
                 <span>JavaScript tooling fallback</span>
                 <label className="checkbox-field">
                   <input
@@ -1680,7 +1698,17 @@ export function App() {
                 <small className="field-note">
                   Bundled runtime stays disabled unless the user explicitly turns it on here or during setup.
                 </small>
-              </label>
+              </div>
+              <div className="field">
+                <span>App updates</span>
+                <div className="inline-row">
+                  <span className="field-note">Current version: {snapshot.productVersion}</span>
+                  <button type="button" className="toolbar-chip" onClick={() => void checkForUpdates()} disabled={checkingUpdates}>
+                    {checkingUpdates ? "Checking…" : "Check for updates"}
+                  </button>
+                </div>
+                {updateMessage ? <small className="field-note">{updateMessage}</small> : null}
+              </div>
               <label className="field">
                 <span>Vercel Team ID</span>
                 <input
