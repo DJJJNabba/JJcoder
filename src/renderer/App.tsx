@@ -1429,15 +1429,14 @@ export function App() {
                     <input
                       type="checkbox"
                       checked={snapshot.settings.useBundledRuntime}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        const checked = event.target.checked;
                         setSnapshot((prev) => ({
                           ...prev,
-                          settings: {
-                            ...prev.settings,
-                            useBundledRuntime: event.target.checked
-                          }
-                        }))
-                      }
+                          settings: { ...prev.settings, useBundledRuntime: checked }
+                        }));
+                        void window.jjcoder.updateSettings({ useBundledRuntime: checked }).catch(() => {});
+                      }}
                     />
                     <span>Use JJcoder's packaged npm/runtime when Node.js is missing</span>
                   </label>
@@ -1683,15 +1682,14 @@ export function App() {
                   <input
                     type="checkbox"
                     checked={snapshot.settings.useBundledRuntime}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      const checked = event.target.checked;
                       setSnapshot((prev) => ({
                         ...prev,
-                        settings: {
-                          ...prev.settings,
-                          useBundledRuntime: event.target.checked
-                        }
-                      }))
-                    }
+                        settings: { ...prev.settings, useBundledRuntime: checked }
+                      }));
+                      void window.jjcoder.updateSettings({ useBundledRuntime: checked }).catch(() => {});
+                    }}
                   />
                   <span>Use packaged npm/runtime fallback when Node.js is missing</span>
                 </label>
