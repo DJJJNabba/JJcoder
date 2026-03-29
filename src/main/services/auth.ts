@@ -87,7 +87,7 @@ async function resolveVercelSource(
   if (!options?.deep) {
     return {
       source: null,
-      cliInstalled: false
+      cliInstalled
     };
   }
 
@@ -105,6 +105,28 @@ async function resolveVercelSource(
     source: null,
     cliInstalled: false
   };
+}
+
+async function canLaunchVercelLoginTerminal(
+  source: "system" | "bundled" | "browser",
+  options?: { allowBundledRuntime?: boolean }
+): Promise<boolean> {
+  if (source === "browser") {
+    return false;
+  }
+
+  if (source === "system") {
+    return await commandSucceeds("vercel --version");
+  }
+
+  try {
+    const result = await runVercelCliCommand(["--version"], process.cwd(), {
+      allowBundledRuntime: options?.allowBundledRuntime
+    });
+    return result.exitCode === 0;
+  } catch {
+    return false;
+  }
 }
 
 export async function resolveAuthState(
@@ -166,7 +188,7 @@ export async function launchProviderLogin(
   const loginCommand = await createVercelLoginTerminalCommand({
     allowBundledRuntime: options?.allowBundledRuntime
   });
-  if (loginCommand.source !== "browser") {
+  if (await canLaunchVercelLoginTerminal(loginCommand.source, options)) {
     await launchCommandInTerminal(loginCommand.command, cwd);
     return;
   }

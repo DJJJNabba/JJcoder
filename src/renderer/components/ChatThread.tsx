@@ -83,21 +83,21 @@ function toolIcon(activity: TimelineActivity) {
 function toolActionLabel(activity: TimelineActivity): string {
   switch (activity.toolName) {
     case "read_file":
-      return "Read";
+      return "Reading";
     case "write_file":
-      return "Saved changes";
+      return "Writing";
     case "delete_file":
-      return "Deleted";
+      return "Deleting";
     case "list_files":
-      return "Listed";
+      return "Listing";
     case "run_workspace_command":
-      return "Command";
+      return "Running";
     case "start_preview":
-      return "Started preview";
+      return "Starting preview";
     case "finish_build":
-      return "Finished";
+      return "Finishing";
     case "request_user_input":
-      return "Requested input";
+      return "Awaiting input";
     default:
       return "Tool";
   }

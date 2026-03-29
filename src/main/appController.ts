@@ -71,7 +71,7 @@ export class AppController {
       conversationSortMode: "recent",
       ideCommand: "code",
       websitesRoot: null,
-      useBundledRuntime: true,
+      useBundledRuntime: false,
       vercelTeamId: "",
       vercelTeamSlug: "",
       onboardingCompletedAt: null
@@ -1112,11 +1112,10 @@ export class AppController {
     return runs
       .map((run, index) => {
         const assistantParts = run.events
-          .filter((event) => event.type === "assistant" || event.type === "completion" || event.type === "plan")
-          .map((event) => event.content.trim())
-          .filter(Boolean);
+          .map((event) => this.extractConversationAssistantText(event))
+          .filter((value): value is string => Boolean(value));
         const userInputParts = run.events
-          .filter((event) => event.type === "user_input")
+          .filter((event) => event.type === "user_input" && event.title === "Answered user input")
           .map((event) => event.content.trim())
           .filter(Boolean);
 
@@ -1130,6 +1129,36 @@ export class AppController {
           .join("\n");
       })
       .join("\n\n");
+  }
+
+  private extractConversationAssistantText(event: RunEvent): string | null {
+    if (event.type === "assistant" || event.type === "assistant_delta" || event.type === "completion" || event.type === "plan") {
+      const trimmed = event.content.trim();
+      return trimmed || null;
+    }
+
+    const toolName = typeof event.metadata?.toolName === "string" ? event.metadata.toolName : null;
+    const toolPhase = typeof event.metadata?.toolPhase === "string" ? event.metadata.toolPhase : null;
+    if (event.type !== "tool" || toolName !== "finish_build" || toolPhase !== "result") {
+      return null;
+    }
+
+    const parsed = this.parseEventJsonRecord(event.content);
+    const summary = typeof parsed?.summary === "string" ? parsed.summary.trim() : "";
+    return summary || null;
+  }
+
+  private parseEventJsonRecord(raw: string): Record<string, unknown> | null {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
   }
 
   private requireWebsite(websiteId: string): Website {

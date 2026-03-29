@@ -55,7 +55,7 @@ const EMPTY_SNAPSHOT: AppSnapshot = {
     conversationSortMode: "recent",
     ideCommand: "code",
     websitesRoot: null,
-    useBundledRuntime: true,
+    useBundledRuntime: false,
     vercelTeamId: "",
     vercelTeamSlug: "",
     onboardingCompletedAt: null
@@ -428,7 +428,7 @@ export function App() {
     const conversations = snapshot.conversations.filter((conversation) => conversation.websiteId === activeWebsite.id);
     const manualOrder = new Map(activeWebsite.conversationIds.map((id, index) => [id, index]));
 
-    switch (snapshot.settings.projectSortMode) {
+    switch (snapshot.settings.conversationSortMode) {
       case "name":
         return [...conversations].sort((left, right) => left.title.localeCompare(right.title));
       case "manual":
@@ -440,7 +440,7 @@ export function App() {
           (left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()
         );
     }
-  }, [activeWebsite, snapshot.conversations, snapshot.settings.projectSortMode]);
+  }, [activeWebsite, snapshot.conversations, snapshot.settings.conversationSortMode]);
 
   const selectedConversation = useMemo(() => {
     const selectedId = snapshot.settings.selectedConversationId;

@@ -263,40 +263,40 @@ function summarizeToolCall(toolName: string, rawInput: string): ToolSummary {
     case "read_file": {
       const targetPath = readString(input, "path");
       return {
-        title: targetPath ? `Read ${targetPath}` : "Read file"
+        title: targetPath ? `Reading ${targetPath}` : "Reading file"
       };
     }
     case "write_file": {
       const targetPath = readString(input, "path");
       return {
-        title: targetPath ? `Wrote ${targetPath}` : "Wrote file"
+        title: targetPath ? `Writing ${targetPath}` : "Writing file"
       };
     }
     case "delete_file": {
       const targetPath = readString(input, "path");
       return {
-        title: targetPath ? `Deleted ${targetPath}` : "Deleted file"
+        title: targetPath ? `Deleting ${targetPath}` : "Deleting file"
       };
     }
     case "list_files": {
       const targetPath = readString(input, "path");
       return {
-        title: targetPath ? `Listed ${targetPath}` : "Listed workspace files"
+        title: targetPath ? `Listing ${targetPath}` : "Listing workspace files"
       };
     }
     case "run_workspace_command": {
       const command = readString(input, "command");
       return {
-        title: command ? `Ran ${command}` : "Ran workspace command"
+        title: command ? `Running ${command}` : "Running workspace command"
       };
     }
     case "start_preview":
       return {
-        title: "Started preview"
+        title: "Starting preview"
       };
     case "finish_build":
       return {
-        title: "Build complete"
+        title: "Finishing build"
       };
     default:
       return {

@@ -16,6 +16,7 @@ interface ResolvedInvocation {
   env?: NodeJS.ProcessEnv;
   displayCommand: string;
   source: JavaScriptRuntimeSource;
+  shell?: boolean;
 }
 
 interface BundledCliPaths {
@@ -72,10 +73,11 @@ export async function runPackageManagerCommand(
   command: string,
   cwd: string,
   options?: RuntimeResolutionOptions,
-  onOutput?: (chunk: string) => void
+  onOutput?: (chunk: string) => void,
+  signal?: AbortSignal
 ): Promise<CommandResult & { source: JavaScriptRuntimeSource }> {
   const invocation = await resolvePackageManagerInvocation(command, options);
-  return await runResolvedInvocation(invocation, cwd, onOutput);
+  return await runResolvedInvocation(invocation, cwd, onOutput, signal);
 }
 
 export async function spawnPackageManagerCommand(
@@ -95,7 +97,7 @@ export async function spawnPackageManagerCommand(
       CI: "1",
       ...invocation.env
     },
-    shell: false,
+    shell: invocation.shell ?? false,
     windowsHide: true
   });
 
@@ -110,10 +112,11 @@ export async function runVercelCliCommand(
   args: string[],
   cwd: string,
   options?: RuntimeResolutionOptions,
-  onOutput?: (chunk: string) => void
+  onOutput?: (chunk: string) => void,
+  signal?: AbortSignal
 ): Promise<CommandResult & { source: JavaScriptRuntimeSource }> {
   const invocation = await resolveVercelInvocation(args, options);
-  return await runResolvedInvocation(invocation, cwd, onOutput);
+  return await runResolvedInvocation(invocation, cwd, onOutput, signal);
 }
 
 export async function hasBundledVercelCli(): Promise<boolean> {
@@ -162,7 +165,8 @@ async function resolvePackageManagerInvocation(
       file: systemBinary,
       args,
       displayCommand: `${packageManager} ${args.join(" ")}`.trim(),
-      source: "system"
+      source: "system",
+      shell: shouldUseShellForSystemCommand(systemBinary)
     };
   }
 
@@ -192,7 +196,8 @@ async function resolveVercelInvocation(
       file: systemBinaryForCommand("vercel"),
       args,
       displayCommand: `vercel ${args.join(" ")}`.trim(),
-      source: "system"
+      source: "system",
+      shell: shouldUseShellForSystemCommand(systemBinaryForCommand("vercel"))
     };
   }
 
@@ -230,7 +235,8 @@ async function resolveBundledNodeInvocation(
 async function runResolvedInvocation(
   invocation: ResolvedInvocation,
   cwd: string,
-  onOutput?: (chunk: string) => void
+  onOutput?: (chunk: string) => void,
+  signal?: AbortSignal
 ): Promise<CommandResult & { source: JavaScriptRuntimeSource }> {
   return await new Promise((resolve, reject) => {
     const child = spawn(invocation.file, invocation.args, {
@@ -240,12 +246,56 @@ async function runResolvedInvocation(
         CI: "1",
         ...invocation.env
       },
-      shell: false,
+      shell: invocation.shell ?? false,
       windowsHide: true
     });
 
     let stdout = "";
     let stderr = "";
+    let settled = false;
+
+    const finalizeReject = (error: Error) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      signal?.removeEventListener("abort", handleAbort);
+      reject(error);
+    };
+
+    const finalizeResolve = (exitCode: number | null) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      signal?.removeEventListener("abort", handleAbort);
+      resolve({
+        command: invocation.displayCommand,
+        cwd,
+        stdout,
+        stderr,
+        exitCode: exitCode ?? 0,
+        source: invocation.source
+      });
+    };
+
+    const handleAbort = () => {
+      try {
+        child.kill();
+      } catch {
+        // Ignore best-effort shutdown failures for aborted commands.
+      }
+
+      const reason = signal?.reason;
+      finalizeReject(reason instanceof Error ? reason : new Error("Command aborted."));
+    };
+
+    if (signal?.aborted) {
+      handleAbort();
+      return;
+    }
+
+    signal?.addEventListener("abort", handleAbort, { once: true });
 
     child.stdout.on("data", (chunk: Buffer | string) => {
       const text = chunk.toString();
@@ -259,16 +309,11 @@ async function runResolvedInvocation(
       onOutput?.(text);
     });
 
-    child.on("error", reject);
+    child.on("error", (error) => {
+      finalizeReject(error);
+    });
     child.on("close", (exitCode) => {
-      resolve({
-        command: invocation.displayCommand,
-        cwd,
-        stdout,
-        stderr,
-        exitCode: exitCode ?? 0,
-        source: invocation.source
-      });
+      finalizeResolve(exitCode);
     });
   });
 }
@@ -499,6 +544,10 @@ function systemBinaryForPackageManager(packageManager: PackageManager): string {
 
 function systemBinaryForCommand(command: string): string {
   return process.platform === "win32" ? `${command}.cmd` : command;
+}
+
+function shouldUseShellForSystemCommand(file: string): boolean {
+  return process.platform === "win32" && /\.(cmd|bat)$/i.test(file);
 }
 
 async function fileExists(targetPath: string): Promise<boolean> {

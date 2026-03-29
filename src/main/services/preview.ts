@@ -78,7 +78,22 @@ export class PreviewManager {
 
     await this.onPreviewChange(website.id, preview);
 
-    const spawned = await spawnPackageManagerCommand(command, website.workspacePath, options);
+    let spawned: Awaited<ReturnType<typeof spawnPackageManagerCommand>>;
+    try {
+      spawned = await spawnPackageManagerCommand(command, website.workspacePath, options);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      await this.onPreviewChange(website.id, {
+        ...preview,
+        status: "error",
+        port: null,
+        url: null,
+        command: null,
+        lastOutput: detail
+      });
+      throw error;
+    }
+
     const child = spawned.child;
 
     const updatePreview = async (next: Partial<PreviewState>) => {

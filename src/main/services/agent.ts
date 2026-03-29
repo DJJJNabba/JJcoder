@@ -22,6 +22,9 @@ export interface AgentRuntimeCallbacks {
   requestUserInput: (input: { questions: PendingUserInputQuestion[] }) => Promise<Record<string, string>>;
 }
 
+const AGENT_INACTIVITY_TIMEOUT_MS = 120_000;
+const TOOL_PROGRESS_THROTTLE_MS = 1_000;
+
 function stringifyContent(value: unknown): string {
   if (typeof value === "string") {
     return value;
@@ -57,6 +60,56 @@ function summarizePreliminaryResult(value: unknown): string | null {
   }
 
   return null;
+}
+
+function truncateText(value: string, limit: number): string {
+  if (value.length <= limit) {
+    return value;
+  }
+
+  return `${value.slice(0, limit - 3).trimEnd()}...`;
+}
+
+function stripAnsi(value: string): string {
+  return value.replace(/\u001b\[[0-9;]*m/g, "");
+}
+
+function summarizeOutputChunk(chunk: string): string | null {
+  const lines = stripAnsi(chunk)
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) {
+    return null;
+  }
+
+  return truncateText(lines[lines.length - 1], 180);
+}
+
+function describeInactivityTimeout(timeoutMs: number): string {
+  const seconds = Math.round(timeoutMs / 1000);
+  return `The agent stopped producing output for ${seconds} seconds and was cancelled.`;
+}
+
+function createLinkedAbortController(parentSignal: AbortSignal): AbortController {
+  const controller = new AbortController();
+
+  if (parentSignal.aborted) {
+    controller.abort(parentSignal.reason);
+    return controller;
+  }
+
+  parentSignal.addEventListener(
+    "abort",
+    () => {
+      controller.abort(parentSignal.reason);
+    },
+    { once: true }
+  );
+
+  return controller;
 }
 
 function createSystemPrompt(workspacePath: string, hasExistingFiles: boolean): string {
@@ -198,6 +251,43 @@ export async function executeWebsiteRun(options: {
   return await executeWebsiteChatRun(options);
 }
 
+interface ActivityWatch {
+  signal: AbortSignal;
+  markActivity: () => void;
+  getErrorMessage: () => string | null;
+  stop: () => void;
+}
+
+function createActivityWatch(parentSignal: AbortSignal): ActivityWatch {
+  const controller = createLinkedAbortController(parentSignal);
+  let inactivityErrorMessage: string | null = null;
+  let lastActivityAt = Date.now();
+
+  const timer = setInterval(() => {
+    if (controller.signal.aborted) {
+      return;
+    }
+
+    if (Date.now() - lastActivityAt < AGENT_INACTIVITY_TIMEOUT_MS) {
+      return;
+    }
+
+    inactivityErrorMessage = describeInactivityTimeout(AGENT_INACTIVITY_TIMEOUT_MS);
+    controller.abort(new Error(inactivityErrorMessage));
+  }, 5_000);
+
+  return {
+    signal: controller.signal,
+    markActivity: () => {
+      lastActivityAt = Date.now();
+    },
+    getErrorMessage: () => inactivityErrorMessage,
+    stop: () => {
+      clearInterval(timer);
+    }
+  };
+}
+
 async function executeWebsiteChatRun(options: {
   apiKey: string;
   website: Website;
@@ -213,12 +303,61 @@ async function executeWebsiteChatRun(options: {
   const client = new OpenRouter({
     apiKey: options.apiKey
   });
+  const activityWatch = createActivityWatch(options.signal);
+  const signal = activityWatch.signal;
 
   let finalSummary = "";
   const plannerOutput = null;
 
   const workspacePath = options.website.workspacePath;
   const buildCommand = buildCommandFor(detectPackageManager(workspacePath));
+  let toolProgressSequence = 0;
+
+  const appendProgressStatus = async (content: string, streamKey: string) => {
+    activityWatch.markActivity();
+    await options.callbacks.appendEvent({
+      agent: "builder",
+      type: "status",
+      title: "Working",
+      content,
+      metadata: {
+        streamKey,
+        replace: true
+      }
+    });
+  };
+
+  const createProgressReporter = (initialMessage: string) => {
+    const streamKey = `builder:tool-progress:${toolProgressSequence += 1}`;
+    let lastMessage = "";
+    let lastEmittedAt = 0;
+
+    const emit = async (message: string, force = false) => {
+      const normalized = truncateText(message.replace(/\s+/g, " ").trim(), 220);
+      if (!normalized) {
+        return;
+      }
+
+      const now = Date.now();
+      if (!force) {
+        if (normalized === lastMessage) {
+          return;
+        }
+        if (now - lastEmittedAt < TOOL_PROGRESS_THROTTLE_MS) {
+          return;
+        }
+      }
+
+      lastMessage = normalized;
+      lastEmittedAt = now;
+      await appendProgressStatus(normalized, streamKey);
+    };
+
+    return {
+      start: async () => await emit(initialMessage, true),
+      update: async (message: string) => await emit(message)
+    };
+  };
 
   const listFilesTool = tool({
     name: "list_files",
@@ -227,8 +366,14 @@ async function executeWebsiteChatRun(options: {
       path: z.string().optional().describe("Relative path inside the workspace.")
     }),
     execute: async ({ path: relativePath }) => {
+      signal.throwIfAborted();
       const safeRelative = relativePath ? relativeToWorkspace(workspacePath, relativePath) : "";
+      const reporter = createProgressReporter(
+        safeRelative ? `Listing files in ${safeRelative}...` : "Listing workspace files..."
+      );
+      await reporter.start();
       const files = await listFilesRecursive(workspacePath, safeRelative);
+      activityWatch.markActivity();
       return {
         files: files.slice(0, 400),
         total: files.length
@@ -243,8 +388,12 @@ async function executeWebsiteChatRun(options: {
       path: z.string().describe("Relative path to the file.")
     }),
     execute: async ({ path: targetPath }) => {
+      signal.throwIfAborted();
+      const reporter = createProgressReporter(`Reading ${targetPath}...`);
+      await reporter.start();
       const filePath = resolveWithinWorkspace(workspacePath, targetPath);
       const contents = await readTextFileSafe(filePath);
+      activityWatch.markActivity();
       return {
         path: targetPath,
         content: contents.slice(0, 20000)
@@ -260,8 +409,12 @@ async function executeWebsiteChatRun(options: {
       content: z.string().describe("Full file contents.")
     }),
     execute: async ({ path: targetPath, content }) => {
+      signal.throwIfAborted();
+      const reporter = createProgressReporter(`Writing ${targetPath}...`);
+      await reporter.start();
       const filePath = resolveWithinWorkspace(workspacePath, targetPath);
       await writeTextFileSafe(filePath, content);
+      activityWatch.markActivity();
       return {
         path: targetPath,
         bytes: Buffer.byteLength(content, "utf8")
@@ -276,8 +429,12 @@ async function executeWebsiteChatRun(options: {
       path: z.string().describe("Relative path to the file.")
     }),
     execute: async ({ path: targetPath }) => {
+      signal.throwIfAborted();
+      const reporter = createProgressReporter(`Deleting ${targetPath}...`);
+      await reporter.start();
       const filePath = resolveWithinWorkspace(workspacePath, targetPath);
       await fs.rm(filePath, { force: true });
+      activityWatch.markActivity();
       return {
         path: targetPath,
         deleted: true
@@ -292,15 +449,32 @@ async function executeWebsiteChatRun(options: {
       command: z.string().describe("Allowed commands include npm/pnpm/yarn/bun install, add, and run scripts.")
     }),
     execute: async ({ command }) => {
+      signal.throwIfAborted();
       if (!commandAllowed(command)) {
         throw new Error("That command is outside JJcoder's allowed workspace command policy.");
       }
-      const result = await runPackageManagerCommand(command, workspacePath, {
-        allowBundledRuntime: options.allowBundledRuntime
-      });
+      const reporter = createProgressReporter(`Running ${command}...`);
+      await reporter.start();
+      const result = await runPackageManagerCommand(
+        command,
+        workspacePath,
+        {
+          allowBundledRuntime: options.allowBundledRuntime
+        },
+        (chunk) => {
+          activityWatch.markActivity();
+          const summary = summarizeOutputChunk(chunk);
+          if (!summary) {
+            return;
+          }
+          void reporter.update(`Running ${command}: ${summary}`);
+        },
+        signal
+      );
       if (result.exitCode !== 0) {
         throw new Error(result.stderr.trim() || result.stdout.trim() || `Command failed: ${command}`);
       }
+      activityWatch.markActivity();
       return {
         command,
         stdout: result.stdout.slice(-4000),
@@ -314,7 +488,11 @@ async function executeWebsiteChatRun(options: {
     description: "Start or refresh the website preview server.",
     inputSchema: z.object({}),
     execute: async () => {
+      signal.throwIfAborted();
+      const reporter = createProgressReporter("Starting preview server...");
+      await reporter.start();
       await options.callbacks.startPreview();
+      activityWatch.markActivity();
       return {
         started: true
       };
@@ -328,6 +506,7 @@ async function executeWebsiteChatRun(options: {
       summary: z.string().describe("A concise ship note covering the delivered website.")
     }),
     execute: async ({ summary }) => {
+      activityWatch.markActivity();
       finalSummary = summary;
       return {
         summary
@@ -337,7 +516,7 @@ async function executeWebsiteChatRun(options: {
 
   const buildContext = await readProjectSnapshot(workspacePath);
   const hasExistingFiles = await hasSourceFiles(workspacePath);
-  options.signal.throwIfAborted();
+  signal.throwIfAborted();
   await options.callbacks.setStatus("Dispatching builder agent.");
   const toolNamesByCallId = new Map<string, string>();
   const assistantDraftsByItemId = new Map<string, string>();
@@ -393,90 +572,114 @@ async function executeWebsiteChatRun(options: {
             .max(3)
         }),
         execute: async ({ questions }) => {
+          signal.throwIfAborted();
+          activityWatch.markActivity();
           const normalizedQuestions = normalizePendingUserInputQuestions(questions);
-          const answers = await options.callbacks.requestUserInput({
-            questions: normalizedQuestions
-          });
-          return { answers };
+          const keepAlive = setInterval(() => {
+            activityWatch.markActivity();
+          }, 30_000);
+
+          try {
+            const answers = await options.callbacks.requestUserInput({
+              questions: normalizedQuestions
+            });
+            activityWatch.markActivity();
+            return { answers };
+          } finally {
+            clearInterval(keepAlive);
+          }
         }
       }),
       finishTool
     ],
     stopWhen: [stepCountIs(20), hasToolCall("finish_build")]
   }, {
-    signal: options.signal
+    signal
   });
 
-  for await (const event of builderResult.getFullResponsesStream()) {
-    options.signal.throwIfAborted();
-    switch (event.type) {
-      case "response.function_call_arguments.done": {
-        toolNamesByCallId.set(event.itemId, event.name);
-        await options.callbacks.appendEvent({
-          agent: "builder",
-          type: "tool",
-          title: event.name,
-          content: parseOrStringifyArguments(event.arguments),
-          metadata: {
-            toolName: event.name,
-            toolPhase: "call",
-            toolCallId: event.itemId
-          }
-        });
-        break;
-      }
-      case "tool.result": {
-        const toolName = toolNamesByCallId.get(event.toolCallId) ?? null;
-        await options.callbacks.appendEvent({
-          agent: "builder",
-          type: "tool",
-          title: "Tool result",
-          content: stringifyContent(event.result),
-          metadata: {
-            toolName,
-            toolPhase: "result",
-            toolCallId: event.toolCallId
-          }
-        });
-        break;
-      }
-      case "tool.preliminary_result": {
-        const summary = summarizePreliminaryResult(event.result);
-        if (!summary) {
+  let builderText = "";
+  try {
+    for await (const event of builderResult.getFullResponsesStream()) {
+      signal.throwIfAborted();
+      activityWatch.markActivity();
+      switch (event.type) {
+        case "response.function_call_arguments.done": {
+          toolNamesByCallId.set(event.itemId, event.name);
+          await options.callbacks.appendEvent({
+            agent: "builder",
+            type: "tool",
+            title: event.name,
+            content: parseOrStringifyArguments(event.arguments),
+            metadata: {
+              toolName: event.name,
+              toolPhase: "call",
+              toolCallId: event.itemId
+            }
+          });
           break;
         }
-        await options.callbacks.appendEvent({
-          agent: "builder",
-          type: "status",
-          title: "Status",
-          content: summary
-        });
-        break;
-      }
-      case "response.output_text.delta": {
-        const streamKey = `builder:assistant:${event.itemId}`;
-        const nextDraft = `${assistantDraftsByItemId.get(event.itemId) ?? ""}${event.delta}`;
-        assistantDraftsByItemId.set(event.itemId, nextDraft);
-        await options.callbacks.appendEvent({
-          agent: "builder",
-          type: "assistant_delta",
-          title: "Builder output",
-          content: nextDraft,
-          metadata: {
-            streamKey,
-            replace: true
+        case "tool.result": {
+          const toolName = toolNamesByCallId.get(event.toolCallId) ?? null;
+          await options.callbacks.appendEvent({
+            agent: "builder",
+            type: "tool",
+            title: "Tool result",
+            content: stringifyContent(event.result),
+            metadata: {
+              toolName,
+              toolPhase: "result",
+              toolCallId: event.toolCallId
+            }
+          });
+          break;
+        }
+        case "tool.preliminary_result": {
+          const summary = summarizePreliminaryResult(event.result);
+          if (!summary) {
+            break;
           }
-        });
-        break;
+          await options.callbacks.appendEvent({
+            agent: "builder",
+            type: "status",
+            title: "Status",
+            content: summary
+          });
+          break;
+        }
+        case "response.output_text.delta": {
+          const streamKey = `builder:assistant:${event.itemId}`;
+          const nextDraft = `${assistantDraftsByItemId.get(event.itemId) ?? ""}${event.delta}`;
+          assistantDraftsByItemId.set(event.itemId, nextDraft);
+          await options.callbacks.appendEvent({
+            agent: "builder",
+            type: "assistant_delta",
+            title: "Builder output",
+            content: nextDraft,
+            metadata: {
+              streamKey,
+              replace: true
+            }
+          });
+          break;
+        }
+        default:
+          break;
       }
-      default:
-        break;
     }
+
+    signal.throwIfAborted();
+    builderText = await builderResult.getText();
+  } catch (error) {
+    const inactivityErrorMessage = activityWatch.getErrorMessage();
+    if (inactivityErrorMessage) {
+      throw new Error(inactivityErrorMessage);
+    }
+    throw error;
+  } finally {
+    activityWatch.stop();
   }
 
-  options.signal.throwIfAborted();
-  const builderText = await builderResult.getText();
-  options.signal.throwIfAborted();
+  signal.throwIfAborted();
   if (builderText.trim() && assistantDraftsByItemId.size === 0) {
     await options.callbacks.appendEvent({
       agent: "builder",
@@ -486,7 +689,7 @@ async function executeWebsiteChatRun(options: {
     });
   }
 
-  options.signal.throwIfAborted();
+  signal.throwIfAborted();
   await options.callbacks.startPreview().catch(() => undefined);
   return finalSummary || builderText.trim() || "Website build complete.";
 }
@@ -505,6 +708,8 @@ async function executeWebsitePlanRun(options: {
   const client = new OpenRouter({
     apiKey: options.apiKey
   });
+  const activityWatch = createActivityWatch(options.signal);
+  const signal = activityWatch.signal;
   const workspacePath = options.website.workspacePath;
   const hasExistingFiles = await hasSourceFiles(workspacePath);
   const buildContext = await readProjectSnapshot(workspacePath);
@@ -535,8 +740,10 @@ async function executeWebsitePlanRun(options: {
           path: z.string().optional().describe("Relative path inside the workspace.")
         }),
         execute: async ({ path: relativePath }) => {
+          signal.throwIfAborted();
           const safeRelative = relativePath ? relativeToWorkspace(workspacePath, relativePath) : "";
           const files = await listFilesRecursive(workspacePath, safeRelative);
+          activityWatch.markActivity();
           return {
             files: files.slice(0, 400),
             total: files.length
@@ -550,8 +757,10 @@ async function executeWebsitePlanRun(options: {
           path: z.string().describe("Relative path to the file.")
         }),
         execute: async ({ path: targetPath }) => {
+          signal.throwIfAborted();
           const filePath = resolveWithinWorkspace(workspacePath, targetPath);
           const contents = await readTextFileSafe(filePath);
+          activityWatch.markActivity();
           return {
             path: targetPath,
             content: contents.slice(0, 20000)
@@ -561,46 +770,59 @@ async function executeWebsitePlanRun(options: {
     ],
     stopWhen: [stepCountIs(12)]
   }, {
-    signal: options.signal
+    signal
   });
 
   const toolNamesByCallId = new Map<string, string>();
-  for await (const event of builderResult.getFullResponsesStream()) {
-    options.signal.throwIfAborted();
-    if (event.type === "response.function_call_arguments.done") {
-      toolNamesByCallId.set(event.itemId, event.name);
-      await options.callbacks.appendEvent({
-        agent: "builder",
-        type: "tool",
-        title: event.name,
-        content: parseOrStringifyArguments(event.arguments),
-        metadata: {
-          toolName: event.name,
-          toolPhase: "call",
-          toolCallId: event.itemId
-        }
-      });
-      continue;
+  let text = "";
+  try {
+    for await (const event of builderResult.getFullResponsesStream()) {
+      signal.throwIfAborted();
+      activityWatch.markActivity();
+      if (event.type === "response.function_call_arguments.done") {
+        toolNamesByCallId.set(event.itemId, event.name);
+        await options.callbacks.appendEvent({
+          agent: "builder",
+          type: "tool",
+          title: event.name,
+          content: parseOrStringifyArguments(event.arguments),
+          metadata: {
+            toolName: event.name,
+            toolPhase: "call",
+            toolCallId: event.itemId
+          }
+        });
+        continue;
+      }
+
+      if (event.type === "tool.result") {
+        await options.callbacks.appendEvent({
+          agent: "builder",
+          type: "tool",
+          title: "Tool result",
+          content: stringifyContent(event.result),
+          metadata: {
+            toolName: toolNamesByCallId.get(event.toolCallId) ?? null,
+            toolPhase: "result",
+            toolCallId: event.toolCallId
+          }
+        });
+      }
     }
 
-    if (event.type === "tool.result") {
-      await options.callbacks.appendEvent({
-        agent: "builder",
-        type: "tool",
-        title: "Tool result",
-        content: stringifyContent(event.result),
-        metadata: {
-          toolName: toolNamesByCallId.get(event.toolCallId) ?? null,
-          toolPhase: "result",
-          toolCallId: event.toolCallId
-        }
-      });
+    signal.throwIfAborted();
+    text = (await builderResult.getText()).trim();
+  } catch (error) {
+    const inactivityErrorMessage = activityWatch.getErrorMessage();
+    if (inactivityErrorMessage) {
+      throw new Error(inactivityErrorMessage);
     }
+    throw error;
+  } finally {
+    activityWatch.stop();
   }
 
-  options.signal.throwIfAborted();
-  const text = (await builderResult.getText()).trim();
-  options.signal.throwIfAborted();
+  signal.throwIfAborted();
   const planMarkdown = extractProposedPlanBlock(text);
   if (!planMarkdown) {
     throw new Error("Plan mode requires a valid <proposed_plan>...</proposed_plan> block.");

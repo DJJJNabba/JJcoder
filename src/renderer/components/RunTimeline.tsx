@@ -30,7 +30,7 @@ function pillClassName(activity: TimelineActivity): string {
 function pillLabel(activity: TimelineActivity): string {
   switch (activity.kind) {
     case "tool":
-      return activity.resolved ? "done" : "tool";
+      return activity.resolved ? "done" : "running";
     case "error":
       return "error";
     default:

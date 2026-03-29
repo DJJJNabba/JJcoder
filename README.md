@@ -36,6 +36,7 @@ The app opens as a desktop shell. Add your OpenRouter API key in Settings before
 ```bash
 npm run build
 npm run dist:win
+npm run dist:win:portable
 npm run dist:mac
 npm run dist:linux
 ```
@@ -47,10 +48,9 @@ Verified in this workspace:
 
 Windows artifacts are emitted into `release/`.
 
-Installed Windows builds now use Electron auto-update against the latest GitHub Release from `DJJJNabba/JJcoder`. The Windows release pipeline publishes both:
+Installed Windows builds now use Electron auto-update against the latest GitHub Release from `DJJJNabba/JJcoder`.
 
-- an NSIS installer for normal installs and auto-updates
-- a portable `.exe` for manual standalone use
+The standard Windows release is the NSIS installer, which now uses the normal install wizard and creates persistent app shortcuts. A portable `.exe` is optional and is built only with `npm run dist:win:portable`.
 
 The release workflow publishes Windows, macOS, and Linux artifacts to GitHub Releases.
 
