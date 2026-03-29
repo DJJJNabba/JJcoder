@@ -4,13 +4,27 @@ on:
   push:
     tags:
       - "v*"
-  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
+  create_release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ensure GitHub release exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" > /dev/null 2>&1 || \
+          gh release create "${GITHUB_REF_NAME}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --verify-tag \
+            --generate-notes
+
   publish:
+    needs: create_release
     strategy:
       fail-fast: false
       matrix:
@@ -40,8 +54,18 @@ jobs:
       - name: Build app
         run: npm run build
 
-      - name: Build and publish release artifacts
+      - name: Build release artifacts
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npx electron-builder ${{ matrix.build_flags }} --publish never
+
+      - name: Upload release assets
+        shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_IDENTITY_AUTO_DISCOVERY: "false"
-        run: npx electron-builder ${{ matrix.build_flags }} --publish always
+        run: |
+          $files = Get-ChildItem release -File | Where-Object { $_.Name -ne "builder-debug.yml" } | ForEach-Object { $_.FullName }
+          if (-not $files) {
+            throw "No top-level release files were produced."
+          }
+          gh release upload $env:GITHUB_REF_NAME $files --repo $env:GITHUB_REPOSITORY --clobber
