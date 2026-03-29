@@ -36,5 +36,37 @@ export function initializeAutoUpdater(getWindow: () => BrowserWindow | null): vo
     }
   });
 
-  void autoUpdater.checkForUpdatesAndNotify();
+  void autoUpdater.checkForUpdatesAndNotify().catch((error) => {
+    console.error("[updater] automatic update check failed", error);
+  });
+}
+
+export async function checkForUpdatesNow(): Promise<{ checked: boolean; message: string }> {
+  if (!app.isPackaged) {
+    return {
+      checked: false,
+      message: "Update checks are available only in packaged builds."
+    };
+  }
+
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    if (result?.updateInfo?.version) {
+      return {
+        checked: true,
+        message: `Checked for updates. Latest available version: ${result.updateInfo.version}.`
+      };
+    }
+
+    return {
+      checked: true,
+      message: "Checked for updates. You're already on the latest version."
+    };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    return {
+      checked: false,
+      message: `Update check failed: ${detail}`
+    };
+  }
 }

@@ -283,6 +283,11 @@ export interface ContextMenuActionEvent {
   conversationId?: string;
 }
 
+export interface UpdateCheckResult {
+  checked: boolean;
+  message: string;
+}
+
 export interface AppEventMap {
   snapshot: AppSnapshot;
   "run-updated": AgentRun;
@@ -321,6 +326,7 @@ export interface DesktopBridgeApi {
   publishRepo: (input: PublishRepoInput) => Promise<AppSnapshot>;
   cancelRun: (runId: string) => Promise<AppSnapshot>;
   deployWebsite: (input: DeployWebsiteInput) => Promise<AppSnapshot>;
+  checkForUpdates: () => Promise<UpdateCheckResult>;
   showSidebarContextMenu: (input: ShowSidebarContextMenuInput) => Promise<void>;
   subscribe: <K extends keyof AppEventMap>(
     channel: K,
