@@ -1313,8 +1313,16 @@ export function App() {
                 <div className="setup-meta">
                   <span>CLI installed: {snapshot.auth.githubCliInstalled ? "Yes" : "No"}</span>
                 </div>
+                <div className="setup-actions">
+                  <button type="button" className="primary-button" onClick={() => void launchProviderLogin("github")}>
+                    Open GitHub setup
+                  </button>
+                  <button type="button" className="toolbar-chip" onClick={() => void refreshConnections()}>
+                    Re-check
+                  </button>
+                </div>
                 <label className="field">
-                  <span>GitHub token</span>
+                  <span>GitHub token (advanced)</span>
                   <input
                     type="password"
                     value={githubToken}
@@ -1323,14 +1331,8 @@ export function App() {
                   />
                 </label>
                 <div className="setup-actions">
-                  <button type="button" className="primary-button" onClick={() => void launchProviderLogin("github")}>
-                    Open GitHub setup
-                  </button>
                   <button type="button" className="toolbar-chip" onClick={() => void saveTokens()}>
                     Save token
-                  </button>
-                  <button type="button" className="toolbar-chip" onClick={() => void refreshConnections()}>
-                    Re-check
                   </button>
                 </div>
               </section>
@@ -1349,8 +1351,16 @@ export function App() {
                 <div className="setup-meta">
                   <span>CLI available: {snapshot.auth.vercelCliInstalled ? "Yes" : "No, token flow available"}</span>
                 </div>
+                <div className="setup-actions">
+                  <button type="button" className="primary-button" onClick={() => void launchProviderLogin("vercel")}>
+                    Open Vercel setup
+                  </button>
+                  <button type="button" className="toolbar-chip" onClick={() => void refreshConnections(true)}>
+                    Re-check
+                  </button>
+                </div>
                 <label className="field">
-                  <span>Vercel token</span>
+                  <span>Vercel token (advanced)</span>
                   <input
                     type="password"
                     value={vercelToken}
@@ -1359,14 +1369,8 @@ export function App() {
                   />
                 </label>
                 <div className="setup-actions">
-                  <button type="button" className="primary-button" onClick={() => void launchProviderLogin("vercel")}>
-                    Open Vercel setup
-                  </button>
                   <button type="button" className="toolbar-chip" onClick={() => void saveTokens()}>
                     Save token
-                  </button>
-                  <button type="button" className="toolbar-chip" onClick={() => void refreshConnections(true)}>
-                    Re-check
                   </button>
                 </div>
               </section>
