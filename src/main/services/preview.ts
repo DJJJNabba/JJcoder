@@ -1,15 +1,15 @@
 import path from "node:path";
 import type { ChildProcess } from "node:child_process";
 import type { PreviewState, Website } from "@shared/types";
+import { ensureWorkspaceDependencies } from "./dependencies";
 import {
   detectPackageManager,
   devCommandFor,
   fileExists,
   getFreePort,
-  installCommandFor,
   terminateChildProcess
 } from "./utils";
-import { resolvePackageManagerForWorkspace, runPackageManagerCommand, spawnPackageManagerCommand } from "./runtime";
+import { resolvePackageManagerForWorkspace, spawnPackageManagerCommand } from "./runtime";
 
 interface PreviewSession {
   child: ChildProcess;
@@ -59,17 +59,11 @@ export class PreviewManager {
 
     const detectedPackageManager = detectPackageManager(website.workspacePath);
     const { packageManager } = await resolvePackageManagerForWorkspace(detectedPackageManager, options);
-    const nodeModulesPath = path.join(website.workspacePath, "node_modules");
-    if (!(await fileExists(nodeModulesPath))) {
-      const installResult = await runPackageManagerCommand(
-        installCommandFor(packageManager),
-        website.workspacePath,
-        options
-      );
-      if (installResult.exitCode !== 0) {
-        throw new Error(installResult.stderr.trim() || installResult.stdout.trim() || "Failed to install dependencies.");
-      }
-    }
+    await ensureWorkspaceDependencies({
+      workspacePath: website.workspacePath,
+      packageManager,
+      allowBundledRuntime: options?.allowBundledRuntime
+    });
 
     const port = await getFreePort();
     const command = devCommandFor(packageManager, port);

@@ -11,11 +11,17 @@ export function initializeAutoUpdater(getWindow: () => BrowserWindow | null): vo
   }
 
   updaterInitialized = true;
-  autoUpdater.autoDownload = true;
+  autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
 
   autoUpdater.on("error", (error) => {
     console.error("[updater] update check failed", error);
+  });
+
+  autoUpdater.on("update-available", () => {
+    void autoUpdater.downloadUpdate().catch((error) => {
+      console.error("[updater] automatic update download failed", error);
+    });
   });
 
   autoUpdater.on("update-downloaded", async (info) => {
@@ -36,7 +42,7 @@ export function initializeAutoUpdater(getWindow: () => BrowserWindow | null): vo
     }
   });
 
-  void autoUpdater.checkForUpdatesAndNotify().catch((error) => {
+  void autoUpdater.checkForUpdates().catch((error) => {
     console.error("[updater] automatic update check failed", error);
   });
 }

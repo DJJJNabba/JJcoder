@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { Vercel } from "@vercel/sdk";
 import type { DeploymentTarget, VercelState, Website } from "@shared/types";
+import { ensureWorkspaceDependencies } from "./dependencies";
 import {
   buildCommandFor,
   detectPackageManager,
@@ -48,17 +49,11 @@ export async function deployWebsiteToVercel(options: {
   const { packageManager } = await resolvePackageManagerForWorkspace(detectedPackageManager, {
     allowBundledRuntime: options.allowBundledRuntime
   });
-  const nodeModulesPath = path.join(options.website.workspacePath, "node_modules");
-  if (!(await fileExists(nodeModulesPath))) {
-    const installResult = await runPackageManagerCommand(
-      installCommandFor(packageManager),
-      options.website.workspacePath,
-      { allowBundledRuntime: options.allowBundledRuntime }
-    );
-    if (installResult.exitCode !== 0) {
-      throw new Error(installResult.stderr.trim() || installResult.stdout.trim() || "Failed to install dependencies.");
-    }
-  }
+  await ensureWorkspaceDependencies({
+    workspacePath: options.website.workspacePath,
+    packageManager,
+    allowBundledRuntime: options.allowBundledRuntime
+  });
   const buildResult = await runPackageManagerCommand(buildCommandFor(packageManager), options.website.workspacePath, {
     allowBundledRuntime: options.allowBundledRuntime
   });
@@ -143,17 +138,11 @@ export async function deployWebsiteToVercelWithCli(options: {
   const { packageManager } = await resolvePackageManagerForWorkspace(detectedPackageManager, {
     allowBundledRuntime: options.allowBundledRuntime
   });
-  const nodeModulesPath = path.join(options.website.workspacePath, "node_modules");
-  if (!(await fileExists(nodeModulesPath))) {
-    const installResult = await runPackageManagerCommand(
-      installCommandFor(packageManager),
-      options.website.workspacePath,
-      { allowBundledRuntime: options.allowBundledRuntime }
-    );
-    if (installResult.exitCode !== 0) {
-      throw new Error(installResult.stderr.trim() || installResult.stdout.trim() || "Failed to install dependencies.");
-    }
-  }
+  await ensureWorkspaceDependencies({
+    workspacePath: options.website.workspacePath,
+    packageManager,
+    allowBundledRuntime: options.allowBundledRuntime
+  });
 
   const result = await runVercelCliCommand(
     ["deploy", ...(options.target === "production" ? ["--prod"] : []), "--yes"],

@@ -55,7 +55,7 @@ const EMPTY_SNAPSHOT: AppSnapshot = {
     conversationSortMode: "recent",
     ideCommand: "code",
     websitesRoot: null,
-    useBundledRuntime: false,
+    useBundledRuntime: true,
     vercelTeamId: "",
     vercelTeamSlug: "",
     onboardingCompletedAt: null

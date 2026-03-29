@@ -19,11 +19,15 @@ interface ResolvedInvocation {
 }
 
 interface BundledCliPaths {
+  rootPath: string | null;
   npmCliPath: string | null;
   vercelCliPath: string | null;
 }
 
 let cachedBundledCliPaths: BundledCliPaths | null = null;
+let bundledCliPathsPromise: Promise<BundledCliPaths> | null = null;
+const bundledToolVerificationCache = new Map<string, Promise<boolean>>();
+const BUNDLED_RUNTIME_PROBE_TIMEOUT_MS = 15_000;
 
 export async function commandExists(command: string, cwd = process.cwd()): Promise<boolean> {
   const probe =
@@ -113,8 +117,7 @@ export async function runVercelCliCommand(
 }
 
 export async function hasBundledVercelCli(): Promise<boolean> {
-  const paths = await getBundledCliPaths();
-  return Boolean(paths.vercelCliPath && paths.npmCliPath);
+  return Boolean(await ensureBundledToolAvailable("vercel"));
 }
 
 export async function createVercelLoginTerminalCommand(options?: RuntimeResolutionOptions): Promise<{
@@ -208,8 +211,7 @@ async function resolveBundledNodeInvocation(
   tool: "npm" | "vercel",
   args: string[]
 ): Promise<ResolvedInvocation | null> {
-  const cliPaths = await getBundledCliPaths();
-  const scriptPath = tool === "npm" ? cliPaths.npmCliPath : cliPaths.vercelCliPath;
+  const scriptPath = await ensureBundledToolAvailable(tool);
   if (!scriptPath) {
     return null;
   }
@@ -272,44 +274,191 @@ async function runResolvedInvocation(
 }
 
 async function hasBundledNpm(): Promise<boolean> {
-  const paths = await getBundledCliPaths();
-  return Boolean(paths.npmCliPath);
+  return Boolean(await ensureBundledToolAvailable("npm"));
 }
 
-async function getBundledCliPaths(): Promise<BundledCliPaths> {
-  if (cachedBundledCliPaths) {
+async function getBundledCliPaths(options?: { forceRefresh?: boolean }): Promise<BundledCliPaths> {
+  if (options?.forceRefresh) {
+    cachedBundledCliPaths = null;
+    bundledCliPathsPromise = null;
+    bundledToolVerificationCache.clear();
+  } else if (cachedBundledCliPaths) {
     return cachedBundledCliPaths;
   }
 
-  const candidateRoots = resolveBundledNodeModuleRoots();
-  let npmCliPath: string | null = null;
-  let vercelCliPath: string | null = null;
+  if (!bundledCliPathsPromise) {
+    bundledCliPathsPromise = resolveBundledCliPaths(options).finally(() => {
+      bundledCliPathsPromise = null;
+    });
+  }
 
-  for (const root of candidateRoots) {
-    if (!npmCliPath) {
-      const npmCandidate = path.join(root, "npm", "bin", "npm-cli.js");
-      if (await fileExists(npmCandidate)) {
-        npmCliPath = npmCandidate;
+  cachedBundledCliPaths = await bundledCliPathsPromise;
+  return cachedBundledCliPaths;
+}
+
+async function resolveBundledCliPaths(options?: { forceRefresh?: boolean }): Promise<BundledCliPaths> {
+  if (app.isPackaged) {
+    const materializedRoot = await prepareBundledNodeModulesRoot(Boolean(options?.forceRefresh));
+    if (materializedRoot) {
+      const materializedPaths = await inspectBundledCliRoot(materializedRoot);
+      if (materializedPaths.npmCliPath || materializedPaths.vercelCliPath) {
+        return materializedPaths;
       }
-    }
-
-    if (!vercelCliPath) {
-      const vercelCandidate = path.join(root, "vercel", "dist", "vc.js");
-      if (await fileExists(vercelCandidate)) {
-        vercelCliPath = vercelCandidate;
-      }
-    }
-
-    if (npmCliPath && vercelCliPath) {
-      break;
     }
   }
 
-  cachedBundledCliPaths = {
-    npmCliPath,
-    vercelCliPath
+  for (const root of resolveBundledNodeModuleRoots()) {
+    const paths = await inspectBundledCliRoot(root);
+    if (paths.npmCliPath || paths.vercelCliPath) {
+      return paths;
+    }
+  }
+
+  return {
+    rootPath: null,
+    npmCliPath: null,
+    vercelCliPath: null
   };
-  return cachedBundledCliPaths;
+}
+
+async function ensureBundledToolAvailable(tool: "npm" | "vercel"): Promise<string | null> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const cliPaths = await getBundledCliPaths({ forceRefresh: attempt > 0 });
+    const scriptPath = tool === "npm" ? cliPaths.npmCliPath : cliPaths.vercelCliPath;
+    if (!scriptPath) {
+      return null;
+    }
+
+    if (await verifyBundledTool(tool, scriptPath)) {
+      return scriptPath;
+    }
+  }
+
+  return null;
+}
+
+async function inspectBundledCliRoot(rootPath: string): Promise<BundledCliPaths> {
+  const npmCliPath = path.join(rootPath, "npm", "bin", "npm-cli.js");
+  const vercelCliPath = path.join(rootPath, "vercel", "dist", "vc.js");
+
+  return {
+    rootPath,
+    npmCliPath: (await fileExists(npmCliPath)) ? npmCliPath : null,
+    vercelCliPath: (await fileExists(vercelCliPath)) ? vercelCliPath : null
+  };
+}
+
+async function prepareBundledNodeModulesRoot(forceRefresh: boolean): Promise<string | null> {
+  const targetRoot = getBundledNodeModulesCacheRoot();
+  if (forceRefresh) {
+    await fs.rm(targetRoot, { recursive: true, force: true }).catch(() => undefined);
+  }
+
+  const cachedPaths = await inspectBundledCliRoot(targetRoot);
+  if (cachedPaths.npmCliPath || cachedPaths.vercelCliPath) {
+    return targetRoot;
+  }
+
+  for (const sourceRoot of resolveBundledRuntimeSourceRoots(targetRoot)) {
+    const sourcePaths = await inspectBundledCliRoot(sourceRoot);
+    if (!sourcePaths.npmCliPath && !sourcePaths.vercelCliPath) {
+      continue;
+    }
+
+    try {
+      await copyBundledNodeModulesRoot(sourceRoot, targetRoot);
+      return targetRoot;
+    } catch {
+      // Fall through to the next candidate source root.
+    }
+  }
+
+  return null;
+}
+
+function getBundledNodeModulesCacheRoot(): string {
+  return path.join(app.getPath("userData"), "bundled-runtime", app.getVersion(), "node_modules");
+}
+
+function resolveBundledRuntimeSourceRoots(targetRoot: string): string[] {
+  const roots = new Set<string>();
+  const appPath = app.getAppPath();
+  const resourcesPath = process.resourcesPath;
+
+  roots.add(path.join(appPath, "node_modules"));
+  roots.add(path.join(resourcesPath, "app.asar.unpacked", "node_modules"));
+  roots.add(path.join(resourcesPath, "node_modules"));
+  roots.add(path.join(process.cwd(), "node_modules"));
+  roots.delete(targetRoot);
+
+  return [...roots];
+}
+
+async function copyBundledNodeModulesRoot(sourceRoot: string, targetRoot: string): Promise<void> {
+  const targetDirectory = path.dirname(targetRoot);
+  const temporaryRoot = path.join(targetDirectory, `node_modules.tmp-${process.pid}`);
+
+  await fs.rm(temporaryRoot, { recursive: true, force: true }).catch(() => undefined);
+  await fs.mkdir(targetDirectory, { recursive: true });
+  await fs.cp(sourceRoot, temporaryRoot, {
+    recursive: true,
+    force: true
+  });
+  await fs.rm(targetRoot, { recursive: true, force: true }).catch(() => undefined);
+  await fs.rename(temporaryRoot, targetRoot);
+}
+
+async function verifyBundledTool(tool: "npm" | "vercel", scriptPath: string): Promise<boolean> {
+  const cacheKey = `${tool}:${scriptPath}`;
+  const cached = bundledToolVerificationCache.get(cacheKey);
+  if (cached) {
+    return await cached;
+  }
+
+  const verification = probeBundledTool(scriptPath).catch(() => false);
+  bundledToolVerificationCache.set(cacheKey, verification);
+  const verified = await verification;
+  if (!verified) {
+    bundledToolVerificationCache.delete(cacheKey);
+  }
+  return verified;
+}
+
+async function probeBundledTool(scriptPath: string): Promise<boolean> {
+  return await new Promise<boolean>((resolve) => {
+    let settled = false;
+    const child = spawn(process.execPath, [scriptPath, "--version"], {
+      cwd: app.getPath("userData"),
+      env: {
+        ...process.env,
+        CI: "1",
+        ELECTRON_RUN_AS_NODE: "1"
+      },
+      shell: false,
+      windowsHide: true
+    });
+
+    const finish = (success: boolean) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      clearTimeout(timer);
+      resolve(success);
+    };
+
+    const timer = setTimeout(() => {
+      try {
+        child.kill();
+      } catch {
+        // Ignore probe shutdown failures.
+      }
+      finish(false);
+    }, BUNDLED_RUNTIME_PROBE_TIMEOUT_MS);
+
+    child.once("error", () => finish(false));
+    child.once("close", (exitCode) => finish(exitCode === 0));
+  });
 }
 
 function resolveBundledNodeModuleRoots(): string[] {
@@ -317,12 +466,13 @@ function resolveBundledNodeModuleRoots(): string[] {
   const appPath = app.isPackaged ? app.getAppPath() : process.cwd();
   const resourcesPath = process.resourcesPath;
 
+  roots.add(path.join(appPath, "node_modules"));
+
   if (app.isPackaged) {
     roots.add(path.join(resourcesPath, "app.asar.unpacked", "node_modules"));
     roots.add(path.join(resourcesPath, "node_modules"));
   }
 
-  roots.add(path.join(appPath, "node_modules"));
   roots.add(path.join(process.cwd(), "node_modules"));
 
   return [...roots];
