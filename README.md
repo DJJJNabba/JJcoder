@@ -4,8 +4,7 @@ JJcoder is an open-source Electron desktop app for agentically building React we
 
 ## Highlights
 
-- T3code-inspired desktop layout with a collapsible website sidebar and nested build runs
-- OpenRouter-powered agent orchestration with `solo` and `squad` modes
+- OpenRouter-powered agent orchestration with `chat` and `plan` modes
 - Searchable model picker backed by the live OpenRouter models catalog
 - React + Vite website scaffolding for new workspaces
 - In-app preview runner for local Vite dev servers
@@ -53,16 +52,7 @@ Installed Windows builds now use Electron auto-update against the latest GitHub 
 - an NSIS installer for normal installs and auto-updates
 - a portable `.exe` for manual standalone use
 
-## GitHub Actions Releases
-
-Push a version tag like `v0.1.1` to trigger cross-platform release builds:
-
-```bash
-git tag v0.1.1
-git push origin v0.1.1
-```
-
-The release workflow publishes Windows, macOS, and Linux artifacts to GitHub Releases. Keep `package.json` version aligned with the tag you publish.
+The release workflow publishes Windows, macOS, and Linux artifacts to GitHub Releases.
 
 ## Provider Setup
 
@@ -83,7 +73,3 @@ Add a Vercel token, plus optional team ID and slug if you deploy into a team sco
 - The app scaffolds Vite React TypeScript websites when you create a new empty workspace.
 - Agent tools are intentionally constrained to workspace file operations, package manager commands, preview start, and build verification.
 - Deployment currently uploads built `dist` output through the Vercel SDK after a successful local build.
-
-## Attribution
-
-JJcoder’s desktop information architecture and some interaction patterns are inspired by [pingdotgg/t3code](https://github.com/pingdotgg/t3code), which is MIT licensed. See [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
