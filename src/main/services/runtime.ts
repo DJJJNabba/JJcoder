@@ -547,7 +547,7 @@ function systemBinaryForCommand(command: string): string {
 }
 
 function shouldUseShellForSystemCommand(file: string): boolean {
-  return process.platform === "win32" && /\.(cmd|bat)$/i.test(file);
+  return process.platform === "win32" && (/\.(cmd|bat)$/i.test(file) || !path.extname(file));
 }
 
 async function fileExists(targetPath: string): Promise<boolean> {

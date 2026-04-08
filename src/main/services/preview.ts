@@ -96,6 +96,17 @@ export class PreviewManager {
 
     const child = spawned.child;
 
+    const session: PreviewSession = {
+      child,
+      preview: {
+        ...preview,
+        command: spawned.displayCommand
+      },
+      stopping: false,
+      stopPromise: null
+    };
+    this.sessions.set(website.id, session);
+
     const updatePreview = async (next: Partial<PreviewState>) => {
       const session = this.sessions.get(website.id);
       const current = session?.preview ?? preview;
@@ -129,6 +140,27 @@ export class PreviewManager {
       void handleChunk(chunk);
     });
 
+    child.on("error", (error) => {
+      const session = this.sessions.get(website.id);
+      if (!session || session.child !== child) {
+        return;
+      }
+
+      this.sessions.delete(website.id);
+      if (session.stopping) {
+        return;
+      }
+
+      void this.onPreviewChange(website.id, {
+        ...session.preview,
+        status: "error",
+        port: null,
+        url: null,
+        command: null,
+        lastOutput: error.message || "Preview server failed to start."
+      });
+    });
+
     child.on("exit", (code) => {
       const session = this.sessions.get(website.id);
       if (!session || session.child !== child) {
@@ -152,16 +184,6 @@ export class PreviewManager {
             ? "Preview server stopped."
             : `Preview server exited unexpectedly with code ${code ?? "unknown"}.`
       });
-    });
-
-    this.sessions.set(website.id, {
-      child,
-      preview: {
-        ...preview,
-        command: spawned.displayCommand
-      },
-      stopping: false,
-      stopPromise: null
     });
 
     return {
