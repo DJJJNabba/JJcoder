@@ -1,8 +1,9 @@
 import path from "node:path";
+import fs from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, shell } from "electron";
 import { AppController } from "./appController";
-import { checkForUpdatesNow, initializeAutoUpdater } from "./services/updater";
+import { checkForUpdatesNow, initializeAutoUpdater, installUpdateNow } from "./services/updater";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -42,6 +43,48 @@ async function createMainWindow() {
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
+}
+
+async function pathExists(targetPath: string): Promise<boolean> {
+  try {
+    await fs.access(targetPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function directoryHasPersistedAppState(directoryPath: string): Promise<boolean> {
+  return (
+    (await pathExists(path.join(directoryPath, "state.json"))) ||
+    (await pathExists(path.join(directoryPath, "state.backup.json"))) ||
+    (await pathExists(path.join(directoryPath, "secrets.json")))
+  );
+}
+
+async function resolveDataDirectory(): Promise<string> {
+  const primary = app.getPath("userData");
+  if (await directoryHasPersistedAppState(primary)) {
+    return primary;
+  }
+
+  const appData = app.getPath("appData");
+  const candidates = [
+    path.join(appData, "JJcoder"),
+    path.join(appData, "jjcoder"),
+    path.join(appData, "JJcoder Desktop"),
+    path.join(appData, "com.jjcoder.desktop")
+  ];
+  for (const candidate of candidates) {
+    if (path.resolve(candidate) === path.resolve(primary)) {
+      continue;
+    }
+    if (await directoryHasPersistedAppState(candidate)) {
+      return candidate;
+    }
+  }
+
+  return primary;
 }
 
 async function registerIpcHandlers() {
@@ -156,7 +199,11 @@ async function registerIpcHandlers() {
       window: owner ?? undefined
     });
   });
-  ipcMain.handle("jjcoder:check-for-updates", async () => await checkForUpdatesNow());
+  ipcMain.handle(
+    "jjcoder:check-for-updates",
+    async () => await checkForUpdatesNow((payload) => emitToRenderer("update-status", payload))
+  );
+  ipcMain.handle("jjcoder:install-update", async () => await installUpdateNow());
 }
 
 function installProcessErrorHandlers() {
@@ -193,10 +240,10 @@ function installProcessErrorHandlers() {
 
 app.whenReady().then(async () => {
   installProcessErrorHandlers();
-  controller = new AppController(app.getPath("userData"), emitToRenderer);
+  controller = new AppController(await resolveDataDirectory(), emitToRenderer);
   await registerIpcHandlers();
   await createMainWindow();
-  initializeAutoUpdater(() => mainWindow);
+  initializeAutoUpdater(() => mainWindow, (payload) => emitToRenderer("update-status", payload));
 
   try {
     await controller.initialize();

@@ -18,7 +18,8 @@ import type {
   ContextMenuActionEvent,
   PendingUserInputRequest,
   ProviderLoginKind,
-  ProposedPlan
+  ProposedPlan,
+  UpdateStatusEvent
 } from "@shared/types";
 import { ModelPicker } from "./components/ModelPicker";
 import { PreviewPane } from "./components/PreviewPane";
@@ -172,6 +173,8 @@ export function App() {
   const [vercelToken, setVercelToken] = useState("");
   const [checkingUpdates, setCheckingUpdates] = useState(false);
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
+  const [updatePrompt, setUpdatePrompt] = useState<UpdateStatusEvent | null>(null);
+  const [installingUpdate, setInstallingUpdate] = useState(false);
   const [pendingUserInputAnswers, setPendingUserInputAnswers] = useState<Record<string, PendingUserInputDraftAnswer>>({});
   const [pendingUserInputQuestionIndex, setPendingUserInputQuestionIndex] = useState(0);
   const [respondingUserInput, setRespondingUserInput] = useState(false);
@@ -230,6 +233,10 @@ export function App() {
         websites: prev.websites.map((website) => (website.id === websiteId ? { ...website, preview } : website))
       }));
     });
+    const unsubscribeUpdate = bridge.subscribe("update-status", (status) => {
+      setUpdatePrompt(status);
+      setUpdateMessage(status.message);
+    });
     const unsubscribeContextMenu = bridge.subscribe("context-menu-action", (action: ContextMenuActionEvent) => {
       setRenameDialog(null);
       setDeleteDialog(null);
@@ -279,6 +286,7 @@ export function App() {
       unsubscribeSnapshot();
       unsubscribeRun();
       unsubscribePreview();
+      unsubscribeUpdate();
       unsubscribeContextMenu();
     };
   }, [bridge, snapshot.conversations, snapshot.websites]);
@@ -552,6 +560,16 @@ export function App() {
       handleError(reason);
     } finally {
       setCheckingUpdates(false);
+    }
+  };
+
+  const installUpdate = async () => {
+    setInstallingUpdate(true);
+    try {
+      await window.jjcoder.installUpdate();
+    } catch (reason) {
+      handleError(reason);
+      setInstallingUpdate(false);
     }
   };
 
@@ -852,6 +870,11 @@ export function App() {
     document.body.classList.add("is-resizing");
   };
 
+  const visibleUpdatePrompt =
+    updatePrompt && updatePrompt.status !== "checking" && updatePrompt.status !== "not-available"
+      ? updatePrompt
+      : null;
+
   if (!bridge) {
     return (
       <div className="app-shell">
@@ -877,6 +900,37 @@ export function App() {
         gridTemplateColumns: `${sidebarCollapsed ? COLLAPSED_SIDEBAR_WIDTH : sidebarWidth}px var(--divider-size) minmax(0, 1fr)`
       }}
     >
+      {visibleUpdatePrompt ? (
+        <div className="update-prompt" role="dialog" aria-live="polite" aria-label="App update">
+          <div>
+            <p className="eyebrow">
+              {visibleUpdatePrompt.status === "ready"
+                ? "Update ready"
+                : visibleUpdatePrompt.status === "error"
+                  ? "Update failed"
+                  : "Update available"}
+            </p>
+            <strong>{visibleUpdatePrompt.version ? `JJcoder ${visibleUpdatePrompt.version}` : "JJcoder update"}</strong>
+            <p>{visibleUpdatePrompt.message}</p>
+          </div>
+          {visibleUpdatePrompt.status === "downloading" && visibleUpdatePrompt.progress !== null ? (
+            <div className="update-progress" aria-label={`Download ${Math.round(visibleUpdatePrompt.progress)} percent`}>
+              <span style={{ width: `${Math.round(visibleUpdatePrompt.progress)}%` }} />
+            </div>
+          ) : null}
+          <div className="update-actions">
+            {visibleUpdatePrompt.status === "ready" ? (
+              <button type="button" className="primary-button" onClick={() => void installUpdate()} disabled={installingUpdate}>
+                {installingUpdate ? "Restarting..." : "Update and restart"}
+              </button>
+            ) : null}
+            <button type="button" className="toolbar-chip" onClick={() => setUpdatePrompt(null)}>
+              {visibleUpdatePrompt.status === "ready" ? "Later" : "Dismiss"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <WebsiteSidebar
         websites={snapshot.websites}
         conversations={snapshot.conversations}

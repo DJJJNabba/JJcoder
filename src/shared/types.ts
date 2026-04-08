@@ -286,6 +286,18 @@ export interface ContextMenuActionEvent {
 export interface UpdateCheckResult {
   checked: boolean;
   message: string;
+  updateAvailable: boolean;
+  version: string | null;
+  readyToInstall: boolean;
+}
+
+export type UpdateStatus = "checking" | "available" | "downloading" | "ready" | "not-available" | "error";
+
+export interface UpdateStatusEvent {
+  status: UpdateStatus;
+  version: string | null;
+  message: string;
+  progress: number | null;
 }
 
 export interface AppEventMap {
@@ -296,6 +308,7 @@ export interface AppEventMap {
     preview: PreviewState;
   };
   "context-menu-action": ContextMenuActionEvent;
+  "update-status": UpdateStatusEvent;
 }
 
 export interface DesktopBridgeApi {
@@ -327,6 +340,7 @@ export interface DesktopBridgeApi {
   cancelRun: (runId: string) => Promise<AppSnapshot>;
   deployWebsite: (input: DeployWebsiteInput) => Promise<AppSnapshot>;
   checkForUpdates: () => Promise<UpdateCheckResult>;
+  installUpdate: () => Promise<void>;
   showSidebarContextMenu: (input: ShowSidebarContextMenuInput) => Promise<void>;
   subscribe: <K extends keyof AppEventMap>(
     channel: K,

@@ -1,3 +1,4 @@
+import fs from "node:fs/promises";
 import path from "node:path";
 import { nanoid } from "nanoid";
 import type {
@@ -9,7 +10,7 @@ import type {
   ProviderModel,
   Website
 } from "@shared/types";
-import { ensureDir, readJsonFile, writeJsonFile } from "./utils";
+import { ensureDir } from "./utils";
 
 interface PersistedState {
   settings: AppSettings;
@@ -39,23 +40,16 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 export class StateStore {
   private readonly stateFilePath: string;
+  private readonly backupFilePath: string;
 
   constructor(baseDirectory: string) {
     this.stateFilePath = path.join(baseDirectory, "state.json");
+    this.backupFilePath = path.join(baseDirectory, "state.backup.json");
   }
 
   async load(): Promise<PersistedState> {
     await ensureDir(path.dirname(this.stateFilePath));
-    const loaded = await readJsonFile<PersistedState>(this.stateFilePath, {
-      settings: DEFAULT_SETTINGS,
-      websites: [],
-      conversations: [],
-      runs: [],
-      proposedPlans: [],
-      pendingUserInputs: [],
-      models: [],
-      modelsFetchedAt: null
-    });
+    const loaded = await this.readPersistedState();
     const migrated = migrateLegacyState(loaded);
 
     return {
@@ -75,7 +69,53 @@ export class StateStore {
   }
 
   async save(value: PersistedState): Promise<void> {
-    await writeJsonFile(this.stateFilePath, value);
+    await ensureDir(path.dirname(this.stateFilePath));
+    await fs.copyFile(this.stateFilePath, this.backupFilePath).catch(() => undefined);
+
+    const temporaryPath = path.join(
+      path.dirname(this.stateFilePath),
+      `state.${process.pid}.${Date.now()}.tmp`
+    );
+    await fs.writeFile(temporaryPath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+    await fs.rename(temporaryPath, this.stateFilePath).catch(async () => {
+      await fs.copyFile(temporaryPath, this.stateFilePath);
+      await fs.rm(temporaryPath, { force: true }).catch(() => undefined);
+    });
+  }
+
+  private async readPersistedState(): Promise<Partial<PersistedState>> {
+    const primary = await this.readStateFile(this.stateFilePath);
+    if (primary) {
+      return primary;
+    }
+
+    const backup = await this.readStateFile(this.backupFilePath);
+    if (backup) {
+      return backup;
+    }
+
+    return {
+      settings: DEFAULT_SETTINGS,
+      websites: [],
+      conversations: [],
+      runs: [],
+      proposedPlans: [],
+      pendingUserInputs: [],
+      models: [],
+      modelsFetchedAt: null
+    };
+  }
+
+  private async readStateFile(filePath: string): Promise<Partial<PersistedState> | null> {
+    try {
+      const raw = await fs.readFile(filePath, "utf8");
+      const parsed = JSON.parse(raw) as unknown;
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? (parsed as Partial<PersistedState>)
+        : null;
+    } catch {
+      return null;
+    }
   }
 }
 

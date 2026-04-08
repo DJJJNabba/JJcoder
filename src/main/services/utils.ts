@@ -36,7 +36,12 @@ export async function readJsonFile<T>(filePath: string, fallback: T): Promise<T>
 
 export async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
   await ensureDir(path.dirname(filePath));
-  await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+  const temporaryPath = path.join(path.dirname(filePath), `${path.basename(filePath)}.${process.pid}.${Date.now()}.tmp`);
+  await fs.writeFile(temporaryPath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+  await fs.rename(temporaryPath, filePath).catch(async () => {
+    await fs.copyFile(temporaryPath, filePath);
+    await fs.rm(temporaryPath, { force: true }).catch(() => undefined);
+  });
 }
 
 export function sanitizeProjectName(input: string): string {
