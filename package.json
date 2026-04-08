@@ -1,6 +1,6 @@
 {
   "name": "jjcoder",
-  "version": "0.0.8-alpha",
+  "version": "0.0.9-alpha",
   "private": true,
   "description": "JJcoder is an open-source Electron workspace for agentically building React websites and deploying them to Vercel.",
   "type": "module",
@@ -97,6 +97,7 @@
       "category": "Development"
     },
     "nsis": {
+      "artifactName": "${productName}-Setup-${version}.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
