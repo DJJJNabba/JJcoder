@@ -12,6 +12,14 @@ export interface CommandResult {
   exitCode: number;
 }
 
+export type PackageManager = "npm" | "pnpm" | "yarn" | "bun";
+
+interface PackageJsonShape {
+  scripts?: Record<string, string>;
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+}
+
 export async function ensureDir(dirPath: string): Promise<void> {
   await fs.mkdir(dirPath, { recursive: true });
 }
@@ -260,7 +268,7 @@ export async function listFilesRecursive(rootPath: string, basePath = ""): Promi
   return results.sort((left, right) => left.localeCompare(right));
 }
 
-export function detectPackageManager(workspacePath: string): "npm" | "pnpm" | "yarn" | "bun" {
+export function detectPackageManager(workspacePath: string): PackageManager {
   const joined = (name: string) => path.join(workspacePath, name);
   if (requirementExists(joined("pnpm-lock.yaml"))) {
     return "pnpm";
@@ -282,7 +290,7 @@ function requirementExists(targetPath: string): boolean {
   }
 }
 
-export function installCommandFor(packageManager: "npm" | "pnpm" | "yarn" | "bun"): string {
+export function installCommandFor(packageManager: PackageManager): string {
   switch (packageManager) {
     case "pnpm":
       return "pnpm install";
@@ -295,7 +303,7 @@ export function installCommandFor(packageManager: "npm" | "pnpm" | "yarn" | "bun
   }
 }
 
-export function buildCommandFor(packageManager: "npm" | "pnpm" | "yarn" | "bun"): string {
+export function buildCommandFor(packageManager: PackageManager): string {
   switch (packageManager) {
     case "pnpm":
       return "pnpm build";
@@ -309,18 +317,78 @@ export function buildCommandFor(packageManager: "npm" | "pnpm" | "yarn" | "bun")
 }
 
 export function devCommandFor(
-  packageManager: "npm" | "pnpm" | "yarn" | "bun",
+  packageManager: PackageManager,
   port: number
 ): string {
+  return packageScriptCommand(packageManager, "dev", ["--host", "127.0.0.1", "--port", String(port)]);
+}
+
+export async function previewCommandForWorkspace(
+  workspacePath: string,
+  packageManager: PackageManager,
+  port: number
+): Promise<string> {
+  const packageJson = await readJsonFile<PackageJsonShape | null>(path.join(workspacePath, "package.json"), null);
+  const scripts = packageJson?.scripts ?? {};
+  const packageNames = new Set([
+    ...Object.keys(packageJson?.dependencies ?? {}),
+    ...Object.keys(packageJson?.devDependencies ?? {})
+  ]);
+
+  const devScript = scripts.dev?.toLowerCase() ?? "";
+  if (scripts.dev) {
+    if (packageNames.has("next") || /\bnext\b/.test(devScript)) {
+      return packageScriptCommand(packageManager, "dev", ["-H", "127.0.0.1", "-p", String(port)]);
+    }
+
+    if (usesHostPortFlags(packageNames, devScript)) {
+      return packageScriptCommand(packageManager, "dev", ["--host", "127.0.0.1", "--port", String(port)]);
+    }
+
+    return packageScriptCommand(packageManager, "dev", []);
+  }
+
+  const startScript = scripts.start?.toLowerCase() ?? "";
+  if (scripts.start) {
+    if (packageNames.has("next") || /\bnext\b/.test(startScript)) {
+      return packageScriptCommand(packageManager, "start", ["-H", "127.0.0.1", "-p", String(port)]);
+    }
+
+    if (usesHostPortFlags(packageNames, startScript)) {
+      return packageScriptCommand(packageManager, "start", ["--host", "127.0.0.1", "--port", String(port)]);
+    }
+
+    return packageScriptCommand(packageManager, "start", []);
+  }
+
+  if (scripts.preview) {
+    return packageScriptCommand(packageManager, "preview", ["--host", "127.0.0.1", "--port", String(port)]);
+  }
+
+  throw new Error("This website does not define a dev, start, or preview script in package.json.");
+}
+
+function usesHostPortFlags(packageNames: Set<string>, script: string): boolean {
+  return (
+    packageNames.has("vite") ||
+    packageNames.has("astro") ||
+    packageNames.has("nuxt") ||
+    packageNames.has("@angular/cli") ||
+    packageNames.has("@sveltejs/kit") ||
+    /\b(vite|astro|nuxt|ng|vite:dev)\b/.test(script)
+  );
+}
+
+function packageScriptCommand(packageManager: PackageManager, scriptName: string, args: string[]): string {
   switch (packageManager) {
     case "pnpm":
-      return `pnpm dev --host 127.0.0.1 --port ${port}`;
+      return ["pnpm", scriptName, ...args].join(" ");
     case "yarn":
-      return `yarn dev --host 127.0.0.1 --port ${port}`;
+      return ["yarn", scriptName, ...args].join(" ");
     case "bun":
-      return `bun run dev -- --host 127.0.0.1 --port ${port}`;
+      return ["bun", "run", scriptName, ...(args.length > 0 ? ["--", ...args] : [])].join(" ");
     default:
-      return `npm run dev -- --host 127.0.0.1 --port ${port}`;
+      return ["npm", "run", scriptName, ...(args.length > 0 ? ["--", ...args] : [])].join(" ");
   }
 }
 

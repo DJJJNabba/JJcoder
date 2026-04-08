@@ -8,6 +8,7 @@ export type PackageManager = "npm" | "pnpm" | "yarn" | "bun";
 export type JavaScriptRuntimeSource = "system" | "bundled";
 interface RuntimeResolutionOptions {
   allowBundledRuntime?: boolean;
+  env?: NodeJS.ProcessEnv;
 }
 
 interface ResolvedInvocation {
@@ -77,7 +78,7 @@ export async function runPackageManagerCommand(
   signal?: AbortSignal
 ): Promise<CommandResult & { source: JavaScriptRuntimeSource }> {
   const invocation = await resolvePackageManagerInvocation(command, options);
-  return await runResolvedInvocation(invocation, cwd, onOutput, signal);
+  return await runResolvedInvocation(invocation, cwd, onOutput, signal, options?.env);
 }
 
 export async function spawnPackageManagerCommand(
@@ -95,7 +96,8 @@ export async function spawnPackageManagerCommand(
     env: {
       ...process.env,
       CI: "1",
-      ...invocation.env
+      ...invocation.env,
+      ...options?.env
     },
     shell: invocation.shell ?? false,
     windowsHide: true
@@ -116,7 +118,7 @@ export async function runVercelCliCommand(
   signal?: AbortSignal
 ): Promise<CommandResult & { source: JavaScriptRuntimeSource }> {
   const invocation = await resolveVercelInvocation(args, options);
-  return await runResolvedInvocation(invocation, cwd, onOutput, signal);
+  return await runResolvedInvocation(invocation, cwd, onOutput, signal, options?.env);
 }
 
 export async function hasBundledVercelCli(): Promise<boolean> {
@@ -236,7 +238,8 @@ async function runResolvedInvocation(
   invocation: ResolvedInvocation,
   cwd: string,
   onOutput?: (chunk: string) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  extraEnv?: NodeJS.ProcessEnv
 ): Promise<CommandResult & { source: JavaScriptRuntimeSource }> {
   return await new Promise((resolve, reject) => {
     const child = spawn(invocation.file, invocation.args, {
@@ -244,7 +247,8 @@ async function runResolvedInvocation(
       env: {
         ...process.env,
         CI: "1",
-        ...invocation.env
+        ...invocation.env,
+        ...extraEnv
       },
       shell: invocation.shell ?? false,
       windowsHide: true
