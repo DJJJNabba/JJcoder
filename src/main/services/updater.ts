@@ -200,5 +200,5 @@ export async function installUpdateNow(): Promise<void> {
   if (!updateReady) {
     throw new Error("The update is not ready to install yet.");
   }
-  autoUpdater.quitAndInstall();
+  autoUpdater.quitAndInstall(true, true);
 }
